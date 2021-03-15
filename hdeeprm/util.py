@@ -18,7 +18,7 @@ min_speed = 0.005
 min_power = 0.005
 
 def generate_workload(workload_file_path: str, nb_cores: int, nb_jobs: int,
-                      custom_workload_path: str = None) -> None:
+                      custom_workload_path: str = None) -> (dict, dict):
     """SWF-formatted Workload -> Batsim-ready JSON format.
 
 Parses a SWF formatted Workload file into a Batsim-ready JSON file. Generates as many jobs as
@@ -144,9 +144,10 @@ Args:
     logging.debug(job_limits)
     with open('job_limits.pkl', 'wb') as out_f:
         pickle.dump(job_limits, out_f)
+    return job_limits, workload
 
 def generate_platform(platform_file_path: str, gen_platform_xml: bool = True,
-                      gen_res_hierarchy: bool = False) -> None:
+                      gen_res_hierarchy: bool = False) -> (dict, list):
     """HDeepRM JSON Platform -> Batsim-ready XML format + Resource Hierarchy.
 
 Parses a HDeepRM JSON formatted platform definition and outputs both a Batsim-ready XML file
@@ -189,6 +190,8 @@ Args:
         _write_platform_definition(root_xml)
     if shared_state['gen_res_hierarchy']:
         _write_resource_hierarchy(shared_state, root_el)
+
+    return root_el, shared_state
 
 def _load_data(platform_file_path: str) -> tuple:
     data_path = path.join(path.dirname(__file__), 'data')

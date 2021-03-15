@@ -20,6 +20,7 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 import numpy as np
 from util import generate_workload, generate_platform
+from Simulator import Simulator
 
 def launch() -> None:
     """Utility for launching HDeepRM experiments.
@@ -74,6 +75,8 @@ Command line arguments:
         else:
             present[fil] = False
 
+    platform = None
+    core_pool = None
     # Generate the Platform and Resource Hierarchy
     new_reference_speed = False
     if not present['platform.xml'] or not present['res_hierarchy.pkl']:
@@ -86,7 +89,7 @@ Command line arguments:
             new_reference_speed = True
         else:
             skipped.append('res_hierarchy')
-        generate_platform(options['platform_file_path'],
+        platform , core_pool = generate_platform(options['platform_file_path'],
                           gen_platform_xml=not present['platform.xml'],
                           gen_res_hierarchy=not present['res_hierarchy.pkl'])
         print('Saved "platform.xml" and "res_hierarchy.pkl" in current directory')
@@ -95,15 +98,17 @@ Command line arguments:
 
     # If a custom workload is provided, just calculate the operations with respect to the reference
     # speed
+    job_limit = None
+    jobs = None
     if args.customworkload:
         print(f'Utilizing {args.customworkload} as workload, adjusting operations')
-        generate_workload(options['workload_file_path'], options['nb_resources'],
+        job_limit, jobs = generate_workload(options['workload_file_path'], options['nb_resources'],
                           options['nb_jobs'], custom_workload_path=args.customworkload)
         print('Saved "workload.json" and "job_limits.pkl" in current directory')
     # Generate the Workload
     elif not present['workload.json'] or not present['job_limits.pkl'] or new_reference_speed:
         print('Generating workload JSON and job limits')
-        generate_workload(options['workload_file_path'], options['nb_resources'],
+        job_limit, jobs = generate_workload(options['workload_file_path'], options['nb_resources'],
                           options['nb_jobs'])
         print('Saved "workload.json" and "job_limits.pkl" in current directory')
     else:
@@ -114,13 +119,7 @@ Command line arguments:
 
     # Launch both PyBatsim and Batsim instances for running the simulation
     for _ in range(args.nbruns):
-        with open('pybatsim.log', 'w+') as out_f:
-            pybs = sp.Popen(('pybatsim', '-o', json.dumps(options['pybatsim']),
-                             path.join(path.dirname(path.realpath(__file__)),
-                                       'entrypoints/HDeepRMWorkloadManager.py')),
-                            stdout=out_f, stderr=out_f)
-            sp.run(('batsim', '-E', '-w', 'workload.json', '-p', 'platform.xml'), check=True)
-            pybs.communicate()
+        Simulator(job_limit, jobs, core_pool, platform, options)
 
 
 def visual() -> None:
