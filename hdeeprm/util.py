@@ -42,11 +42,18 @@ Args:
     if custom_workload_path:
         with open(custom_workload_path, 'r') as in_f:
             workload = json.load(in_f)
+        if workload["num_instructions"] == "True" or workload["num_instructions"] == "true" or \
+                workload["num_instructions"] == "TRUE":
+            for profile in workload['profiles'].values():
+                profile['cpu'] = profile['cpu'] / profile['ipc']
+                profile['req_ops'] = profile['cpu']
+                print("Req_ops y CPU %lf, %lf", profile['req_ops'], profile['cpu'])
         # Adjust operations for every profile
-        for profile in workload['profiles'].values():
-            profile['req_ops'] = reference_speed * profile['req_time'] * 1e9
-            profile['cpu'] = profile['req_ops']
-            print("Req_ops y CPU %lf, %lf",profile['req_ops'],profile['cpu'])
+        else:
+            for profile in workload['profiles'].values():
+                profile['req_ops'] = reference_speed * profile['req_time'] * 1e9
+                profile['cpu'] = profile['req_ops']
+                print("Req_ops y CPU %lf, %lf",profile['req_ops'],profile['cpu'])
     # Usual workload (SWF)
     else:
         with open(workload_file_path, 'r') as in_f:
@@ -131,9 +138,10 @@ Args:
             [job['res'] for job in workload['jobs']]), 99),
         'max_mem': numpy.percentile(numpy.array(
             [workload['profiles'][job['profile']]['mem'] for job in workload['jobs']]), 99),
-        'max_mem_bw': numpy.percentile(numpy.array(
-            [workload['profiles'][job['profile']]['mem_bw'] for job in workload['jobs']]), 99)
+        'max_mem_vol': numpy.percentile(numpy.array(
+            [workload['profiles'][job['profile']]['mem_vol'] for job in workload['jobs']]), 99)
     }
+    logging.debug(job_limits)
     with open('job_limits.pkl', 'wb') as out_f:
         pickle.dump(job_limits, out_f)
 
@@ -288,45 +296,60 @@ def _generate_processors(shared_state: dict, node_desc: dict, node_el: dict) -> 
         gflops_per_core = shared_state['types']['processor'][proc_desc['type']]['clock_rate'] *\
                          shared_state['types']['processor'][proc_desc['type']]['dpflops_per_cycle']
         # Power consumption per Core in Watts
-        power_per_core = shared_state['types']['processor'][proc_desc['type']]['Q2']
+        power_per_core = shared_state['types']['processor'][proc_desc['type']]['pa'] + \
+                         (shared_state['types']['processor'][proc_desc['type']]['pb'] /\
+                         shared_state['types']['processor'][proc_desc['type']]['cores'])
         proc_el = None
         gflops_per_core_xml = None
         power_per_core_xml = None
         if shared_state['gen_platform_xml']:
-            gflops_per_core_xml, power_per_core_xml = _proc_xml(gflops_per_core, power_per_core, shared_state['types']['processor']
-                                                    [proc_desc['type']]['Q1'] / shared_state['types']['processor']
-                                                    [proc_desc['type']]['cores'])
+            gflops_per_core_xml, power_per_core_xml, p_state_with_speed = _proc_xml(gflops_per_core, power_per_core,
+                                                    shared_state['types']['processor'][proc_desc['type']]['pb'] /
+                                                    shared_state['types']['processor'][proc_desc['type']]['cores'])
         for _ in range(proc_desc['number']):
             if shared_state['gen_res_hierarchy']:
                 proc_el = _proc_el(shared_state, proc_desc, node_el, gflops_per_core,
                                    power_per_core)
             _generate_cores(shared_state, gflops_per_core_xml, power_per_core_xml, proc_desc,
-                            proc_el)
+                            proc_el, p_state_with_speed)
             shared_state['counters']['processor'] += 1
 
 def _proc_xml(gflops_per_core: float, dynamic_power_per_core: float, static_power_per_core: float) -> tuple:
-    # For each processor several P-states are defined based on the utilization
-    # P0 - 100% FLOPS - 100% Power / core - Job scheduled on the core
-    # P1 - 75% FLOPS - 100% Power / core - Job scheduled on the core but constraint by memory BW
-    # P2 - 0% FLOPS - 25% Power / core - Job not scheduled but other job in same processor cores
-    # P3 - 0% FLOPS - 5% Power / core - Processor idle
-    # These are further associated to each individual core
-    gflops_per_core_xml = {'speed': (f'{gflops_per_core:.3f}Gf, {(gflops_per_core*min_speed):.3f}Gf, {(gflops_per_core*min_speed):.3f}Gf')}
-    #ERRORES DE ADRIAN
-    power_per_core_xml = (f'{gflops_per_core:.3f}:{(dynamic_power_per_core+static_power_per_core):.3f}' \
-                          f', {(gflops_per_core*min_speed):.3f}:{static_power_per_core:.3f}'\
-                         f', {(gflops_per_core*min_speed):.3f}:{(static_power_per_core*min_power):.3f}')
-    return gflops_per_core_xml, power_per_core_xml
+    # For each processor several P-states are defined based on the number of p-state, with to more statics P-state
+    # For each P-state it is compute the speed in fuction of the number of p-state
+
+    gflops_list = ""
+    p_state_with_speed = []
+
+    for i in reversed(range(res.number_p_states)):
+        gflops_list += f'{(gflops_per_core) * (1 / (res.number_p_states)) * (i + 1):.3f}Gf, '
+        p_state_with_speed.append((gflops_per_core) * (1 / (res.number_p_states)) * (i + 1))
+
+
+    gflops_list += f'{(gflops_per_core*min_speed):.3f}Gf, '
+    gflops_list += f'{(gflops_per_core*min_speed):.3f}Gf'
+    gflops_per_core_xml = {'speed': (gflops_list)}
+
+    power_list = ""
+    for i in reversed(range(res.number_p_states)):
+        power_list+=(f'{(gflops_per_core) * (1 / (res.number_p_states)) * (i + 1):.3f}:{(dynamic_power_per_core):.3f},')
+
+    power_list+=(f'{(gflops_per_core*min_speed):.3f}:{static_power_per_core:.3f},')
+    power_list+=(f'{(gflops_per_core*min_speed):.3f}:{static_power_per_core*min_power:.3f}')
+
+    power_per_core_xml = power_list
+    return gflops_per_core_xml, power_per_core_xml, p_state_with_speed
 
 def _proc_el(shared_state: dict, proc_desc: dict, node_el: dict, gflops_per_core: float,
              power_per_core: float) -> dict:
-    max_mem_bw = shared_state['types']['processor'][proc_desc['type']]['mem_bw']
+    #max_mem_bw = shared_state['types']['processor'][proc_desc['type']]['mem_bw']
     proc_el = {
         'node': node_el,
         'id': shared_state['counters']['processor'],
         # Memory bandwidth is tracked at Processor-level
-        'max_mem_bw': max_mem_bw,
-        'current_mem_bw': max_mem_bw,
+        #TODO CAMBIARLO
+        #'max_mem_bw': 0,
+        'current_mem_bw': 0,
         'gflops_per_core': gflops_per_core,
         'power_per_core': power_per_core,
         'local_cores': []
@@ -336,17 +359,17 @@ def _proc_el(shared_state: dict, proc_desc: dict, node_el: dict, gflops_per_core
     return proc_el
 
 def _generate_cores(shared_state: dict, gflops_per_core_xml: dict, power_per_core_xml: str,
-                    proc_desc: dict, proc_el: dict) -> None:
+                    proc_desc: dict, proc_el: dict, p_state_with_speed:list) -> None:
     for _ in range(shared_state['types']['processor'][proc_desc['type']]['cores']):
         if shared_state['gen_platform_xml']:
             _core_xml(shared_state, gflops_per_core_xml, power_per_core_xml)
         if shared_state['gen_res_hierarchy']:
-            _core_el(shared_state, proc_el, proc_desc)
+            _core_el(shared_state, proc_el, proc_desc, p_state_with_speed)
         shared_state['counters']['core'] += 1
 
 def _core_xml(shared_state: dict, gflops_per_core_xml: dict, power_per_core_xml: str) -> None:
     # Create the Core XML element and associate power properties
-    core_attrs = {'id': f'cor_{shared_state["counters"]["core"]}', 'pstate': '2'}
+    core_attrs = {'id': f'cor_{shared_state["counters"]["core"]}', 'pstate': f'{res.number_p_states+1}'}
     core_attrs.update(gflops_per_core_xml)
     exml.SubElement(exml.SubElement(shared_state['cluster_xml'], 'host', attrib=core_attrs),
                     'prop', attrib={'id': 'watt_per_state', 'value': power_per_core_xml})
@@ -354,11 +377,15 @@ def _core_xml(shared_state: dict, gflops_per_core_xml: dict, power_per_core_xml:
     shared_state['udlink_routes'].append((f'cor_{shared_state["counters"]["core"]}',
                                           f'udl_{shared_state["counters"]["node"]}'))
 
-def _core_el(shared_state: dict, proc_el: dict, proc_desc: dict) -> None:
+def _core_el(shared_state: dict, proc_el: dict, proc_desc: dict, p_state_with_speed:list) -> None:
+    proccesor = shared_state['types']['processor'][proc_desc['type']]
     core_el = res.Core(proc_el, shared_state['counters']['core'], shared_state['types']['processor']
-                        [proc_desc['type']]['Q2'], shared_state['types']['processor']
-                        [proc_desc['type']]['Q1']/shared_state['types']['processor']
-                        [proc_desc['type']]['cores'], min_power)
+                        [proc_desc['type']]['pa'], shared_state['types']['processor']
+                        [proc_desc['type']]['pb']/shared_state['types']['processor']
+                        [proc_desc['type']]['cores'], min_power, p_state_with_speed,
+                        proccesor['c'], proccesor['da'], proccesor['dc'], proccesor['b'],
+                       proccesor['dd'], proccesor['db'])
+
     proc_el['node']['cluster']['platform']['total_cores'] += 1
     proc_el['local_cores'].append(core_el)
     shared_state['core_pool'].append(core_el)

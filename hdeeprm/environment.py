@@ -107,7 +107,7 @@ Attributes:
             'shortest': lambda job: job.req_time,
             'smallest': lambda job: job.requested_resources,
             'low_mem': lambda job: job.mem,
-            'low_mem_bw': lambda job: job.mem_bw
+            'low_mem_ops': lambda job: job.mem_vol
         })
         self.core_selections = OrderedDict({
             'random': None,
@@ -115,8 +115,8 @@ Attributes:
             'high_cores': lambda core: - len([c for c in core.processor['local_cores'] \
                                               if c.state['served_job']]),
             'high_mem': lambda core: - core.processor['node']['current_mem'],
-            'high_mem_bw': lambda core: - core.processor['current_mem_bw'],
-            'low_power': lambda core: core.processor['power_per_core']
+            'high_mem_bw': lambda core: core.processor['current_mem_bw'],
+            'low_power': lambda core: core.static_power+core.dynamic_power
         })
         # Parse the actions selected by the user
         self.actions = []
@@ -240,13 +240,25 @@ Returns:
                 for node in cluster['local_nodes']:
                     # Node: current fraction of memory available
                     observation.append(node['current_mem'] / node['max_mem'])
+                    max_mem_bw_proccesor = 0
+                    #for processor in node['local_processors']:
+                    #    if max_mem_bw_proccesor < processor['current_mem_bw']:
+                    #        max_mem_bw_proccesor = processor['current_mem_bw']
                     for processor in node['local_processors']:
                         # Processor: current fraction of memory BW available
                         # Memory bandwidth is not bounded, since several jobs might be
                         # overutilizing it, clip it to a minimum
-                        observation.append(
-                            max(0.0, processor['current_mem_bw']) / processor['max_mem_bw']
-                        )
+                        #observation.append(
+                        #    max(0.0, processor['current_mem_bw']) / processor['max_mem_bw']
+                        #)
+                        if max_mem_bw_proccesor == 0:
+                            observation.append(
+                                0.0
+                            )
+                        else:
+                            observation.append(
+                                max(0.0, processor['current_mem_bw']) / max_mem_bw_proccesor
+                             )
                         if otype != 'small':
                             for core in processor['local_cores']:
                                 if not core.state['served_job']:
@@ -258,7 +270,7 @@ Returns:
                                     remaining_per = core.get_remaining_per()
                                 observation.extend(
                                     [core.state['current_gflops'] / processor['gflops_per_core'],
-                                     core.state['current_power'] / processor['power_per_core'],
+                                     core.state['current_power'] / (core.static_power+core.dynamic_power),
                                      remaining_per]
                                 )
         req_time = np.array(
@@ -267,15 +279,15 @@ Returns:
             [job.requested_resources for job in self.workload_manager.job_scheduler.pending_jobs])
         req_mem = np.array(
             [job.mem for job in self.workload_manager.job_scheduler.pending_jobs])
-        req_mem_bw = np.array(
-            [job.mem_bw for job in self.workload_manager.job_scheduler.pending_jobs])
+        req_mem_vol = np.array(
+            [job.mem_vol for job in self.workload_manager.job_scheduler.pending_jobs])
         # Calculate percentiles for each requested resource
         # Each percentile is tranformed into a fraction relative to the maximum value
         job_limits = self.workload_manager.resource_manager.platform['job_limits']
-        reqes = (req_time, req_core, req_mem, req_mem_bw)
-        reqns = ('time', 'core', 'mem', 'mem_bw')
+        reqes = (req_time, req_core, req_mem, req_mem_vol)
+        reqns = ('time', 'core', 'mem', 'mem_vol')
         maxes = (job_limits['max_time'], job_limits['max_core'],
-                 job_limits['max_mem'], job_limits['max_mem_bw'])
+                 job_limits['max_mem'], job_limits['max_mem_vol'])
         for reqe, reqn, maxe in zip(reqes, reqns, maxes):
             pmin = np.min(reqe) / maxe
             p25 = np.percentile(reqe, 25) / maxe
@@ -388,8 +400,6 @@ Returns:
 
         return (sum([core.state['current_gflops'] for core
                     in self.workload_manager.resource_manager.core_pool]))
-                #/ sum([core.processor['gflops_per_core']for core \
-                 #   in self.workload_manager.resource_manager.core_pool]))
 
     def energy_consumption_reward(self) -> float:
         """Reward when the objective is to minimize total energy consumption.
@@ -408,22 +418,29 @@ Returns:
         # Calculate energy for each core
         for core in self.workload_manager.resource_manager.core_pool:
             # if the core change it's pstate
+
             if core.bs_id in changes:
                 eliminate = []
                 length = len(changes[core.bs_id].timePStates)
 
                 # Check time of change
-                for index, change in enumerate(changes[core.bs_id].timePStates):
-                    time_event, power = change[0], change[1]
+                if self.workload_manager.last_reward == False:
+                    for index, change in enumerate(changes[core.bs_id].timePStates):
+                        time_event, power = change[0], change[1]
 
-                    if time_event < self.workload_manager.time_last_step:
-                        # Eliminate useless changes but saving the last change
-                        if length > 1:
-                            eliminate.append(change)
-                            length -= 1
+                        if time_event < self.workload_manager.time_last_step:
+                            # Eliminate useless changes but saving the last change
+                            if length > 1:
+                                eliminate.append(change)
+                                length -= 1
+                else:
+                    changes[core.bs_id].timePStates[0] = (self.workload_manager.time_last_step,
+                                                          changes[core.bs_id].timePStates[0][1])
 
                 changes[core.bs_id].timePStates = [x for x in changes[core.bs_id].timePStates if x not in eliminate]
 
+
+                logging.debug(changes[core.bs_id])
                 # Only one change
                 if length == 1:
                     energy += changes[core.bs_id].timePStates[0][1] * time
@@ -431,6 +448,8 @@ Returns:
                 else:
                     # Calculate energy for cores with jobs
                     for i in range(length - 1):
+                        logging.debug(changes[core.bs_id].timePStates[i][1] * \
+                                  (changes[core.bs_id].timePStates[i + 1][0] - changes[core.bs_id].timePStates[i][0]))
                         energy += changes[core.bs_id].timePStates[i][1] * \
                                   (changes[core.bs_id].timePStates[i + 1][0] - changes[core.bs_id].timePStates[i][0])
 
@@ -438,9 +457,13 @@ Returns:
                               (self.workload_manager.bs.time() - changes[core.bs_id].timePStates[length - 1][0])
 
             else:
-
+                logging.debug(core.state['current_power'])
                 energy = energy + core.state['current_power'] * time
 
+        with open('energia.log', 'a') as ene:
+            ene.write(f'{energy}, {self.workload_manager.bs.time()},  {self.workload_manager.time_last_step}, {time}\n')
+        logging.debug("REWAAAAAAAAAAAAAAAAAARD")
+        logging.debug(f'{energy}, {self.workload_manager.bs.time()},  {self.workload_manager.time_last_step}, {time}')
         return -energy
 
     def edp_reward(self) -> float:
@@ -461,14 +484,18 @@ Returns:
                 length = len(changes[core.bs_id].timePStates)
 
                 # Check time of change
-                for index, change in enumerate(changes[core.bs_id].timePStates):
-                    time_event, power = change[0], change[1]
+                if self.workload_manager.last_reward == False:
+                    for index, change in enumerate(changes[core.bs_id].timePStates):
+                        time_event, power = change[0], change[1]
 
-                    if time_event < self.workload_manager.time_last_step:
-                        # Eliminate useless changes but saving the last change
-                        if length > 1:
-                            eliminate.append(change)
-                            length -= 1
+                        if time_event < self.workload_manager.time_last_step:
+                            # Eliminate useless changes but saving the last change
+                            if length > 1:
+                                eliminate.append(change)
+                                length -= 1
+                else:
+                    changes[core.bs_id].timePStates[0] = (self.workload_manager.time_last_step,
+                                                          changes[core.bs_id].timePStates[0][1])
 
                 changes[core.bs_id].timePStates = [x for x in changes[core.bs_id].timePStates if x not in eliminate]
 
@@ -490,24 +517,9 @@ Returns:
 
                 energy = energy + core.state['current_power'] * time * time
 
-
         logging.info("Energy consumption in this step: " + str(energy))
 
-        #energy = (energy/ (time * time *(sum([core.processor['power_per_core'] for core \
-                    #in self.workload_manager.resource_manager.core_pool]))))
-
-        #return -energy * math.pow(10, -math.floor(math.log10(energy))) * 1e5
-
-        #digits = self.count_digits(energy)
-
         return -energy
-
-    def count_digits(self, num):
-        ind = 1
-        while num > 9:
-            num = num/10
-            ind += 1
-        return  ind
 
     def render(self, mode='human'):
         """Not used."""

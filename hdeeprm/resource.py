@@ -3,6 +3,8 @@ Core class and functionality for defining the Resource Hierarchy in the Decision
 """
 
 from batsim.batsim import Job
+import logging
+number_p_states = 98 # Number of P-state less 2
 
 class Core:
     """Core representing a compute resource in the Platform.
@@ -57,16 +59,25 @@ Attributes:
       | served_job (batim.batsim.Job) - Job being served by the Core.
     """
 
-    def __init__(self, processor: dict, bs_id: int, dynamic_power, static_power, min_power) -> None:
+    def __init__(self, processor: dict, bs_id: int, dynamic_power:float, static_power:float, min_power:float,
+                 p_state_with_speed:list, c:int, da:int, dc:int, b:int, dd:int, db:int) -> None:
         self.processor = processor
         self.bs_id = bs_id
         self.dynamic_power = dynamic_power
         self.static_power = static_power
         self.min_power = min_power
+        self.p_state_with_speed = p_state_with_speed
+        self.c = c
+        self.da = da
+        self.dc = dc
+        self.b = b
+        self.dd = dd
+        self.db = db
         # By default, core is idle
         self.state = {
-            'pstate': 2,
+            'pstate': number_p_states + 1,
             'current_gflops': 0.0,
+            'current_mem_bw': 0.0,
             'current_power': min_power * self.static_power,
             # When active, the Core is serving a Job which is stored as part of its state
             # Remaining operations and updates along simulation are tracked
@@ -89,39 +100,35 @@ Args:
         """
 
         # Active core
-        if new_pstate == 0:
+        if new_pstate < number_p_states:
             if not self.state['served_job']:
                 new_served_job.last_update = now
                 new_served_job.remaining_ops = new_served_job.req_ops
                 self.state['served_job'] = new_served_job
-                #self.processor['current_mem_bw'] -= new_served_job.mem_bw
-                #self.processor['node']['current_mem'] -= new_served_job.mem
+                self.state['current_mem_bw'] = new_served_job.mem_vol / \
+                                                    (new_served_job.req_ops / (self.processor['gflops_per_core']*1e9))
+
+                self.processor['current_mem_bw'] += self.state['current_mem_bw']
+                self.processor['node']['current_mem'] -= new_served_job.mem
             else:
                 self.update_completion(now)
             # 100% Power
             self.state['current_power'] = self.dynamic_power + self.static_power
-            self.state['current_gflops'] = self.processor['gflops_per_core']
-            """
-            if new_pstate == 0:
-                # 100% GFLOPS
-                self.state['current_gflops'] = self.processor['gflops_per_core']
-            else:
-                # 75% GFLOPS
-                self.state['current_gflops'] = 0.75 * self.processor['gflops_per_core']
-            """
+            self.state['current_gflops'] = self.p_state_with_speed[new_pstate]
         # Inactive core
-        elif new_pstate in (1, 2):
+        elif new_pstate in (number_p_states, number_p_states + 1):
             if self.state['served_job']:
-                #self.processor['current_mem_bw'] += self.state['served_job'].mem_bw
-                #self.processor['node']['current_mem'] += self.state['served_job'].mem
+                self.processor['current_mem_bw'] -= self.state['current_mem_bw']
+                self.processor['node']['current_mem'] += self.state['served_job'].mem
+                self.state['current_mem_bw'] = 0
                 self.state['served_job'] = None
             # 0% GFLOPS
             self.state['current_gflops'] = 0.0
-            if new_pstate == 1:
-                # 15% Power
+            if new_pstate == number_p_states:
+                # Static Power
                 self.state['current_power'] = self.static_power
             else:
-                # 5% Power
+                # Min Power
                 self.state['current_power'] = self.min_power * self.static_power
         else:
             raise ValueError('Error: unknown P-state')
@@ -139,6 +146,8 @@ Args:
 
         time_delta = now - self.state['served_job'].last_update
         self.state['served_job'].remaining_ops -= self.state['current_gflops'] * time_delta
+        self.processor['current_mem_bw'] -= self.state['current_mem_bw']
+        self.processor['current_mem_bw'] += self.state['current_mem_bw']
         self.state['served_job'].last_update = now
 
     def get_remaining_per(self) -> float:
@@ -148,3 +157,6 @@ Calculated by dividing the remaining operations by the total requested on arriva
         """
 
         return self.state['served_job'].remaining_ops / self.state['served_job'].req_ops
+
+    def __str__(self):
+        return str(self.bs_id)+ ": " +str(self.processor['current_mem_bw']) + " " + str(self.processor['gflops_per_core'])

@@ -53,6 +53,7 @@ Attributes:
 
         super().__init__(options)
         self.load_agent = True
+        self.last_reward = False
 
         #if objective change reset agent
         self.reward = options["env"]['objective']
@@ -145,14 +146,6 @@ Returns:
                 logging.info(checkpoint['optimizer_state_dict']['param_groups'])
                 optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
                 logging.debug(optimizer.state_dict())
-                """
-                old versions without change in learning rate
-                state = optimizer.state_dict()
-                if state['param_groups'][0]['lr'] != float(agent_options['lr']):
-                    state['param_groups'][0]['lr'] = float(agent_options['lr'])
-                    optimizer.load_state_dict(state)
-                    logging.debug(optimizer.state_dict())
-                """
 
             if agent_options['run'] == 'train':
                 agent.train()
@@ -175,9 +168,9 @@ logged for observing performance.
 
         if self.flow_flags['action_taken'] and self.reward != "makespan":
             # The Agent is rewarded
+            self.last_reward = True
             self.agent.rewarded(self.env)
             self.time_last_step = self.bs.time()
-            logging.info("Time reward: "+str(self.time_last_step))
             self.flow_flags['action_taken'] = False
 
         super().onSimulationEnds()
@@ -229,7 +222,6 @@ Further details on this handler on the base
             # The Agent is rewarded
             self.agent.rewarded(self.env)
             self.time_last_step = self.bs.time()
-            logging.info(self.time_last_step)
             self.flow_flags['action_taken'] = False
         super().onJobSubmission(job)
         self.flow_flags['jobs_submitted'] = True
@@ -241,11 +233,12 @@ Further details on this handler on the base
 :meth:`~hdeeprm.entrypoints.BaseWorkloadManager.BaseWorkloadManager.onJobCompletion`.
         """
 
-        if self.flow_flags['action_taken'] and self.reward != "makespan" and self.bs.no_more_static_jobs == False:
+        if self.flow_flags['action_taken'] and self.reward != "makespan" and (len(self.job_scheduler.pending_jobs) != 0\
+                or self.bs.no_more_static_jobs == False):
+            logging.debug(f'{len(self.job_scheduler.pending_jobs)}{self.bs.no_more_static_jobs}')
             # The Agent is rewarded
             self.agent.rewarded(self.env)
             self.time_last_step = self.bs.time()
-            logging.info("entro"+str(self.time_last_step))
             self.flow_flags['action_taken'] = False
         super().onJobCompletion(job)
         self.flow_flags['jobs_completed'] = True
@@ -266,10 +259,6 @@ When there are no more events in the current time step, the following flow occur
                 self.agent.rewarded(self.env)
                 self.flow_flags['action_taken'] = False
 
-            #La decisión anterior se ha pasado al resto de eventos debido a que para el cálculo de la métrica
-            # de energía se necesita el tiempo para su calculo
-
-
             if (self.flow_flags['jobs_submitted'] or self.flow_flags['jobs_completed'] or\
                 (self.bs.no_more_static_jobs and self.flow_flags['void_taken'])) and\
                   self.job_scheduler.nb_pending_jobs:
@@ -280,7 +269,7 @@ When there are no more events in the current time step, the following flow occur
                 # The Agent decides which action to take
                 action = self.agent.decide(observation)
                 logging.info('Action %s', action)
-                if action == self.env.action_size - 1:
+                if action == self.env.action_size - 1 and self.env.with_void == True:
                     self.flow_flags['void_taken'] = True
                 else:
                     self.flow_flags['void_taken'] = False

@@ -7,7 +7,9 @@ import pickle
 import random
 from procset import ProcSet
 from batsim.batsim import Job
-from resource import Core
+from resource import number_p_states
+import math
+
 class JobScheduler:
     """Selects Jobs from the Job Queue to be processed in the Platform.
 
@@ -170,10 +172,11 @@ Returns:
                 return None
         # Check and record memory bandwidth over-utilizations
         for proc_id in mem_bw_utilization_changes:
-            if not proc_id in self.over_utilization['mem_bw']['procs']:
-                self.over_utilization['mem_bw']['procs'][proc_id] = {'state': 1, 'values': [now]}
-            elif self.over_utilization['mem_bw']['procs'][proc_id]['state'] == 0:
-                self.over_utilization['mem_bw']['procs'][proc_id]['state'] = 1
+            if proc_id not in self.over_utilization['mem_bw']['procs']:
+                self.over_utilization['mem_bw']['procs'][proc_id] = {'state': self.core_pool[proc_id].state['pstate'],
+                                                                     'values': [now]}
+            elif self.over_utilization['mem_bw']['procs'][proc_id]['state'] < number_p_states:
+                self.over_utilization['mem_bw']['procs'][proc_id]['state'] = self.core_pool[proc_id].state['pstate']
                 self.over_utilization['mem_bw']['procs'][proc_id]['values'].append(now)
         # Store modifications for commit
         self.state_changes = {**self.state_changes, **modified}
@@ -212,41 +215,90 @@ Returns:
             if new_state == 'LOCKED':
                 score.set_state(0, now, job)
                 modified[score.bs_id] = 0
+                served_jobs_processor = 0
 
                 for lcore in processor['local_cores']:
                     # If this is the first active core in the processor,
-                    # set the state of the rest of cores to 2 (indirect energy consumption)
-                    if lcore.state['pstate'] == 2:
-                        lcore.set_state(1, now)
-                        modified[lcore.bs_id] = 1
-                """
-                    # If the memory bandwidth capacity is now overutilized,
-                    # transition every active core of the processor into state 1 (reduced GFLOPS)
-                    if processor['current_mem_bw'] < 0.0 and lcore.state['pstate'] == 0:
-                        mem_bw_utilization_changes.add(processor['id'])
-                        lcore.set_state(1, now)
-                        modified[lcore.bs_id] = 1
-                """
+                    # set the state of the rest of cores to number_p_states (indirect energy consumption)
+                    if lcore.state['pstate'] == number_p_states + 1:
+                        lcore.set_state(number_p_states, now)
+                        modified[lcore.bs_id] = number_p_states
+                    elif lcore.state['served_job'] != None:
+                        lcore.update_completion(now)
+                        served_jobs_processor += 1
+
+                self.overutilization_mem_bw_pstate_change(mem_bw_utilization_changes, modified, now, processor,
+                                                          served_jobs_processor)
+
+
             elif new_state == 'FREE':
-                score.set_state(2, now)
-                modified[score.bs_id] = 2
+                score.set_state(number_p_states, now)
+                modified[score.bs_id] = number_p_states
                 all_inactive = all(not lcore.state['served_job']
                                    for lcore in processor['local_cores'])
 
+                served_jobs_processor = 0
                 for lcore in processor['local_cores']:
                     # If this was the last core being utilized, lower all
                     # cores of processor from indirect energy consuming
                     if all_inactive:
-                        lcore.set_state(2, now)
-                        modified[lcore.bs_id] = 2
-                    # If bandwidth is now not overutilized, scale
-                    # to full potential (P0) other active cores
-                    """
-                    if processor['current_mem_bw'] >= 0.0 and lcore.state['pstate'] == 1:
-                        mem_bw_utilization_changes.add(processor['id'])
-                        lcore.set_state(0, now)
-                        modified[lcore.bs_id] = 0
-                """
+                        lcore.set_state(number_p_states + 1, now)
+                        modified[lcore.bs_id] = number_p_states + 1
+                    if lcore.state['served_job'] != None:
+                        lcore.update_completion(now)
+                        served_jobs_processor += 1
+
+                self.overutilization_mem_bw_pstate_change(mem_bw_utilization_changes, modified, now, processor,
+                                                          served_jobs_processor)
+
             else:
                 raise ValueError('Error: unknown state')
         return modified, mem_bw_utilization_changes
+
+    def overutilization_mem_bw_pstate_change(self, mem_bw_utilization_changes, modified, now, processor,
+                                             served_jobs_processor):
+        # Check mem_bw in proccessor
+        for lcore in processor['local_cores']:
+            # If the memory bandwidth capacity is now overutilized,
+            # transition every active core of the processor into another state(reduced GFLOPS)
+            if lcore.state['served_job'] != None:
+                lcore.update_completion(now)
+
+                x = processor['current_mem_bw']
+                y = lcore.state['current_mem_bw']
+                n = served_jobs_processor - 1
+                speedup = 0
+                def ss(x):
+                    if x < 0:
+                        return 1
+                    elif x > 1:
+                        return 0
+                    else:
+                        return (1 - x*x*x*(x*(x*6-15)+10))
+
+                def d(y, n):
+                    aux = (y-(lcore.da-n)*lcore.db)/(lcore.dc-n*lcore.dd)
+                    aux = ss(aux)
+                    return aux * (n*0.6/(1+n*0.6))+1/(1+n*0.6)
+
+                def perf(x,y,n):
+                    if x < lcore.c:
+                        return 1
+                    elif x > ((d(y,n)+lcore.b*lcore.c-1)/lcore.b):
+                        return d(y,n)
+                    else:
+                        return lcore.b*(x-lcore.c)+1
+
+                speedup = perf(x,y,n)
+
+                speed = lcore.p_state_with_speed[0] * speedup
+
+                new_pstate = round((speed / ((processor['gflops_per_core']) * (1 / (number_p_states)))))
+                new_pstate = number_p_states - new_pstate
+
+                mem_bw_utilization_changes.add(processor['id'])
+                lcore.set_state(new_pstate, now)
+                modified[lcore.bs_id] = new_pstate
+
+                with open("speedup.txt", 'a') as f_speed:
+                    f_speed.write(f'{lcore.bs_id},{speed},{new_pstate},{speedup},{now},{lcore.state["served_job"].id}, {x}, {y},{n}\n')

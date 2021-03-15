@@ -26,10 +26,80 @@
     "type": "CPU",
     "cores": 4,
     "clock_rate": 1,
-    "mem_bw": 32,
+    "mem_bw": 32768,
     "llc_size": 8,
     "Q2": 7.7807,
     "Q1": 4.3955,
     "dpflops_per_cycle": 4
-  }
+  },
+"proc_n1114": {
+      "uarch": "basic_arch", "id": "n1114", "type": "CPU",
+      "cores": 4, "clock_rate": 2.5,
+      "llc_size": 8, "power": 100, "dpflops_per_cycle": 1,
+      "pa": 3.51244, "db": 3500, "pb": 3.19636, "da": 1.75, "b": -1.85e-05, "c": 32000, "dc": 45000, "dd": 3000 },
+   "proc_n1134": {
+      "uarch": "basic_arch", "id": "n1134", "type": "CPU",
+      "cores": 4, "clock_rate": 1.7,
+      "llc_size": 8, "power": 100, "dpflops_per_cycle": 1,
+      "pa": 2.31082, "db": 3500, "pb": 1.59482, "da": 1.75, "b": -1.85e-05, "c": 32000, "dc": 45000, "dd": 3000 },
+   "proc_n1122": {
+      "uarch": "basic_arch", "id": "n1122", "type": "CPU",
+      "cores": 4, "clock_rate": 1.7,
+      "llc_size": 8, "power": 100, "dpflops_per_cycle": 1,
+      "pa": 2.31082, "db": 3500, "pb": 1.59482, "da": 1.75, "b": -1.85e-05, "c": 32000, "dc": 45000, "dd": 3000 },
+   "proc_n1144": {
+      "uarch": "basic_arch", "id": "n1144", "type": "CPU",
+      "cores": 4, "clock_rate": 1.7,
+      "llc_size": 8, "power": 100, "dpflops_per_cycle": 1,
+      "pa": 2.31082, "db": 3500, "pb": 1.59482, "da": 1.75, "b": -1.85e-05, "c": 32000, "dc": 45000, "dd": 3000 },
+   "proc_n1143": {
+      "uarch": "basic_arch", "id": "n1143", "type": "CPU",
+      "cores": 4, "clock_rate": 2.5,
+      "llc_size": 8, "power": 100, "dpflops_per_cycle": 1,
+      "pa": 3.51244, "db": 3500, "pb": 3.19636, "da": 1.75, "b": -1.85e-05, "c": 32000, "dc": 45000, "dd": 3000 },
+   "proc_n1154": {
+      "uarch": "basic_arch", "id": "n1154", "type": "CPU",
+      "cores": 4, "clock_rate": 3.4,
+      "llc_size": 8, "power": 100, "dpflops_per_cycle": 1,
+      "pa": 6.14211, "db": 3500, "pb": 5.59316, "da": 1.75, "b": -1.85e-05, "c": 32000, "dc": 45000, "dd": 3000 },
+   "proc_n1131": {
+      "uarch": "basic_arch", "id": "n1131", "type": "CPU",
+      "cores": 4, "clock_rate": 3.4,
+      "llc_size": 8, "power": 100, "dpflops_per_cycle": 1,
+      "pa": 6.14211, "db": 3500, "pb": 5.59316, "da": 1.75, "b": -1.85e-05, "c": 32000, "dc": 45000, "dd": 3000 },
+   "proc_n1124": {
+      "uarch": "basic_arch", "id": "n1124", "type": "CPU",
+      "cores": 4, "clock_rate": 3.4,
+      "llc_size": 8, "power": 100, "dpflops_per_cycle": 1,
+      "pa": 6.14211, "db": 3500, "pb": 5.59316, "da": 1.75, "b": -1.85e-05, "c": 32000, "dc": 45000, "dd": 3000 },
+   "proc_n1112": {
+      "uarch": "basic_arch", "id": "n1112", "type": "CPU",
+      "cores": 4, "clock_rate": 3.4,
+      "llc_size": 8, "power": 100, "dpflops_per_cycle": 1,
+      "pa": 6.14211, "db": 3500, "pb": 5.59316, "da": 1.75, "b": -1.85e-05, "c": 32000, "dc": 45000, "dd": 3000 },
+   "proc_n1132": {
+      "uarch": "basic_arch", "id": "n1132", "type": "CPU",
+      "cores": 4, "clock_rate": 2.5,
+      "llc_size": 8, "power": 100, "dpflops_per_cycle": 1,
+      "pa": 3.51244, "db": 3500, "pb": 3.19636, "da": 1.75, "b": -1.85e-05, "c": 32000, "dc": 45000, "dd": 3000 },
+   "proc_n1141": {
+      "uarch": "basic_arch", "id": "n1141", "type": "CPU",
+      "cores": 4, "clock_rate": 3.4,
+      "llc_size": 8, "power": 100, "dpflops_per_cycle": 1,
+      "pa": 6.14211, "db": 3500, "pb": 5.59316, "da": 1.75, "b": -1.85e-05, "c": 32000, "dc": 45000, "dd": 3000 },
+   "proc_n1152": {
+      "uarch": "basic_arch", "id": "n1152", "type": "CPU",
+      "cores": 4, "clock_rate": 3.4,
+      "llc_size": 8, "power": 100, "dpflops_per_cycle": 1,
+      "pa": 6.14211, "db": 3500, "pb": 5.59316, "da": 1.75, "b": -1.85e-05, "c": 32000, "dc": 45000, "dd": 3000 },
+   "proc_n1113": {
+      "uarch": "basic_arch", "id": "n1113", "type": "CPU",
+      "cores": 4, "clock_rate": 3.4,
+      "llc_size": 8, "power": 100, "dpflops_per_cycle": 1,
+      "pa": 6.14211, "db": 3500, "pb": 5.59316, "da": 1.75, "b": -1.85e-05, "c": 32000, "dc": 45000, "dd": 3000 },
+   "proc_n1142": {
+      "uarch": "basic_arch", "id": "n1142", "type": "CPU",
+      "cores": 4, "clock_rate": 3.4,
+      "llc_size": 8, "power": 100, "dpflops_per_cycle": 1,
+      "pa": 6.14211, "db": 3500, "pb": 5.59316, "da": 1.75, "b": -1.85e-05, "c": 32000, "dc": 45000, "dd": 3000 }
 }

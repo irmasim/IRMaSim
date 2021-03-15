@@ -10,6 +10,7 @@ from procset import ProcSet
 from batsim.batsim import BatsimScheduler, Job
 from manager import JobScheduler, ResourceManager
 from Changes_Cores import ChangesCores
+from resource import number_p_states
 
 class BaseWorkloadManager(BatsimScheduler):
     """Entrypoint for classic and non-Reinforcement Learning experimentation.
@@ -74,9 +75,9 @@ Args:
         job.req_ops = self.bs.profiles[job.workload][job.profile]['req_ops']
         job.req_time = self.bs.profiles[job.workload][job.profile]['req_time']
         job.mem = self.bs.profiles[job.workload][job.profile]['mem']
-        job.mem_bw = self.bs.profiles[job.workload][job.profile]['mem_bw']
+        job.mem_vol = self.bs.profiles[job.workload][job.profile]['mem_vol']
         logging.debug('Job arrived: %s %s %s %s %s', job.id, job.req_time, job.req_ops, job.mem,
-                      job.mem_bw)
+                      job.mem_vol)
         self.job_scheduler.new_job(job)
 
     def onJobCompletion(self, job: Job) -> None:
@@ -118,7 +119,6 @@ If there are no more events, it means all Jobs have arrived and completed, and t
 handled. The Workload Manager proceeds to schedule the Jobs and send Batsim the resource state
 changes.
         """
-
         if self.bs.running_simulation:
             self.schedule_jobs()
             self.change_resource_states()
@@ -171,7 +171,7 @@ This alters the Cores P-states in the simulation, thus affecting computational c
 consumption.
         """
 
-        for pstate in (0, 1, 2, 3):
+        for pstate in range(number_p_states+1):
             resources = [i for i, s in self.resource_manager.state_changes.items() if s == pstate]
             if resources:
                 # Save changes of cores in core_changes
