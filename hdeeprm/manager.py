@@ -6,7 +6,7 @@ import logging
 import pickle
 import random
 from procset import ProcSet
-from batsim.batsim import Job
+from Job import Job
 from resource import number_p_states
 import math
 
@@ -35,6 +35,8 @@ Attributes:
         self.nb_completed_jobs = 0
         self.peeked_job = None
         self.sorting_key = None
+        self.jobs_running = []
+        self.finished_jobs = []
 
     def peek_job(self) -> Job:
         """Returns a reference to the first selected job.
@@ -97,14 +99,13 @@ Attributes:
         Key defining the Core selection policy.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, platform: dict, core_pool: list, job_limits: dict) -> None:
         self.state_changes = {}
-        with open('./res_hierarchy.pkl', 'rb') as in_f:
-            self.platform, self.core_pool = pickle.load(in_f)
+        self.platform = platform
+        self.core_pool = core_pool
         logging.info('Reference speed %s', self.platform['reference_speed'])
         # Add the job resource requirement limits to the resource hierarchy
-        with open('./job_limits.pkl', 'rb') as in_f:
-            self.platform['job_limits'] = pickle.load(in_f)
+        self.platform['job_limits'] = job_limits
         self.over_utilization = {
             'core': [],
             'mem': [],

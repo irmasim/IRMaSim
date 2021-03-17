@@ -7,12 +7,12 @@ import logging
 import random
 import numpy as np
 from procset import ProcSet
-from batsim.batsim import BatsimScheduler, Job
-from ..manager import JobScheduler, ResourceManager
-from ..Changes_Cores import ChangesCores
-from ..resource import number_p_states
+from Job import Job
+from manager import JobScheduler, ResourceManager
+from Changes_Cores import ChangesCores
+from resource import number_p_states
 
-class BaseWorkloadManager(BatsimScheduler):
+class BaseWorkloadManager():
     """Entrypoint for classic and non-Reinforcement Learning experimentation.
 
 It provides a Job Scheduler for Job selection and a Resource Manager for resource selection and
@@ -33,9 +33,8 @@ Attributes:
     """
 
     def __init__(self, options: dict) -> None:
-        super().__init__(options)
         # Reference to Batsim proxy, populated dynamically
-        self.bs = None
+        #self.bs = None
         # Set random seed for reproducibility
         seed = int(options['seed'])
         random.seed(seed)
@@ -72,6 +71,7 @@ Args:
         The arriving Job.
         """
 
+        #TODO ESTO DEBERÍAMOS CAMBIARLO NO ME PARECE BIEN EL PONER LOS ATRIBUTOS AHÍ
         job.req_ops = self.bs.profiles[job.workload][job.profile]['req_ops']
         job.req_time = self.bs.profiles[job.workload][job.profile]['req_time']
         job.mem = self.bs.profiles[job.workload][job.profile]['mem']

@@ -12,10 +12,10 @@ import datetime
 import os.path as path
 import numpy as np
 import torch
-from batsim.batsim import Job
-from ..agent import Agent, ClassicAgent
-from ..entrypoints.BaseWorkloadManager import BaseWorkloadManager
-from ..environment import Environment
+from Job import Job
+from agent import Agent, ClassicAgent
+from BaseWorkloadManager import BaseWorkloadManager
+from environment import Environment
 
 
 class HDeepRMWorkloadManager(BaseWorkloadManager):
@@ -235,7 +235,6 @@ Further details on this handler on the base
 
         if self.flow_flags['action_taken'] and self.reward != "makespan" and (len(self.job_scheduler.pending_jobs) != 0\
                 or self.bs.no_more_static_jobs == False):
-            logging.debug(f'{len(self.job_scheduler.pending_jobs)}{self.bs.no_more_static_jobs}')
             # The Agent is rewarded
             self.agent.rewarded(self.env)
             self.time_last_step = self.bs.time()

@@ -2,7 +2,7 @@
 Core class and functionality for defining the Resource Hierarchy in the Decision System.
 """
 
-from batsim.batsim import Job
+from Job import Job
 import logging
 number_p_states = 98 # Number of P-state less 2
 
