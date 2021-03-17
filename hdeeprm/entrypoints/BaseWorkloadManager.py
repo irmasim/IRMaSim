@@ -33,6 +33,7 @@ Attributes:
     """
 
     def __init__(self, options: dict) -> None:
+        super().__init__(options)
         # Reference to Batsim proxy, populated dynamically
         #self.bs = None
         # Set random seed for reproducibility
@@ -71,7 +72,6 @@ Args:
         The arriving Job.
         """
 
-        #TODO ESTO DEBERÍAMOS CAMBIARLO NO ME PARECE BIEN EL PONER LOS ATRIBUTOS AHÍ
         job.req_ops = self.bs.profiles[job.workload][job.profile]['req_ops']
         job.req_time = self.bs.profiles[job.workload][job.profile]['req_time']
         job.mem = self.bs.profiles[job.workload][job.profile]['mem']

@@ -235,6 +235,7 @@ Further details on this handler on the base
 
         if self.flow_flags['action_taken'] and self.reward != "makespan" and (len(self.job_scheduler.pending_jobs) != 0\
                 or self.bs.no_more_static_jobs == False):
+            logging.debug(f'{len(self.job_scheduler.pending_jobs)}{self.bs.no_more_static_jobs}')
             # The Agent is rewarded
             self.agent.rewarded(self.env)
             self.time_last_step = self.bs.time()
