@@ -134,16 +134,12 @@ Command line arguments:
     # speed
     job_limit = None
     jobs = None
-    if args.customworkload:
-        print(f'Utilizing {args.customworkload} as workload, adjusting operations')
-        job_limit, jobs = generate_workload(options['workload_file'], options['nb_resources'],
-                          options['nb_jobs'], custom_workload_path=args.customworkload)
-        print('Saved "workload.json" and "job_limits.pkl" in current directory')
     # Generate the Workload
-    elif not present['workload.json'] or not present['job_limits.pkl'] or new_reference_speed:
+    if not present['workload.json'] or not present['job_limits.pkl'] or new_reference_speed:
         print('Generating workload JSON and job limits')
         job_limit, jobs = generate_workload(options['workload_file'], options['nb_resources'],
                           options['nb_jobs'])
+        print('Loaded workload from %s' % options['workload_file'])
         print('Saved "workload.json" and "job_limits.pkl" in current directory')
     else:
         skipped.extend(('workload', 'job_limits'))
@@ -154,7 +150,7 @@ Command line arguments:
     # Launch both PyBatsim and Batsim instances for running the simulation
     for _ in range(args.nbruns):
         Simulator(job_limit, jobs, core_pool, platform, options)
-
+    sys.exit(0)
 
 def visual() -> None:
     """Utility for analysing stats from HDeepRM outcomes.
