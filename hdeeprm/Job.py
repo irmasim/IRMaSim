@@ -1,5 +1,5 @@
 
-from resource import Core
+import resource
 
 class Job:
 
@@ -21,7 +21,7 @@ class Job:
         self.core = None
 
 
-    def core_selection(self,core: Core):
+    def core_selection(self, core: resource.Core):
         self.core = core
 
 

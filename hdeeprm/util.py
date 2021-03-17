@@ -17,7 +17,7 @@ import logging
 min_speed = 0.005
 min_power = 0.005
 
-def generate_workload(workload_file: str, nb_cores: int, nb_jobs: int) -> (dict, dict):
+def generate_workload(workload_file: str) -> (dict, dict):
     """SWF-formatted Workload -> Batsim-ready JSON format.
 
 Parses a SWF formatted Workload file into a Batsim-ready JSON file. Generates as many jobs as
@@ -26,10 +26,6 @@ specified in "nb_jobs". It also generates the job resource requirement limits fr
 Args:
     workload_file (str):
         Location of the Workload file in the system.
-    nb_cores (int):
-        Total number of Cores in the Platform.
-    nb_jobs (int):
-        Total number of jobs for the generated Workload.
     """
 
     # Load the reference speed for operations calculation
