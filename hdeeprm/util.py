@@ -17,116 +17,39 @@ import logging
 min_speed = 0.005
 min_power = 0.005
 
-def generate_workload(workload_file_path: str, nb_cores: int, nb_jobs: int,
-                      custom_workload_path: str = None) -> (dict, dict):
+def generate_workload(workload_file: str, nb_cores: int, nb_jobs: int) -> (dict, dict):
     """SWF-formatted Workload -> Batsim-ready JSON format.
 
 Parses a SWF formatted Workload file into a Batsim-ready JSON file. Generates as many jobs as
 specified in "nb_jobs". It also generates the job resource requirement limits from the Workload.
 
 Args:
-    workload_file_path (str):
-        Location of the SWF Workload file in the system.
+    workload_file (str):
+        Location of the Workload file in the system.
     nb_cores (int):
         Total number of Cores in the Platform.
     nb_jobs (int):
         Total number of jobs for the generated Workload.
-    custom_workload_path (str):
-        Path for the custom workload JSON file. ``None`` by default.
     """
 
     # Load the reference speed for operations calculation
     with open('./res_hierarchy.pkl', 'rb') as in_f:
         reference_speed = pickle.load(in_f)[0]['reference_speed']
     # Custom workload (JSON)
-    if custom_workload_path:
-        with open(custom_workload_path, 'r') as in_f:
-            workload = json.load(in_f)
-        if workload["num_instructions"] == "True" or workload["num_instructions"] == "true" or \
-                workload["num_instructions"] == "TRUE":
-            for profile in workload['profiles'].values():
-                profile['cpu'] = profile['cpu'] / profile['ipc']
-                profile['req_ops'] = profile['cpu']
-                print("Req_ops y CPU %lf, %lf", profile['req_ops'], profile['cpu'])
-        # Adjust operations for every profile
-        else:
-            for profile in workload['profiles'].values():
-                profile['req_ops'] = reference_speed * profile['req_time'] * 1e9
-                profile['cpu'] = profile['req_ops']
-                print("Req_ops y CPU %lf, %lf",profile['req_ops'],profile['cpu'])
-    # Usual workload (SWF)
+    with open(workload_file, 'r') as in_f:
+        workload = json.load(in_f)
+    num_instructions = workload.get("num_instructions")
+    if num_instructions and num_instructions.lower() == "true":
+        for profile in workload['profiles'].values():
+            profile['cpu'] = profile['cpu'] / profile['ipc']
+            profile['req_ops'] = profile['cpu']
+            print("Req_ops y CPU %lf, %lf", profile['req_ops'], profile['cpu'])
+    # Adjust operations for every profile
     else:
-        with open(workload_file_path, 'r') as in_f:
-            workload = {
-                'nb_res': nb_cores,
-                'jobs': [],
-                'profiles': {}
-            }
-            # Read each Job from the SWF file and parse the fields
-            min_submit_time = None
-            job_id = 0
-            for line in in_f:
-                # End if total number of jobs has been reached
-                if job_id == nb_jobs:
-                    break
-                # Skip comments
-                if line.startswith(';'):
-                    continue
-                job_info = tuple(map(lambda par: int(float(par)), line.split()))
-                job = {
-                    'id': job_id,
-                    'subtime': job_info[1],
-                    'res': job_info[7],
-                    'profile': None
-                }
-                profile = {
-                    'type': 'parallel_homogeneous',
-                    'com': 0,
-                    'cpu': None,
-                    'req_time': job_info[8],
-                    'req_ops': None,
-                    'mem': job_info[9],
-                    'mem_bw': None
-                }
-                # Skip if submission time, requested cores, requested time per core and both
-                # memory parameters are not specified. In SWF, this is indicated by - 1.
-                # job_info[6] = used_mem
-                if any(map(lambda parameter: parameter < 0,
-                        (job['subtime'], job['res'], profile['req_time']))):
-                    continue
-                if profile['mem'] < 0:
-                    if job_info[6] < 0:
-                        continue
-                    else:
-                        profile['mem'] = job_info[6]
-                # Need to shift the initial submission time by the minimum since the trace does not
-                # start at 0
-                if not min_submit_time:
-                    min_submit_time = job['subtime']
-                job['subtime'] -= min_submit_time
-                # Calculate FLOPs per core. The original trace provides time per core, here it
-                # is normalized to FLOPs with respect to the reference speed calculated previously.
-                profile['req_ops'] = int(reference_speed * profile['req_time'] * 1e9)
-                # User estimates in Job requested time have been shown to be generally overestimated.
-                # The distribution here used is taken as an approximation to that shown in
-                # [Tsafrir et al. 2007]
-                profile['cpu'] = int(reference_speed * nprnd.choice(
-                    numpy.arange(0.05, 1.3, 0.05),
-                    p=numpy.array([0.15, 0.09, 0.07] + 5 * [0.04] + 5 *\
-                                [0.03] + 10 * [0.02] + [0.06, 0.08])
-                ) * profile['req_time'] * 1e9)
-                # Original trace provides memory in KB, convert it to MB for framework compatibility
-                profile['mem'] = int(profile['mem'] / 1000)
-                # Calculate the sustained memory bandwidth requirement per core. No info on original
-                # trace, this is synthetically produced from a random uniform distribution with values
-                # (4, 8, 12, 16, 20, 24).
-                profile['mem_bw'] = int(nprnd.choice(numpy.arange(4, 25, 4), p=[0.60,0.15,0.10,0.10,0.025,0.025]))
-                # Profile name based on parameters. This may be shared between multiple Jobs if they
-                # share their requirements.
-                job['profile'] = f'{profile["req_time"]}_{profile["mem"]}_{profile["mem_bw"]}'
-                workload['profiles'].setdefault(job['profile'], profile)
-                workload['jobs'].append(job)
-                job_id += 1
+        for profile in workload['profiles'].values():
+            profile['req_ops'] = reference_speed * profile['req_time'] * 1e9
+            profile['cpu'] = profile['req_ops']
+            print("Req_ops y CPU %lf, %lf",profile['req_ops'],profile['cpu'])
     # Write the data structure into the JSON output
     with open('workload.json', 'w') as out_f:
         json.dump(workload, out_f)
@@ -146,8 +69,8 @@ Args:
         pickle.dump(job_limits, out_f)
     return job_limits, workload
 
-def generate_platform(platform_file_path: str, gen_platform_xml: bool = True,
-                      gen_res_hierarchy: bool = False) -> (dict, list):
+def generate_platform(platform_name: str,platform_file_path: str, platform_library_path: str,
+                      gen_platform_xml: bool = True, gen_res_hierarchy: bool = False) -> (dict, list):
     """HDeepRM JSON Platform -> Batsim-ready XML format + Resource Hierarchy.
 
 Parses a HDeepRM JSON formatted platform definition and outputs both a Batsim-ready XML file
@@ -176,7 +99,9 @@ Args:
         # imposes setting them at the end of generating all nodes. Initially, these are empty
         'udlink_routes': []
     }
-    root_desc, shared_state['types'] = _load_data(platform_file_path)
+    shared_state['types'] = _load_data(platform_file_path, platform_library_path)
+    root_desc = shared_state['types']['platform'][platform_name]
+    print(f'Using platform {platform_name}')
     root_el = None
     main_zone_xml = None
     if shared_state['gen_platform_xml']:
@@ -193,15 +118,23 @@ Args:
 
     return root_el, shared_state
 
-def _load_data(platform_file_path: str) -> tuple:
-    data_path = path.join(path.dirname(__file__), 'data')
-    with open(platform_file_path, 'r') as in_f,\
-         open(path.join(data_path, 'network_types.json'), 'r') as nt_f,\
-         open(path.join(data_path, 'node_types.json'), 'r') as nd_f,\
-         open(path.join(data_path, 'processor_types.json'), 'r') as pr_f:
-        root_desc = json.load(in_f)
-        types = {'network': json.load(nt_f), 'node': json.load(nd_f), 'processor': json.load(pr_f)}
-    return root_desc, types
+def _load_data(platform_file_path: str, platform_library_path: str) -> dict:
+    types = {}
+    for pair in [ ( 'platform', 'platforms.json' ), ( 'network', 'network_types.json' ), ( 'node', 'node_types.json' ), ( 'processor', 'processor_types.json' ) ]:
+       types[pair[0]] = {}
+       lib_filename = path.join(platform_library_path, pair[1])
+       if path.isfile(lib_filename):
+          with open(lib_filename, 'r') as lib_f:
+             print(f'Loading definitions from {lib_filename}')
+             types.update( { pair[0]: json.load(lib_f)} )
+
+    if platform_file_path:
+       with open(platform_file_path, 'r') as in_f:
+           print(f'Loading definitions from {platform_file_path}')
+           types_from_file = json.load(in_f)
+           for group in types_from_file:
+              types[group].update(types_from_file[group]);
+    return types
 
 def _root_xml() -> tuple:
     # Generates the 'platform' and 'main zone' XML elements. These contain the 'master zone' and all

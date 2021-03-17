@@ -69,7 +69,7 @@ Command line arguments:
         options['platform_name'] = args.platform_name
     if args.platform_file:
         options['platform_file'] = args.platform_file
-    if args.platform_file:
+    if args.workload_file:
         options['workload_file'] = args.workload_file
     if args.agent:
         options['pybatsim']['agent']['file'] = path.abspath(args.agent)
@@ -120,7 +120,10 @@ Command line arguments:
             new_reference_speed = True
         else:
             skipped.append('res_hierarchy')
-        platform , core_pool = generate_platform(options['platform_file_path'],
+        platform , core_pool = generate_platform(
+                          options['platform_name'],
+                          options.get('platform_file'),
+                          options['platform_library_path'],
                           gen_platform_xml=not present['platform.xml'],
                           gen_res_hierarchy=not present['res_hierarchy.pkl'])
         print('Saved "platform.xml" and "res_hierarchy.pkl" in current directory')
@@ -133,13 +136,13 @@ Command line arguments:
     jobs = None
     if args.customworkload:
         print(f'Utilizing {args.customworkload} as workload, adjusting operations')
-        job_limit, jobs = generate_workload(options['workload_file_path'], options['nb_resources'],
+        job_limit, jobs = generate_workload(options['workload_file'], options['nb_resources'],
                           options['nb_jobs'], custom_workload_path=args.customworkload)
         print('Saved "workload.json" and "job_limits.pkl" in current directory')
     # Generate the Workload
     elif not present['workload.json'] or not present['job_limits.pkl'] or new_reference_speed:
         print('Generating workload JSON and job limits')
-        job_limit, jobs = generate_workload(options['workload_file_path'], options['nb_resources'],
+        job_limit, jobs = generate_workload(options['workload_file'], options['nb_resources'],
                           options['nb_jobs'])
         print('Saved "workload.json" and "job_limits.pkl" in current directory')
     else:
