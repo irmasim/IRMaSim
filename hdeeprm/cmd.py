@@ -5,6 +5,7 @@ Command line scripts for managing HDeepRM experiments.
 import argparse as ap
 import csv
 import json
+import sys
 import os
 import os.path as path
 import random as rnd
@@ -38,30 +39,60 @@ Command line arguments:
     """
 
 
-    parser = ap.ArgumentParser(description='Launches HDeepRM experiments')
-    parser.add_argument('options_file', type=str, help='Options file defining the experiment')
+    parser = ap.ArgumentParser(description='Launches IRMaSim experiments')
+    parser.add_argument('options_file', type=str, nargs='?', help='File defining the experiment in json format')
+    parser.add_argument('-n', '--platform_name', type=str, help='Name of the platform to simulate')
+    parser.add_argument('-p', '--platform_file', type=str, help='File with a description of elements of the platform')
+    parser.add_argument('-w', '--workload_file', type=str, help='File with the workload definition')
+
     parser.add_argument('-cw', '--customworkload', type=str, help='Path for the custom workload')
     parser.add_argument('-a', '--agent', type=str, help='File with the learning agent definition')
     parser.add_argument('-im', '--inmodel', type=str, help='Path for previous model loading')
     parser.add_argument('-om', '--outmodel', type=str, help='Path for saving new model')
-    parser.add_argument('-nr', '--nbruns', type=int, default=1,
-                        help='Number of simulations to be run')
+    parser.add_argument('-nr', '--nbruns', type=int, default=1, help='Number of simulations to run')
     args = parser.parse_args()
 
-    # Load the options
-    print('Loading options')
-    with open(args.options_file, 'r') as in_f:
-        options = json.load(in_f)
-        options['pybatsim']['seed'] = options['seed']
-        if args.agent:
-            options['pybatsim']['agent']['file'] = path.abspath(args.agent)
-        if args.inmodel:
-            options['pybatsim']['agent']['input_model'] = path.abspath(args.inmodel)
-        if args.outmodel:
-            options['pybatsim']['agent']['output_model'] = path.abspath(args.outmodel)
+    # Default options
+    options = { 'seed': 0, 'pybatsim': { 'agent': { } }  }
+    options['pybatsim']['seed'] = options['seed']
+    # By default the library path is the data directory bundled with the code
+    options['platform_library_path'] = path.join(path.dirname(__file__), 'data')
 
-    # Set the seed for random libraries
-    print('Setting the random seed')
+    # Load options from config file
+    if args.options_file:
+       print(f'Loading options from {args.options_file}')
+       with open(args.options_file, 'r') as in_f:
+           options.update(json.load(in_f))
+
+    # Override config file options with command line arguments
+    if args.platform_name:
+        options['platform_name'] = args.platform_name
+    if args.platform_file:
+        options['platform_file'] = args.platform_file
+    if args.platform_file:
+        options['workload_file'] = args.workload_file
+    if args.agent:
+        options['pybatsim']['agent']['file'] = path.abspath(args.agent)
+    if args.inmodel:
+        options['pybatsim']['agent']['input_model'] = path.abspath(args.inmodel)
+    if args.outmodel:
+        options['pybatsim']['agent']['output_model'] = path.abspath(args.outmodel)
+    if args.outmodel:
+        options['pybatsim']['agent']['output_model'] = path.abspath(args.outmodel)
+
+    # Check for minimum operating parameters
+    if not 'platform_name' in options:
+       parser.print_help()
+       print('Need to specify a platform to simulate. Either with -n or in an options_file.')
+       sys.exit(1)
+
+    if not 'workload_file' in options:
+       parser.print_help()
+       print('Need to specify a workload to simulate. Either with -w or in an options_file.')
+       sys.exit(1)
+
+    # Set the seed for pseudo-random number generators
+    print(f'Setting the random seed to {options["seed"]}')
     rnd.seed(options['seed'])
     np.random.seed(options['seed'])
 

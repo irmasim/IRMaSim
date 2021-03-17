@@ -2,6 +2,7 @@
 .vscode/
 .idea/
 *~
+.*.sw?
 
 # Vagrant
 .vagrant/
