@@ -8,9 +8,9 @@ import random
 import numpy as np
 from procset import ProcSet
 from batsim.batsim import BatsimScheduler, Job
-from ..manager import JobScheduler, ResourceManager
-from ..Changes_Cores import ChangesCores
-from ..resource import number_p_states
+from manager import JobScheduler, ResourceManager
+from Changes_Cores import ChangesCores
+from resource import number_p_states
 
 class BaseWorkloadManager(BatsimScheduler):
     """Entrypoint for classic and non-Reinforcement Learning experimentation.

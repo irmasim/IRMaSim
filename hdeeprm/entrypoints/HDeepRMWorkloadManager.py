@@ -13,9 +13,9 @@ import os.path as path
 import numpy as np
 import torch
 from batsim.batsim import Job
-from ..agent import Agent, ClassicAgent
-from ..entrypoints.BaseWorkloadManager import BaseWorkloadManager
-from ..environment import Environment
+from agent import Agent, ClassicAgent
+from entrypoints.BaseWorkloadManager import BaseWorkloadManager
+from environment import Environment
 
 
 class HDeepRMWorkloadManager(BaseWorkloadManager):
