@@ -1,5 +1,7 @@
 
-import resource
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from resource import Core
 
 class Job:
 
@@ -20,8 +22,7 @@ class Job:
         self.id = id
         self.core = None
 
-
-    def core_selection(self, core: resource.Core):
+    def core_selection(self, core: 'Core'):
         self.core = core
 
 

@@ -1,6 +1,9 @@
 
-#from entrypoints.HDeepRMWorkloadManager import HDeepRMWorkloadManager
-#from manager import JobScheduler, ResourceManager
+
+from entrypoints.HDeepRMWorkloadManager import HDeepRMWorkloadManager
+
+from manager import JobScheduler, ResourceManager
+
 import heapq
 
 class Simulator:
@@ -10,9 +13,9 @@ class Simulator:
         self.jobs = jobs
         self.core_pool = core_pool
         self.platform = platform
-        #self.scheduler = HDeepRMWorkloadManager(options)
-        #self.jobScheduler = JobScheduler()
-        #self.resourceManager = ResourceManager(platform, core_pool, job_limits)
+        self.scheduler = HDeepRMWorkloadManager(options)
+        self.jobScheduler = JobScheduler()
+        self.resourceManager = ResourceManager(platform, core_pool, job_limits)
         self.startSimulation()
         self.time_simulation = 0
 

@@ -14,7 +14,7 @@ import numpy as np
 import torch
 from Job import Job
 from agent import Agent, ClassicAgent
-from BaseWorkloadManager import BaseWorkloadManager
+from entrypoints.BaseWorkloadManager import BaseWorkloadManager
 from environment import Environment
 
 
