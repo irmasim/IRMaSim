@@ -17,21 +17,19 @@ import logging
 min_speed = 0.005
 min_power = 0.005
 
-def generate_workload(workload_file: str) -> (dict, dict):
-    """SWF-formatted Workload -> Batsim-ready JSON format.
-
-Parses a SWF formatted Workload file into a Batsim-ready JSON file. Generates as many jobs as
-specified in "nb_jobs". It also generates the job resource requirement limits from the Workload.
+def generate_workload(workload_file: str, shared_state: dict) -> (dict, dict):
+    """ Parse workload file
 
 Args:
     workload_file (str):
         Location of the Workload file in the system.
+     shared_state (dict):
+        Platform information.
     """
 
     # Load the reference speed for operations calculation
-    with open('./res_hierarchy.pkl', 'rb') as in_f:
-        reference_speed = pickle.load(in_f)[0]['reference_speed']
-    # Custom workload (JSON)
+    reference_speed = numpy.mean(numpy.array([core.processor['gflops_per_core'] for core in shared_state['core_pool']]))
+    # Load JSON workload file
     with open(workload_file, 'r') as in_f:
         workload = json.load(in_f)
     num_instructions = workload.get("num_instructions")
@@ -46,10 +44,7 @@ Args:
             profile['req_ops'] = reference_speed * profile['req_time'] * 1e9
             profile['cpu'] = profile['req_ops']
             print("Req_ops y CPU %lf, %lf",profile['req_ops'],profile['cpu'])
-    # Write the data structure into the JSON output
-    with open('workload.json', 'w') as out_f:
-        json.dump(workload, out_f)
-    # Pickle the job limits from the Workload
+    # Calculate the job limits from the Workload
     job_limits = {
         'max_time': numpy.percentile(numpy.array(
             [workload['profiles'][job['profile']]['req_time'] for job in workload['jobs']]), 99),
@@ -61,12 +56,9 @@ Args:
             [workload['profiles'][job['profile']]['mem_vol'] for job in workload['jobs']]), 99)
     }
     logging.debug(job_limits)
-    with open('job_limits.pkl', 'wb') as out_f:
-        pickle.dump(job_limits, out_f)
     return job_limits, workload
 
-def generate_platform(platform_name: str,platform_file_path: str, platform_library_path: str,
-                      gen_platform_xml: bool = True, gen_res_hierarchy: bool = False) -> (dict, list):
+def generate_platform(platform_name: str,platform_file_path: str, platform_library_path: str) -> (dict, list):
     """HDeepRM JSON Platform -> Batsim-ready XML format + Resource Hierarchy.
 
 Parses a HDeepRM JSON formatted platform definition and outputs both a Batsim-ready XML file
@@ -75,18 +67,18 @@ Processors and Nodes.
 
 Args:
     platform_file_path (str):
-        Location of the HDeepRM Platform file in the system.
-    gen_platform_xml (bool):
-        If ``True``, generate the Platform XML. Defaults to ``True``.
-    gen_res_hierarchy (bool):
-        If ``True``, generate the Resource Hierarchy. Defaults to ``False``.
+        Identifier of the platform to generate.
+    platform_file_path (str):
+        Location of a file defining platforms.
+    platform_library_path (str):
+        Localtion of a library of components.
     """
 
     shared_state = {
         # Type of resources in the Platform
         'types': None,
-        'gen_platform_xml': gen_platform_xml,
-        'gen_res_hierarchy': gen_res_hierarchy,
+        'gen_platform_xml': False,
+        'gen_res_hierarchy': True,
         'counters': {'cluster': 0, 'node': 0, 'processor': 0, 'core': 0},
         # Core pool for filtering and selecting Cores is initially empty
         'core_pool': [],
@@ -101,16 +93,13 @@ Args:
     root_el = None
     main_zone_xml = None
     if shared_state['gen_platform_xml']:
-        root_xml, main_zone_xml = _root_xml()
+        main_zone_xml = _root_xml()
     if shared_state['gen_res_hierarchy']:
         root_el = _root_el()
     _generate_clusters(shared_state, root_desc, root_el, main_zone_xml)
     if shared_state['gen_platform_xml']:
         _global_links(shared_state, root_desc, main_zone_xml)
         _zone_routes(root_desc, main_zone_xml)
-        _write_platform_definition(root_xml)
-    if shared_state['gen_res_hierarchy']:
-        _write_resource_hierarchy(shared_state, root_el)
 
     return root_el, shared_state
 
@@ -132,7 +121,7 @@ def _load_data(platform_file_path: str, platform_library_path: str) -> dict:
               types[group].update(types_from_file[group]);
     return types
 
-def _root_xml() -> tuple:
+def _root_xml() -> dict:
     # Generates the 'platform' and 'main zone' XML elements. These contain the 'master zone' and all
     # the clusters.
     root_xml = exml.Element('platform', attrib={'version': '4.1'})
@@ -144,7 +133,7 @@ def _root_xml() -> tuple:
                             'zone', attrib={'id': 'master', 'routing': 'None'}),
             'host', attrib={'id': 'master_host', 'speed': '1Gf'}),
         'prop', attrib={'id': 'watt_per_state', 'value': '0.0:0.0'})
-    return root_xml, main_zone_xml
+    return main_zone_xml
 
 def _root_el() -> dict:
     # Resource hierarchy starts on the Platform element
@@ -234,10 +223,9 @@ def _generate_processors(shared_state: dict, node_desc: dict, node_el: dict) -> 
         proc_el = None
         gflops_per_core_xml = None
         power_per_core_xml = None
-        if shared_state['gen_platform_xml']:
-            gflops_per_core_xml, power_per_core_xml, p_state_with_speed = _proc_xml(gflops_per_core, power_per_core,
-                                                    shared_state['types']['processor'][proc_desc['type']]['pb'] /
-                                                    shared_state['types']['processor'][proc_desc['type']]['cores'])
+        gflops_per_core_xml, power_per_core_xml, p_state_with_speed = _proc_xml(gflops_per_core, power_per_core,
+                                                shared_state['types']['processor'][proc_desc['type']]['pb'] /
+                                                shared_state['types']['processor'][proc_desc['type']]['cores'])
         for _ in range(proc_desc['number']):
             if shared_state['gen_res_hierarchy']:
                 proc_el = _proc_el(shared_state, proc_desc, node_el, gflops_per_core,
@@ -368,20 +356,3 @@ def _zone_routes(root_desc: dict, main_zone_xml: XMLElement) -> None:
         exml.SubElement(
             zone_route_up_xml, 'link_ctn',
             attrib={'id': f'glob_lnk_{cluster_n}', 'direction': 'UP'})
-
-def _write_platform_definition(root_xml: XMLElement) -> None:
-    # Write the Simgrid / Batsim compliant platform to an output file
-    with open('platform.xml', 'w') as out_f:
-        out_f.write(mxml.parseString(
-            (f'<!DOCTYPE platform SYSTEM "https://simgrid.org/simgrid.dtd">'
-             f'{exml.tostring(root_xml).decode()}')).toprettyxml(indent='  ',
-                                                                 encoding='utf-8').decode())
-
-def _write_resource_hierarchy(shared_state: dict, root_el: dict) -> None:
-    # Pickle the resource hierarchy and core pool
-    with open('res_hierarchy.pkl', 'wb') as out_f:
-        # Add the reference speed to the resource hierarchy
-        root_el['reference_speed'] = numpy.mean(numpy.array(
-            [core.processor['gflops_per_core'] for core in shared_state['core_pool']]))
-        print(root_el)
-        pickle.dump((root_el, shared_state['core_pool']), out_f)

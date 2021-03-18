@@ -96,55 +96,15 @@ Command line arguments:
     rnd.seed(options['seed'])
     np.random.seed(options['seed'])
 
-    # Check if Platform, Resource Hierarchy, Workload and Job Limits are already present
-    files = ('platform.xml', 'res_hierarchy.pkl', 'workload.json', 'job_limits.pkl')
-    skipped = []
-    present = {}
-    for fil in files:
-        if path.isfile(f'./{fil}'):
-            present[fil] = True
-        else:
-            present[fil] = False
-
+    # Generate the Platform and Resource Hierarchy
     platform = None
     core_pool = None
-    # Generate the Platform and Resource Hierarchy
-    new_reference_speed = False
-    if not present['platform.xml'] or not present['res_hierarchy.pkl']:
-        if not present['platform.xml']:
-            print('Generating platform XML')
-        else:
-            skipped.append('platform')
-        if not present['res_hierarchy.pkl']:
-            print('Generating resource hierarchy')
-            new_reference_speed = True
-        else:
-            skipped.append('res_hierarchy')
-        platform , core_pool = generate_platform(
-                          options['platform_name'],
-                          options.get('platform_file'),
-                          options['platform_library_path'],
-                          gen_platform_xml=not present['platform.xml'],
-                          gen_res_hierarchy=not present['res_hierarchy.pkl'])
-        print('Saved "platform.xml" and "res_hierarchy.pkl" in current directory')
-    else:
-        skipped.extend(('platform', 'res_hierarchy'))
+    platform, core_pool = generate_platform( options['platform_name'], options.get('platform_file'), options['platform_library_path'])
 
-    # If a custom workload is provided, just calculate the operations with respect to the reference
-    # speed
+    # Generate the Workload
     job_limit = None
     jobs = None
-    # Generate the Workload
-    if not present['workload.json'] or not present['job_limits.pkl'] or new_reference_speed:
-        print('Generating workload JSON and job limits')
-        job_limit, jobs = generate_workload(options['workload_file'])
-        print('Loaded workload from %s' % options['workload_file'])
-        print('Saved "workload.json" and "job_limits.pkl" in current directory')
-    else:
-        skipped.extend(('workload', 'job_limits'))
-
-    for skip in skipped:
-        print(f'Skipping {skip} generation - Using file in current directory')
+    job_limit, jobs = generate_workload(options['workload_file'], core_pool)
 
     # Launch both PyBatsim and Batsim instances for running the simulation
     for _ in range(args.nbruns):
