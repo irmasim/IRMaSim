@@ -5,7 +5,6 @@ Utilities for parsing and generating Workloads, Platforms and Resource Hierarchi
 import json
 import os.path as path
 from functools import partial
-import pprint
 import defusedxml.minidom as mxml
 import numpy
 import numpy.random as nprnd
@@ -31,17 +30,18 @@ Args:
     with open(workload_file, 'r') as in_f:
         workload = json.load(in_f)
     num_instructions = workload.get("num_instructions")
+    
     if num_instructions and num_instructions.lower() == "true":
         for profile in workload['profiles'].values():
             profile['cpu'] = profile['cpu'] / profile['ipc']
             profile['req_ops'] = profile['cpu']
-            print("Req_ops y CPU %lf, %lf", profile['req_ops'], profile['cpu'])
+            print("Req_ops y CPU %lf, %lf" % (profile['req_ops'], profile['cpu']))
     # Adjust operations for every profile
     else:
         for profile in workload['profiles'].values():
             profile['req_ops'] = reference_speed * profile['req_time'] * 1e9
             profile['cpu'] = profile['req_ops']
-            print("Req_ops y CPU %lf, %lf",profile['req_ops'],profile['cpu'])
+            print("Req_ops y CPU %lf, %lf" % (profile['req_ops'], profile['cpu']))
     # Calculate the job limits from the Workload
     job_limits = {
         'max_time': numpy.percentile(numpy.array(
