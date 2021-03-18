@@ -4,9 +4,8 @@ Utilities for parsing and generating Workloads, Platforms and Resource Hierarchi
 
 import json
 import os.path as path
-import pickle
 from functools import partial
-
+import pprint
 import defusedxml.minidom as mxml
 import numpy
 import numpy.random as nprnd
@@ -16,18 +15,18 @@ import logging
 min_speed = 0.005
 min_power = 0.005
 
-def generate_workload(workload_file: str, shared_state: dict) -> (dict, dict):
+def generate_workload(workload_file: str, core_pool: dict) -> (dict, dict):
     """ Parse workload file
 
 Args:
     workload_file (str):
         Location of the Workload file in the system.
-     shared_state (dict):
+     core_pool (dict):
         Platform information.
     """
 
     # Load the reference speed for operations calculation
-    reference_speed = numpy.mean(numpy.array([core.processor['gflops_per_core'] for core in shared_state['core_pool']]))
+    reference_speed = numpy.mean(numpy.array([core.processor['gflops_per_core'] for core in core_pool['pool']]))
     # Load JSON workload file
     with open(workload_file, 'r') as in_f:
         workload = json.load(in_f)
@@ -60,6 +59,10 @@ Args:
 def generate_platform(platform_name: str,platform_file_path: str, platform_library_path: str) -> (dict, list):
     """ Construct platform definition from platform name, file and library.
 
+Based on the name of the platform and its definition, found either in the
+platform file or the library, it constructs a hierarchy of dicts that
+represents each element of the platform.
+
 Args:
     platform_file_path (str):
         Identifier of the platform to generate.
@@ -69,28 +72,27 @@ Args:
         Localtion of a library of components.
     """
 
-    shared_state = {
-        # Type of resources in the Platform
-        'types': None,
-        'gen_res_hierarchy': True,
+    core_pool = {
         'counters': {'cluster': 0, 'node': 0, 'processor': 0, 'core': 0},
         # Core pool for filtering and selecting Cores is initially empty
-        'core_pool': [],
-        # Need to temporarly store information about up / down routes, since the XML DTD spec
-        # imposes setting them at the end of generating all nodes. Initially, these are empty
-        'udlink_routes': []
+        'pool': [],
     }
-    shared_state['types'] = _load_data(platform_file_path, platform_library_path)
-    root_desc = shared_state['types']['platform'][platform_name]
+    library = _build_library(platform_file_path, platform_library_path)
+    platform_description = library['platform'][platform_name]
     print(f'Using platform {platform_name}')
-    root_el = None
-    if shared_state['gen_res_hierarchy']:
-        root_el = _root_el()
-    _generate_clusters(shared_state, root_desc, root_el)
+    platform = {
+        'total_nodes': 0,
+        'total_processors': 0,
+        'total_cores': 0,
+        'clusters': []
+    }
+    _generate_clusters(library, platform_description, core_pool, platform)
+    print(f'Built platform with %s cluster, %s nodes, %s processors and %s cores' % (
+          core_pool['counters']['cluster'], core_pool['counters']['node'],
+          core_pool['counters']['processor'], core_pool['counters']['core']))
+    return platform, core_pool
 
-    return root_el, shared_state
-
-def _load_data(platform_file_path: str, platform_library_path: str) -> dict:
+def _build_library(platform_file_path: str, platform_library_path: str) -> dict:
     types = {}
     for pair in [ ( 'platform', 'platforms.json' ), ( 'network', 'network_types.json' ), ( 'node', 'node_types.json' ), ( 'processor', 'processor_types.json' ) ]:
        types[pair[0]] = {}
@@ -108,43 +110,29 @@ def _load_data(platform_file_path: str, platform_library_path: str) -> dict:
               types[group].update(types_from_file[group]);
     return types
 
-def _root_el() -> dict:
-    # Resource hierarchy starts on the Platform element
-    return {
-        'total_nodes': 0,
-        'total_processors': 0,
-        'total_cores': 0,
-        'clusters': []
-    }
-
-def _generate_clusters(shared_state: dict, root_desc: dict, root_el: dict) -> None:
+def _generate_clusters(library: dict, root_desc: dict, core_pool: dict, root_el: dict) -> None:
     for cluster_desc in root_desc['clusters']:
-        cluster_el = None
-        if shared_state['gen_res_hierarchy']:
-            cluster_el = _cluster_el(root_el)
-        _generate_nodes(shared_state, cluster_desc, cluster_el)
-        shared_state['counters']['cluster'] += 1
+        cluster_el = _cluster_el(root_el, core_pool)
+        _generate_nodes(library, cluster_desc, core_pool, cluster_el)
 
-def _cluster_el(root_el: dict) -> dict:
+def _cluster_el(root_el: dict, core_pool: dict) -> dict:
     cluster_el = {
         'platform': root_el,
         'local_nodes': []
     }
     root_el['clusters'].append(cluster_el)
+    core_pool['counters']['cluster'] += 1
     return cluster_el
 
-def _generate_nodes(shared_state: dict, cluster_desc: dict, cluster_el: dict) -> None:
+def _generate_nodes(library: dict, cluster_desc: dict, core_pool: dict, cluster_el: dict) -> None:
     for node_desc in cluster_desc['nodes']:
         for _ in range(node_desc['number']):
-            node_el = None
-            if shared_state['gen_res_hierarchy']:
-                node_el = _node_el(shared_state, node_desc, cluster_el)
-            _generate_processors(shared_state, node_desc, node_el)
-            shared_state['counters']['node'] += 1
+            node_el = _node_el(library, node_desc, core_pool, cluster_el)
+            _generate_processors(library, node_desc, core_pool, node_el)
 
-def _node_el(shared_state: dict, node_desc: dict, cluster_el: dict) -> dict:
+def _node_el(library: dict, node_desc: dict, core_pool: dict, cluster_el: dict) -> dict:
     # Transform memory from GB to MB
-    max_mem = shared_state['types']['node'][node_desc['type']]['memory']['capacity'] * 1000
+    max_mem = library['node'][node_desc['type']]['memory']['capacity'] * 1000
     node_el = {
         'cluster': cluster_el,
         # Memory is tracked at Node-level
@@ -154,63 +142,40 @@ def _node_el(shared_state: dict, node_desc: dict, cluster_el: dict) -> dict:
     }
     cluster_el['platform']['total_nodes'] += 1
     cluster_el['local_nodes'].append(node_el)
+    core_pool['counters']['node'] += 1
     return node_el
 
-def _generate_processors(shared_state: dict, node_desc: dict, node_el: dict) -> None:
-    for proc_desc in shared_state['types']['node'][node_desc['type']]['processors']:
+def _generate_processors(library: dict, node_desc: dict, core_pool: dict, node_el: dict) -> None:
+    for proc_desc in library['node'][node_desc['type']]['processors']:
         # Computational capability per Core in FLOPs
-        gflops_per_core = shared_state['types']['processor'][proc_desc['type']]['clock_rate'] *\
-                         shared_state['types']['processor'][proc_desc['type']]['dpflops_per_cycle']
+        gflops_per_core = library['processor'][proc_desc['type']]['clock_rate'] *\
+                          library['processor'][proc_desc['type']]['dpflops_per_cycle']
         # Power consumption per Core in Watts
-        power_per_core = shared_state['types']['processor'][proc_desc['type']]['pa'] + \
-                         (shared_state['types']['processor'][proc_desc['type']]['pb'] /\
-                         shared_state['types']['processor'][proc_desc['type']]['cores'])
+        power_per_core = library['processor'][proc_desc['type']]['pa'] + \
+                         (library['processor'][proc_desc['type']]['pb'] /\
+                         library['processor'][proc_desc['type']]['cores'])
         proc_el = None
-        gflops_per_core_xml = None
-        power_per_core_xml = None
-        gflops_per_core_xml, power_per_core_xml, p_state_with_speed = _proc_xml(gflops_per_core, power_per_core,
-                                                shared_state['types']['processor'][proc_desc['type']]['pb'] /
-                                                shared_state['types']['processor'][proc_desc['type']]['cores'])
+        p_state_with_speed = _calculate_pstates(gflops_per_core, power_per_core,
+                                       library['processor'][proc_desc['type']]['pb'] /
+                                       library['processor'][proc_desc['type']]['cores'])
         for _ in range(proc_desc['number']):
-            if shared_state['gen_res_hierarchy']:
-                proc_el = _proc_el(shared_state, proc_desc, node_el, gflops_per_core,
-                                   power_per_core)
-            _generate_cores(shared_state, gflops_per_core_xml, power_per_core_xml, proc_desc,
-                            proc_el, p_state_with_speed)
-            shared_state['counters']['processor'] += 1
+            proc_el = _proc_el(library, proc_desc, gflops_per_core, power_per_core, core_pool, node_el)
+            _generate_cores(library, proc_desc, p_state_with_speed, core_pool, proc_el)
 
-def _proc_xml(gflops_per_core: float, dynamic_power_per_core: float, static_power_per_core: float) -> tuple:
+def _calculate_pstates(gflops_per_core: float, dynamic_power_per_core: float, static_power_per_core: float) -> list:
     # For each processor several P-states are defined based on the number of p-state, with to more statics P-state
     # For each P-state it is compute the speed in fuction of the number of p-state
 
-    gflops_list = ""
     p_state_with_speed = []
-
     for i in reversed(range(res.number_p_states)):
-        gflops_list += f'{(gflops_per_core) * (1 / (res.number_p_states)) * (i + 1):.3f}Gf, '
         p_state_with_speed.append((gflops_per_core) * (1 / (res.number_p_states)) * (i + 1))
+    return p_state_with_speed
 
-
-    gflops_list += f'{(gflops_per_core*min_speed):.3f}Gf, '
-    gflops_list += f'{(gflops_per_core*min_speed):.3f}Gf'
-    gflops_per_core_xml = {'speed': (gflops_list)}
-
-    power_list = ""
-    for i in reversed(range(res.number_p_states)):
-        power_list+=(f'{(gflops_per_core) * (1 / (res.number_p_states)) * (i + 1):.3f}:{(dynamic_power_per_core):.3f},')
-
-    power_list+=(f'{(gflops_per_core*min_speed):.3f}:{static_power_per_core:.3f},')
-    power_list+=(f'{(gflops_per_core*min_speed):.3f}:{static_power_per_core*min_power:.3f}')
-
-    power_per_core_xml = power_list
-    return gflops_per_core_xml, power_per_core_xml, p_state_with_speed
-
-def _proc_el(shared_state: dict, proc_desc: dict, node_el: dict, gflops_per_core: float,
-             power_per_core: float) -> dict:
-    #max_mem_bw = shared_state['types']['processor'][proc_desc['type']]['mem_bw']
+def _proc_el(library: dict, proc_desc: dict, gflops_per_core: float, power_per_core: float, core_pool: dict, node_el: dict) -> dict:
+    #max_mem_bw = library['processor'][proc_desc['type']]['mem_bw']
     proc_el = {
         'node': node_el,
-        'id': shared_state['counters']['processor'],
+        'id': core_pool['counters']['processor'],
         # Memory bandwidth is tracked at Processor-level
         #TODO CAMBIARLO
         #'max_mem_bw': 0,
@@ -221,24 +186,21 @@ def _proc_el(shared_state: dict, proc_desc: dict, node_el: dict, gflops_per_core
     }
     node_el['cluster']['platform']['total_processors'] += 1
     node_el['local_processors'].append(proc_el)
+    core_pool['counters']['processor'] += 1
     return proc_el
 
-def _generate_cores(shared_state: dict, gflops_per_core_xml: dict, power_per_core_xml: str,
-                    proc_desc: dict, proc_el: dict, p_state_with_speed:list) -> None:
-    for _ in range(shared_state['types']['processor'][proc_desc['type']]['cores']):
-        if shared_state['gen_res_hierarchy']:
-            _core_el(shared_state, proc_el, proc_desc, p_state_with_speed)
-        shared_state['counters']['core'] += 1
+def _generate_cores(library: dict, proc_desc: dict, p_state_with_speed:list, core_pool: dict, proc_el: dict) -> None:
+    for _ in range(library['processor'][proc_desc['type']]['cores']):
+        _core_el(library, proc_desc, p_state_with_speed, core_pool, proc_el)
 
-def _core_el(shared_state: dict, proc_el: dict, proc_desc: dict, p_state_with_speed:list) -> None:
-    proccesor = shared_state['types']['processor'][proc_desc['type']]
-    core_el = res.Core(proc_el, shared_state['counters']['core'], shared_state['types']['processor']
-                        [proc_desc['type']]['pa'], shared_state['types']['processor']
-                        [proc_desc['type']]['pb']/shared_state['types']['processor']
-                        [proc_desc['type']]['cores'], min_power, p_state_with_speed,
-                        proccesor['c'], proccesor['da'], proccesor['dc'], proccesor['b'],
-                       proccesor['dd'], proccesor['db'])
+def _core_el(library: dict, proc_desc: dict, p_state_with_speed:list, core_pool: dict, proc_el: dict) -> None:
+    processor = library['processor'][proc_desc['type']]
+    core_el = res.Core(proc_el, core_pool['counters']['core'],
+                        processor['pa'], processor['pb'] / processor['cores'],
+                        min_power, p_state_with_speed, processor['c'],
+                        processor['da'], processor['dc'], processor['b'], processor['dd'], processor['db'])
 
     proc_el['node']['cluster']['platform']['total_cores'] += 1
     proc_el['local_cores'].append(core_el)
-    shared_state['core_pool'].append(core_el)
+    core_pool['pool'].append(core_el)
+    core_pool['counters']['core'] += 1
