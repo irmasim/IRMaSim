@@ -1,15 +1,10 @@
-
-from typing import TYPE_CHECKING
-if TYPE_CHECKING:
-    from resource import Core
-
 class Job:
 
 
     def __init__(self, id: int, type: str, profile : str,
                  req_ops: int, ipc:float, req_time: float,
                  mem: float, mem_vol: float, subtime : float,
-                 res: int):
+                 resources: int):
         self.type = type
         self.profile = profile
         self.req_ops = req_ops
@@ -18,13 +13,17 @@ class Job:
         self.mem = mem
         self.mem_vol = mem_vol
         self.subtime = subtime
-        self.res = res
+        self.resources = resources
         self.id = id
-        self.core = None
+        self.last_update = None
+        self.remaining_ops = -1
+        self.cores = None
 
-    def core_selection(self, core: 'Core'):
-        self.core = core
-
+    def core_selection(self, cores: list):
+        self.cores = cores
 
     def __lt__(self, other):
         return self.subtime < other.subtime
+
+    def __eq__(self, other):
+        return self.id == other.id

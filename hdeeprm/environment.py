@@ -419,13 +419,13 @@ Returns:
         for core in self.workload_manager.resource_manager.core_pool:
             # if the core change it's pstate
 
-            if core.bs_id in changes:
+            if core.id in changes:
                 eliminate = []
-                length = len(changes[core.bs_id].timePStates)
+                length = len(changes[core.id].timePStates)
 
                 # Check time of change
                 if self.workload_manager.last_reward == False:
-                    for index, change in enumerate(changes[core.bs_id].timePStates):
+                    for index, change in enumerate(changes[core.id].timePStates):
                         time_event, power = change[0], change[1]
 
                         if time_event < self.workload_manager.time_last_step:
@@ -434,27 +434,27 @@ Returns:
                                 eliminate.append(change)
                                 length -= 1
                 else:
-                    changes[core.bs_id].timePStates[0] = (self.workload_manager.time_last_step,
-                                                          changes[core.bs_id].timePStates[0][1])
+                    changes[core.id].timePStates[0] = (self.workload_manager.time_last_step,
+                                                       changes[core.id].timePStates[0][1])
 
-                changes[core.bs_id].timePStates = [x for x in changes[core.bs_id].timePStates if x not in eliminate]
+                changes[core.id].timePStates = [x for x in changes[core.id].timePStates if x not in eliminate]
 
 
-                logging.debug(changes[core.bs_id])
+                logging.debug(changes[core.id])
                 # Only one change
                 if length == 1:
-                    energy += changes[core.bs_id].timePStates[0][1] * time
+                    energy += changes[core.id].timePStates[0][1] * time
 
                 else:
                     # Calculate energy for cores with jobs
                     for i in range(length - 1):
-                        logging.debug(changes[core.bs_id].timePStates[i][1] * \
-                                  (changes[core.bs_id].timePStates[i + 1][0] - changes[core.bs_id].timePStates[i][0]))
-                        energy += changes[core.bs_id].timePStates[i][1] * \
-                                  (changes[core.bs_id].timePStates[i + 1][0] - changes[core.bs_id].timePStates[i][0])
+                        logging.debug(changes[core.id].timePStates[i][1] * \
+                                      (changes[core.id].timePStates[i + 1][0] - changes[core.id].timePStates[i][0]))
+                        energy += changes[core.id].timePStates[i][1] * \
+                                  (changes[core.id].timePStates[i + 1][0] - changes[core.id].timePStates[i][0])
 
-                    energy += changes[core.bs_id].timePStates[length - 1][1] * \
-                              (self.workload_manager.bs.time() - changes[core.bs_id].timePStates[length - 1][0])
+                    energy += changes[core.id].timePStates[length - 1][1] * \
+                              (self.workload_manager.bs.time() - changes[core.id].timePStates[length - 1][0])
 
             else:
                 logging.debug(core.state['current_power'])
@@ -479,13 +479,13 @@ Returns:
         for core in self.workload_manager.resource_manager.core_pool:
 
             # if the core change it's pstate
-            if core.bs_id in changes:
+            if core.id in changes:
                 eliminate = []
-                length = len(changes[core.bs_id].timePStates)
+                length = len(changes[core.id].timePStates)
 
                 # Check time of change
                 if self.workload_manager.last_reward == False:
-                    for index, change in enumerate(changes[core.bs_id].timePStates):
+                    for index, change in enumerate(changes[core.id].timePStates):
                         time_event, power = change[0], change[1]
 
                         if time_event < self.workload_manager.time_last_step:
@@ -494,24 +494,24 @@ Returns:
                                 eliminate.append(change)
                                 length -= 1
                 else:
-                    changes[core.bs_id].timePStates[0] = (self.workload_manager.time_last_step,
-                                                          changes[core.bs_id].timePStates[0][1])
+                    changes[core.id].timePStates[0] = (self.workload_manager.time_last_step,
+                                                       changes[core.id].timePStates[0][1])
 
-                changes[core.bs_id].timePStates = [x for x in changes[core.bs_id].timePStates if x not in eliminate]
+                changes[core.id].timePStates = [x for x in changes[core.id].timePStates if x not in eliminate]
 
                 # Only one change
                 if length == 1:
-                    energy += changes[core.bs_id].timePStates[0][1] * time * time
+                    energy += changes[core.id].timePStates[0][1] * time * time
 
                 else:
                     # Calculate energy for cores with multiple changes
                     for i in range(length - 1):
-                        energy += changes[core.bs_id].timePStates[i][1] * \
-                                  np.power((changes[core.bs_id].timePStates[i + 1][0] -
-                                            changes[core.bs_id].timePStates[i][0]), 2)
+                        energy += changes[core.id].timePStates[i][1] * \
+                                  np.power((changes[core.id].timePStates[i + 1][0] -
+                                            changes[core.id].timePStates[i][0]), 2)
 
-                    energy += changes[core.bs_id].timePStates[length - 1][1] * np.power(
-                        (self.workload_manager.bs.time() - changes[core.bs_id].timePStates[length - 1][0]), 2)
+                    energy += changes[core.id].timePStates[length - 1][1] * np.power(
+                        (self.workload_manager.bs.time() - changes[core.id].timePStates[length - 1][0]), 2)
 
             else:
 

@@ -14,11 +14,13 @@ import numpy as np
 import torch
 from Job import Job
 from agent import Agent, ClassicAgent
-from entrypoints.BaseWorkloadManager import BaseWorkloadManager
 from environment import Environment
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from Simulator import Simulator
 
 
-class HDeepRMWorkloadManager(BaseWorkloadManager):
+class HDeepRMWorkloadManager():
     """Entrypoint for Deep Reinforcement Learning experimentation.
 
 This Workload Manager generates the HDeepRM Environment and provides a reference of it to the Agent,
@@ -49,12 +51,11 @@ Attributes:
             Becomes ``True`` when a void action has been selected.
     """
 
-    def __init__(self, options: dict) -> None:
+    def __init__(self, options: dict, simulator : Simulator) -> None:
 
-        super().__init__(options)
         self.load_agent = True
         self.last_reward = False
-
+        self.simulator = simulator
         #if objective change reset agent
         self.reward = options["env"]['objective']
         try:
@@ -170,7 +171,7 @@ logged for observing performance.
             # The Agent is rewarded
             self.last_reward = True
             self.agent.rewarded(self.env)
-            self.time_last_step = self.bs.time()
+            self.time_last_step = self.simulator.simulation_time
             self.flow_flags['action_taken'] = False
 
         super().onSimulationEnds()
@@ -197,7 +198,7 @@ logged for observing performance.
         with open('rewards.log', 'a+') as out_f:
             out_f.write(f'{np.sum(self.agent.rewards)}\n')
         with open('makespans.log', 'a+') as out_f:
-            out_f.write(f'{self.bs.time()}\n')
+            out_f.write(f'{self.simulator.simulation_time}\n')
         if hasattr(self.agent, 'probs'):
             if path.isfile('probs.json'):
                 with open('probs.json', 'r') as in_f:
@@ -221,9 +222,8 @@ Further details on this handler on the base
         if self.flow_flags['action_taken'] and self.reward != "makespan":
             # The Agent is rewarded
             self.agent.rewarded(self.env)
-            self.time_last_step = self.bs.time()
+            self.time_last_step = self.simulator.simulation_time
             self.flow_flags['action_taken'] = False
-        super().onJobSubmission(job)
         self.flow_flags['jobs_submitted'] = True
 
     def onJobCompletion(self, job: Job) -> None:
@@ -233,14 +233,12 @@ Further details on this handler on the base
 :meth:`~hdeeprm.entrypoints.BaseWorkloadManager.BaseWorkloadManager.onJobCompletion`.
         """
 
-        if self.flow_flags['action_taken'] and self.reward != "makespan" and (len(self.job_scheduler.pending_jobs) != 0\
-                or self.bs.no_more_static_jobs == False):
-            logging.debug(f'{len(self.job_scheduler.pending_jobs)}{self.bs.no_more_static_jobs}')
+        if self.flow_flags['action_taken'] and self.reward != "makespan" and (self.simulator.nb_pending_jobs() != 0\
+                or self.simulator.no_more_static_jobs == False):
             # The Agent is rewarded
             self.agent.rewarded(self.env)
-            self.time_last_step = self.bs.time()
+            self.time_last_step = self.simulator.simulation_time
             self.flow_flags['action_taken'] = False
-        super().onJobCompletion(job)
         self.flow_flags['jobs_completed'] = True
 
     def onNoMoreEvents(self) -> None:
@@ -253,14 +251,14 @@ When there are no more events in the current time step, the following flow occur
 4. In the next decision step, the Agent will be rewarded for its action.
         """
 
-        if self.bs.running_simulation:
+        if self.simulator.running_simulation:
             if self.flow_flags['action_taken'] and self.reward == "makespan":
                 # The Agent is rewarded
                 self.agent.rewarded(self.env)
                 self.flow_flags['action_taken'] = False
 
             if (self.flow_flags['jobs_submitted'] or self.flow_flags['jobs_completed'] or\
-                (self.bs.no_more_static_jobs and self.flow_flags['void_taken'])) and\
+                (self.simulator.no_more_static_jobs and self.flow_flags['void_taken'])) and\
                   self.job_scheduler.nb_pending_jobs:
                 # The Agent observes the Environment
                 observation = self.agent.observe(self.env)
@@ -277,7 +275,7 @@ When there are no more events in the current time step, the following flow occur
                 self.agent.alter(action, self.env)
                 #Check initial time simulation
                 if self.step == 0:
-                    self.time_last_step = self.bs.time()
+                    self.time_last_step = self.simulator.simulation_time
                 self.step += 1
                 self.flow_flags['action_taken'] = True
                 self.flow_flags['jobs_submitted'] = self.flow_flags['jobs_completed'] = False
@@ -285,6 +283,6 @@ When there are no more events in the current time step, the following flow occur
             self.change_resource_states()
             # Treat case when a void action has been taken but there are still
             # pending jobs in spite of no more arrivals. This avoids deadlock.
-            if self.bs.no_more_static_jobs and self.job_scheduler.pending_jobs\
+            if self.simulator.no_more_static_jobs and self.job_scheduler.pending_jobs\
                and self.flow_flags['void_taken']:
                 self.onNoMoreEvents()

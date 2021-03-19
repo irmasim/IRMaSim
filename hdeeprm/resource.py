@@ -1,9 +1,7 @@
 """
 Core class and functionality for defining the Resource Hierarchy in the Decision System.
 """
-from typing import TYPE_CHECKING
-if TYPE_CHECKING:
-    import Job
+import Job
 import logging
 number_p_states = 98 # Number of P-state less 2
 
@@ -51,7 +49,7 @@ Attributes:
       | power_per_core (:class:`float`) - Maximum Watts per Core in the Processor.
       | local_cores (list(:class:`.Core`)) - Reference to local Cores to the Processor.
 
-    bs_id (int): Unique identification. Also used in Batsim.
+    id (int): Unique identification. Also used in Batsim.
     state (dict): Defines the current state of the Core. Data fields:
 
       | pstate (:class:`int`) - P-state for the Core.
@@ -60,14 +58,13 @@ Attributes:
       | served_job (batim.batsim.Job) - Job being served by the Core.
     """
 
-    def __init__(self, processor: dict, bs_id: int, dynamic_power:float, static_power:float, min_power:float,
-                 p_state_with_speed:list, c:int, da:int, dc:int, b:int, dd:int, db:int) -> None:
+    def __init__(self, processor: dict, id: int, dynamic_power:float, static_power:float, min_power:float,
+                 c:int, da:int, dc:int, b:int, dd:int, db:int) -> None:
         self.processor = processor
-        self.bs_id = bs_id
+        self.id = id
         self.dynamic_power = dynamic_power
         self.static_power = static_power
         self.min_power = min_power
-        self.p_state_with_speed = p_state_with_speed
         self.c = c
         self.da = da
         self.dc = dc
@@ -76,7 +73,7 @@ Attributes:
         self.db = db
         # By default, core is idle
         self.state = {
-            'pstate': number_p_states + 1,
+            'speedup': 0.0,
             'current_gflops': 0.0,
             'current_mem_bw': 0.0,
             'current_power': min_power * self.static_power,
@@ -85,7 +82,7 @@ Attributes:
             'served_job': None
         }
 
-    def set_state(self, new_pstate: int, now: float, new_served_job: 'Job' = None) -> None:
+    def set_state(self, state: str, now: float, speedup : float = None, new_served_job: Job = None) -> None:
         """Sets the state of the Core.
 
 It modifies the availability, computing speed and power consumption. It also establishes a new
@@ -101,11 +98,11 @@ Args:
         """
 
         # Active core
-        if new_pstate < number_p_states:
+        if state == "RUN":
             if not self.state['served_job']:
                 new_served_job.last_update = now
-                new_served_job.remaining_ops = new_served_job.req_ops
                 self.state['served_job'] = new_served_job
+                new_served_job.remaining_ops = new_served_job.req_ops
                 self.state['current_mem_bw'] = new_served_job.mem_vol / \
                                                (new_served_job.req_ops / (self.processor['gflops_per_core'] * 1e9))
 
@@ -115,9 +112,9 @@ Args:
                 self.update_completion(now)
             # 100% Power
             self.state['current_power'] = self.dynamic_power + self.static_power
-            self.state['current_gflops'] = self.p_state_with_speed[new_pstate]
+            self.state['current_gflops'] = self.processor['gflops_per_core'] * speedup * 1e9
         # Inactive core
-        elif new_pstate in (number_p_states, number_p_states + 1):
+        elif state in ("NEIGHBOURS-RUNNING", "IDLE"):
             if self.state['served_job']:
                 self.processor['current_mem_bw'] -= self.state['current_mem_bw']
                 self.processor['node']['current_mem'] += self.state['served_job'].mem
@@ -125,15 +122,15 @@ Args:
                 self.state['served_job'] = None
             # 0% GFLOPS
             self.state['current_gflops'] = 0.0
-            if new_pstate == number_p_states:
+            if state == "NEIGHBOURS-RUNNING":
                 # Static Power
                 self.state['current_power'] = self.static_power
             else:
                 # Min Power
                 self.state['current_power'] = self.min_power * self.static_power
         else:
-            raise ValueError('Error: unknown P-state')
-        self.state['pstate'] = new_pstate
+            raise ValueError('Error: unknown State')
+        self.state['speedup'] = speedup
 
     def update_completion(self, now: float) -> None:
         """Updates the Job operations left.
@@ -147,8 +144,6 @@ Args:
 
         time_delta = now - self.state['served_job'].last_update
         self.state['served_job'].remaining_ops -= self.state['current_gflops'] * time_delta
-        self.processor['current_mem_bw'] -= self.state['current_mem_bw']
-        self.processor['current_mem_bw'] += self.state['current_mem_bw']
         self.state['served_job'].last_update = now
 
     def get_remaining_per(self) -> float:
@@ -160,5 +155,8 @@ Calculated by dividing the remaining operations by the total requested on arriva
         return self.state['served_job'].remaining_ops / self.state['served_job'].req_ops
 
     def __str__(self):
-        return str(self.bs_id) + ": " + str(self.processor['current_mem_bw']) + " " + str(
+        return str(self.id) + ": " + str(self.processor['current_mem_bw']) + " " + str(
             self.processor['gflops_per_core'])
+
+    def __lt__(self, other):
+        return self.id < other.id
