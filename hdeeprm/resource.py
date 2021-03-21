@@ -3,7 +3,6 @@ Core class and functionality for defining the Resource Hierarchy in the Decision
 """
 import Job
 import logging
-number_p_states = 98 # Number of P-state less 2
 
 class Core:
     """Core representing a compute resource in the Platform.
@@ -82,7 +81,7 @@ Attributes:
             'served_job': None
         }
 
-    def set_state(self, state: str, now: float, speedup : float = None, new_served_job: Job = None) -> None:
+    def set_state(self, state: str, now: float, speedup : float = 1, new_served_job: Job = None) -> None:
         """Sets the state of the Core.
 
 It modifies the availability, computing speed and power consumption. It also establishes a new
@@ -112,6 +111,7 @@ Args:
                 self.update_completion(now)
             # 100% Power
             self.state['current_power'] = self.dynamic_power + self.static_power
+            self.state['speedup'] = speedup
             self.state['current_gflops'] = self.processor['gflops_per_core'] * speedup * 1e9
         # Inactive core
         elif state in ("NEIGHBOURS-RUNNING", "IDLE"):
@@ -121,6 +121,7 @@ Args:
                 self.state['current_mem_bw'] = 0
                 self.state['served_job'] = None
             # 0% GFLOPS
+            self.state['speedup'] = 0.0
             self.state['current_gflops'] = 0.0
             if state == "NEIGHBOURS-RUNNING":
                 # Static Power
@@ -141,10 +142,14 @@ Args:
     now (float):
         Current simulation time in seconds.
         """
-
-        time_delta = now - self.state['served_job'].last_update
-        self.state['served_job'].remaining_ops -= self.state['current_gflops'] * time_delta
-        self.state['served_job'].last_update = now
+        if self.state['served_job'] is not None:
+            time_delta = now - self.state['served_job'].last_update
+            self.state['served_job'].remaining_ops -= self.state['current_gflops'] * time_delta
+            if self.state['served_job'].remaining_ops <= 0:
+                self.processor['current_mem_bw'] -= self.state['current_mem_bw']
+                self.state['current_mem_bw'] = 0.0
+                self.state['served_job'].remaining_ops = 0
+            self.state['served_job'].last_update = now
 
     def get_remaining_per(self) -> float:
         """Provides the remaining percentage of the Job being served.

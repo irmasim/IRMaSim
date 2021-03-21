@@ -115,7 +115,7 @@ Attributes:
             'high_cores': lambda core: - len([c for c in core.processor['local_cores'] \
                                               if c.state['served_job']]),
             'high_mem': lambda core: - core.processor['node']['current_mem'],
-            'high_mem_bw': lambda core: core.processor['current_mem_bw'],
+            'high_mem_bw': lambda core: core.processor['current_mem_bw'], #TODO COMENTARLO PARA LA OBSERVACIÓN
             'low_power': lambda core: core.static_power+core.dynamic_power
         })
         # Parse the actions selected by the user
@@ -143,14 +143,14 @@ Attributes:
         # Observation types
         observation_types = {
             'normal': {
-                'size': self.workload_manager.resource_manager.platform['total_nodes'] + \
-                        self.workload_manager.resource_manager.platform['total_processors'] + \
-                        self.workload_manager.resource_manager.platform['total_cores'] * 3 + 21,
+                'size': self.workload_manager.simulator.total_nodes_platform() + \
+                        self.workload_manager.simulator.total_processors_platform() + \
+                        self.workload_manager.simulator.total_cores_platform() * 3 + 21,
                 'observation': partial(self._base_observation, otype='normal')
             },
             'small': {
-                'size': self.workload_manager.resource_manager.platform['total_nodes'] + \
-                        self.workload_manager.resource_manager.platform['total_processors'] + 21,
+                'size': self.workload_manager.simulator.total_nodes_platform() + \
+                        self.workload_manager.simulator.total_processors_platform() + 21,
                 'observation': partial(self._base_observation, otype='small')
             },
             'minimal': {
@@ -236,7 +236,7 @@ Returns:
 
         observation = []
         if otype != 'minimal':
-            for cluster in self.workload_manager.resource_manager.platform['clusters']:
+            for cluster in self.workload_manager.simulator.clusters_platform():
                 for node in cluster['local_nodes']:
                     # Node: current fraction of memory available
                     observation.append(node['current_mem'] / node['max_mem'])
@@ -266,7 +266,6 @@ Returns:
                                     remaining_per = 0.0
                                 else:
                                     # Percentage remaining of the current served job
-                                    core.update_completion(self.workload_manager.bs.time())
                                     remaining_per = core.get_remaining_per()
                                 observation.extend(
                                     [core.state['current_gflops'] / processor['gflops_per_core'],
@@ -274,16 +273,16 @@ Returns:
                                      remaining_per]
                                 )
         req_time = np.array(
-            [job.req_time for job in self.workload_manager.job_scheduler.pending_jobs])
+            [job.req_time for job in self.workload_manager.simulator.pending_jobs()])
         req_core = np.array(
-            [job.requested_resources for job in self.workload_manager.job_scheduler.pending_jobs])
+            [job.requested_resources for job in self.workload_manager.simulator.pending_jobs()])
         req_mem = np.array(
-            [job.mem for job in self.workload_manager.job_scheduler.pending_jobs])
+            [job.mem for job in self.workload_manager.simulator.pending_jobs()])
         req_mem_vol = np.array(
-            [job.mem_vol for job in self.workload_manager.job_scheduler.pending_jobs])
+            [job.mem_vol for job in self.workload_manager.simulator.pending_jobs()])
         # Calculate percentiles for each requested resource
         # Each percentile is tranformed into a fraction relative to the maximum value
-        job_limits = self.workload_manager.resource_manager.platform['job_limits']
+        job_limits = self.workload_manager.simulator.job_limits()
         reqes = (req_time, req_core, req_mem, req_mem_vol)
         reqns = ('time', 'core', 'mem', 'mem_vol')
         maxes = (job_limits['max_time'], job_limits['max_core'],
@@ -298,21 +297,21 @@ Returns:
                          reqn, pmin, p25, pmed, p75, pmax)
             observation.extend([pmin, p25, pmed, p75, pmax])
         # Fraction of queue variation since last observation
-        if not self.last_job_queue_length and self.workload_manager.job_scheduler.nb_pending_jobs:
+        if not self.last_job_queue_length and self.workload_manager.simulator.nb_pending_jobs:
             # Past queue was empty and current queue has jobs
             variation_ratio = 1.0
         else:
             # 0.0 when current queue is 1 x queue_sensitivity less than past queue
             # 1.0 when current queue is 1 x queue_sensitivity more than past queue
             # 0.5 indicates no variability
-            variation = self.workload_manager.job_scheduler.nb_pending_jobs \
+            variation = self.workload_manager.simulator.nb_pending_jobs \
                         - self.last_job_queue_length
             variation_ratio = to_range(
-                variation / min(self.workload_manager.job_scheduler.nb_pending_jobs,
+                variation / min(self.workload_manager.simulator.nb_pending_jobs,
                                 self.last_job_queue_length)
             )
         observation.append(variation_ratio)
-        self.last_job_queue_length = self.workload_manager.job_scheduler.nb_pending_jobs
+        self.last_job_queue_length = self.workload_manager.simulator.nb_pending_jobs
         return np.array(observation, dtype=np.float32)
 
     def step(self, action: int) -> None:
@@ -333,10 +332,10 @@ Args:
         else:
             # Set actions as given by the key
             keys = self.actions[action]
-            self.workload_manager.job_scheduler.sorting_key = keys[0]
-            self.workload_manager.resource_manager.sorting_key = keys[1]
+            self.workload_manager.simulator.set_job_sorting_key(keys[0])
+            self.workload_manager.simulator.set_resource_sorting_key(keys[1])
             # Schedule jobs
-            self.workload_manager.schedule_jobs()
+            self.workload_manager.simulator.schedule_jobs()
 
     def avg_job_slowdown_reward(self) -> float:
         """Reward when the objetive is to minimize average job slowdown.
@@ -401,15 +400,18 @@ Returns:
         return (sum([core.state['current_gflops'] for core
                     in self.workload_manager.resource_manager.core_pool]))
 
+
+    #TODO viejo cálculo hay que comprobar que el nuevo calculo funciona correctamente
+    """
     def energy_consumption_reward(self) -> float:
-        """Reward when the objective is to minimize total energy consumption.
+        Reward when the objective is to minimize total energy consumption.
 
-It is negative the of current power usage in the data centre. Keeping the power low will decrease
-total energy consumed.
+    It is negative the of current power usage in the data centre. Keeping the power low will decrease
+    total energy consumed.
 
-Returns:
+    Returns:
     Negative the power usage in the data centre service.
-        """
+        
 
         energy = 0
         changes: dict = self.workload_manager.core_changes
@@ -467,9 +469,9 @@ Returns:
         return -energy
 
     def edp_reward(self) -> float:
-        """Reward when the objective is to minimize the Energy-Delay Product (EDP).
+        Reward when the objective is to minimize the Energy-Delay Product (EDP).
 
-        """
+        
 
         energy = 0
         changes: dict = self.workload_manager.core_changes
@@ -520,6 +522,14 @@ Returns:
         logging.info("Energy consumption in this step: " + str(energy))
 
         return -energy
+
+    """
+
+    def edp_reward(self) -> float:
+        return -1 * self.workload_manager.simulator.get_edp_last_period()
+
+    def energy_consumption_reward(self) -> float:
+        return -1 * self.workload_manager.simulator.get_energy_last_period()
 
     def render(self, mode='human'):
         """Not used."""
