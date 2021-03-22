@@ -9,7 +9,6 @@ import sys
 import os
 import os.path as path
 import random as rnd
-import subprocess as sp
 import evalys.jobset as ej
 import evalys.utils as eu
 import evalys.visu.core as evc
@@ -343,28 +342,6 @@ Command line arguments:
         print(np.percentile(data, 95))
     elif args.statistic == 'p99':
         print(np.percentile(data, 99))
-
-def clean() -> None:
-    """Utility for cleaning current directory outcomes.
-
-WARNING: it also erases the "platform.xml", "workload.json", "res_hierarchy.pkl" and
-"job_limits.pkl" files, use ``-s`` or ``--soft`` to avoid this behaviour. Its purpose is to
-facilitate quick experimenting and debugging.
-
-Command line arguments:
-    | ``soft`` - (Optional) Cleans only logs, does not remove platform or workload definitions.
-    """
-
-    parser = ap.ArgumentParser(description='Compares metrics between simulation runs')
-    parser.add_argument('-s', '--soft', action='store_true', help='Only clean logs')
-    args = parser.parse_args()
-
-    skipped = ['options.json']
-    if args.soft:
-        skipped.extend(['platform.xml', 'workload.json', 'res_hierarchy.pkl', 'job_limits.pkl'])
-    for entry in os.scandir():
-        if entry.name not in skipped:
-            os.remove(entry.name)
 
 def _fixed_plot_series(jobset, *, name, title='Time series plot', legend_label, **kwargs):
     """

@@ -4,8 +4,6 @@ Utilities for parsing and generating Workloads, Platforms and Resource Hierarchi
 
 import json
 import os.path as path
-from functools import partial
-import defusedxml.minidom as mxml
 import numpy
 import numpy.random as nprnd
 import resource as res
@@ -53,7 +51,6 @@ Args:
         'max_mem_vol': numpy.percentile(numpy.array(
             [workload['profiles'][job['profile']]['mem_vol'] for job in workload['jobs']]), 99)
     }
-    logging.debug(job_limits)
     return job_limits, workload
 
 def generate_platform(platform_name: str,platform_file_path: str, platform_library_path: str) -> (dict, list):
