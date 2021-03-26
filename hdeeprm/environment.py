@@ -115,7 +115,7 @@ Attributes:
             'high_cores': lambda core: - len([c for c in core.processor['local_cores'] \
                                               if c.state['served_job']]),
             'high_mem': lambda core: - core.processor['node']['current_mem'],
-            'high_mem_bw': lambda core: core.processor['current_mem_bw'], #TODO COMENTARLO PARA LA OBSERVACIÓN
+            'high_mem_bw': lambda core: core.processor['current_mem_bw'],
             'low_power': lambda core: core.static_power+core.dynamic_power
         })
         # Parse the actions selected by the user

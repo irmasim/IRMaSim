@@ -76,6 +76,7 @@ Attributes:
             'current_gflops': 0.0,
             'current_mem_bw': 0.0,
             'current_power': min_power * self.static_power,
+            'job_remaining_ops': 0.0,
             # When active, the Core is serving a Job which is stored as part of its state
             # Remaining operations and updates along simulation are tracked
             'served_job': None
@@ -101,7 +102,7 @@ Args:
             if not self.state['served_job']:
                 new_served_job.last_update = now
                 self.state['served_job'] = new_served_job
-                new_served_job.remaining_ops = new_served_job.req_ops
+                self.state['job_remaining_ops'] = new_served_job.req_ops
                 self.state['current_mem_bw'] = new_served_job.mem_vol / \
                                                (new_served_job.req_ops / (self.processor['gflops_per_core'] * 1e9))
 
@@ -144,11 +145,11 @@ Args:
         """
         if self.state['served_job'] is not None:
             time_delta = now - self.state['served_job'].last_update
-            self.state['served_job'].remaining_ops -= self.state['current_gflops'] * time_delta
-            if self.state['served_job'].remaining_ops <= 0:
+            self.state['job_remaining_ops'] -= self.state['current_gflops'] * time_delta
+            if self.state['job_remaining_ops'] <= 0:
                 self.processor['current_mem_bw'] -= self.state['current_mem_bw']
                 self.state['current_mem_bw'] = 0.0
-                self.state['served_job'].remaining_ops = 0
+                self.state['job_remaining_ops'] = 0
             self.state['served_job'].last_update = now
 
     def get_remaining_per(self) -> float:
@@ -157,7 +158,7 @@ Args:
 Calculated by dividing the remaining operations by the total requested on arrival.
         """
 
-        return self.state['served_job'].remaining_ops / self.state['served_job'].req_ops
+        return self.state['job_remaining_ops'] / self.state['served_job'].req_ops
 
     def __str__(self):
         return str(self.id) + ": " + str(self.processor['current_mem_bw']) + " " + str(

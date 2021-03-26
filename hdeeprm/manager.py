@@ -79,9 +79,6 @@ It uses the cached peeked Job for removal.
     def run_job(self, job : Job) -> None:
         self.jobs_running.append(job)
 
-    def finish_jobs_now(self) -> list:
-        return [x for x in self.jobs_running if x.remaining_ops == 0]
-
     def job_complete(self, job: Job):
         self.jobs_running.remove(job)
 
@@ -130,8 +127,10 @@ Attributes:
         self.sorting_key = None
 
     def update_cores(self, time: float):
-        for i in self.core_pool:
-            i.update_completion(time)
+        for core in self.core_pool:
+            core.update_completion(time)
+            if core.state['job_remaining_ops'] == 0:
+                self.update_state(core.state['served_job'], [core.id], "FREE", time)
 
     def get_resources(self, job: Job, now: float) -> list or None:
         """Gets a set of resources for the selected job.
@@ -176,11 +175,11 @@ Returns:
             else:
                 # There are no sufficient resources, revert the state of the
                 # temporarily selected
-                self.update_state(job, selected, 'FREE', now)
+                self.update_state(job, selected, 'FREE', now, free_resource_job=True)
                 return None
         return selected
 
-    def update_state(self, job: Job, id_list: list, new_state: str, now: float) -> None:
+    def update_state(self, job: Job, id_list: list, new_state: str, now: float, free_resource_job : bool = False) -> None:
         """Modifies the state of the computing resources.
 
 This affects speed, power and availability for selection. Modifications are local to the Decision
@@ -209,6 +208,7 @@ Returns:
             score = self.core_pool[id]
             processor = score.processor
             if new_state == 'LOCKED':
+                job.allocation.append(id)
                 score.set_state("RUN", now, new_served_job=job)
                 served_jobs_processor = 0
 
@@ -224,6 +224,8 @@ Returns:
                                                          served_jobs_processor)
 
             elif new_state == 'FREE':
+                if free_resource_job:
+                    job.allocation = []
                 score.set_state("NEIGHBOURS-RUNNING", now)
                 all_inactive = all(not lcore.state['served_job']
                                    for lcore in processor['local_cores'])

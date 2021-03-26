@@ -25,6 +25,7 @@ class Simulator:
         self.statistics.calculate_energy_and_edp(self.resource_manager.core_pool, self.simulation_time)
         first_job.time_left = first_job.req_time
         self.scheduler.onJobSubmission(first_job)
+        self.job_scheduler.new_job(first_job)
         self.start_static_jobs()
 
     def start_static_jobs(self) -> None:
@@ -34,7 +35,7 @@ class Simulator:
             self.peek_jobs_now()
             self.finish_jobs_now()
             self.scheduler.onNoMoreEvents()
-            next_step = self.calculate_next_step()
+            next_step = self.calculate_next_scheduler_step()
             self.statistics.calculate_energy_and_edp(self.resource_manager.core_pool, next_step - self.simulation_time)
             self.simulation_time = next_step
             self.resource_manager.update_cores(self.simulation_time)
@@ -47,7 +48,7 @@ class Simulator:
         while self.job_scheduler.jobs_running > 0:
             self.finish_jobs_now()
             self.scheduler.onNoMoreEvents()
-            next_step = self.calculate_next_step()
+            next_step = self.calculate_next_scheduler_step()
             self.statistics.calculate_energy_and_edp(self.resource_manager.core_pool, next_step - self.simulation_time)
             self.simulation_time = next_step
             self.resource_manager.update_cores(self.simulation_time)
@@ -60,10 +61,17 @@ class Simulator:
         return self.job_scheduler.nb_pending_jobs
 
     def finish_jobs_now(self) -> None:
-        finish_jobs = self.job_scheduler.finish_jobs_now()
-        for i in finish_jobs:
-            self.scheduler.onJobCompletion(i)
-            self.resource_manager.update_state(i, [x.id for x in i.cores], 'FREE', self.simulation_time)
+        finish_jobs = []
+        for job in self.job_scheduler.jobs_running:
+            core_job = self.resource_manager.core_pool[job.allocation[0]]
+            all_inactive = all(not core.state['served_job']
+                                   for core in core_job.processor['local_cores'])
+            if all_inactive:
+                finish_jobs.append(job)
+        for job in finish_jobs:
+            self.scheduler.onJobCompletion(job)
+            self.resource_manager.update_state(job, [x for x in job.allocation], 'FREE',
+                                               self.simulation_time, free_resource_job=True)
 
     def peek_jobs_now(self) -> None:
         while self.job_scheduler.nb_jobs_queue_left > 0 and \
@@ -91,21 +99,26 @@ class Simulator:
             self.job_scheduler.nb_active_jobs += len(scheduled_jobs)
             self.job_scheduler.jobs_running.extend(scheduled_jobs)
 
-    def calculate_next_step(self) -> float:
-        min_speed_per_job = []
+    def calculate_next_scheduler_step(self) -> float:
+        time_finish_one_core = float("inf")
         for job in self.job_scheduler.jobs_running:
-            min_speed_per_job.append(max([job.remaining_ops / self.resource_manager.core_pool[id].state['current_gflops']
-                 for id in job.allocation]))
-        min_job_finish = min(min_speed_per_job)
+
+            time_finish_core_job = min([self.resource_manager.core_pool[id].state['job_remaining_ops'] / \
+                                self.resource_manager.core_pool[id].state['current_gflops'] for id in job.allocation
+                                     if self.resource_manager.core_pool[id].state['job_remaining_ops'] != 0])
+
+            if time_finish_one_core > time_finish_core_job:
+                time_finish_one_core = time_finish_core_job
+
 
         if self.job_scheduler.nb_jobs_queue_left > 0:
-            min_job_start = self.job_scheduler.show_first_job_in_queue().subtime
-            if min_job_start < min_job_finish:
-                return min_job_start
-            else:
-                return min_job_finish
-        else:
-            return min_job_finish
+            time_min_job_start = self.job_scheduler.show_first_job_in_queue().subtime
+            if time_min_job_start <= time_finish_one_core:
+                return time_min_job_start
+
+        return time_finish_one_core
+
+
 
 
     def total_nodes_platform(self) -> int:

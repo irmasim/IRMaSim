@@ -13,8 +13,11 @@ class Job:
         self.mem_vol = profile['mem_vol']
         self.type = profile['type']
         self.last_update = subtime
-        self.remaining_ops = -1
-        self.allocation = None
+        self.allocation = []
+        self.core_finish = []
+
+    def is_job_finished(self) -> bool:
+        return len(self.core_finish) == len(self.allocation)
 
     def __lt__(self, other):
         return self.subtime < other.subtime
