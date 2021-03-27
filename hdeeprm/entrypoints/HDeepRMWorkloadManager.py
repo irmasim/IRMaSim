@@ -49,7 +49,7 @@ Attributes:
             Becomes ``True`` when a void action has been selected.
     """
 
-    def __init__(self, options: dict, simulator : Simulator) -> None:
+    def __init__(self, options: dict, simulator : 'Simulator') -> None:
 
         self.load_agent = True
         self.last_reward = False
@@ -251,7 +251,7 @@ When there are no more events in the current time step, the following flow occur
             self.flow_flags['action_taken'] = False
 
         if (self.flow_flags['jobs_submitted'] or self.flow_flags['jobs_completed'] or
-            (self.simulator.no_more_static_jobs and self.flow_flags['void_taken'])) and\
+            (self.simulator.no_more_static_jobs() and self.flow_flags['void_taken'])) and\
               self.simulator.nb_pending_jobs():
             # The Agent observes the Environment
             observation = self.agent.observe(self.env)
@@ -274,6 +274,6 @@ When there are no more events in the current time step, the following flow occur
             self.flow_flags['jobs_submitted'] = self.flow_flags['jobs_completed'] = False
         # Treat case when a void action has been taken but there are still
         # pending jobs in spite of no more arrivals. This avoids deadlock.
-        if self.simulator.no_more_static_jobs and self.simulator.nb_pending_jobs\
+        if self.simulator.no_more_static_jobs() and self.simulator.nb_pending_jobs\
            and self.flow_flags['void_taken']:
             self.onNoMoreEvents()

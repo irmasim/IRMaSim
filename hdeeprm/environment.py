@@ -103,9 +103,9 @@ Attributes:
         # Selection policies
         self.job_selections = OrderedDict({
             'random': None,
-            'first': lambda job: job.submit_time,
+            'first': lambda job: job.subtime,
             'shortest': lambda job: job.req_time,
-            'smallest': lambda job: job.requested_resources,
+            'smallest': lambda job: job.resources,
             'low_mem': lambda job: job.mem,
             'low_mem_ops': lambda job: job.mem_vol
         })
@@ -275,7 +275,7 @@ Returns:
         req_time = np.array(
             [job.req_time for job in self.workload_manager.simulator.pending_jobs()])
         req_core = np.array(
-            [job.requested_resources for job in self.workload_manager.simulator.pending_jobs()])
+            [job.resources for job in self.workload_manager.simulator.pending_jobs()])
         req_mem = np.array(
             [job.mem for job in self.workload_manager.simulator.pending_jobs()])
         req_mem_vol = np.array(

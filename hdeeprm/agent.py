@@ -386,7 +386,7 @@ Returns:
 
         value_loss = []
         for value, rew in zip(self.values, rews):
-            value_loss.append(F.smooth_l1_loss(value, torch.tensor([rew])))
+            value_loss.append(F.smooth_l1_loss(value.reshape(torch.tensor([rew]).shape), torch.tensor([rew])))
         with open('value_loss.log', 'a+') as out_f:
             out_f.write(f'{value_loss}, {self.values}, {rews}\n')
         logging.debug(f'VALUE LOSS{value_loss}, {self.values}, {rews}')

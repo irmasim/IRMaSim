@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import logging
-from hdeeprm.agent import PolicyLearningAgent, ValueLearningAgent
+from agent import PolicyLearningAgent, ValueLearningAgent
 
 class ActorCriticAgent(PolicyLearningAgent, ValueLearningAgent):
     """Class for the agent implementing the Adavantage Actor-Critic algorithm.
