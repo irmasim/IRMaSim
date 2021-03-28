@@ -30,7 +30,6 @@ It also runs both Batsim and PyBatsim.
 
 Command line arguments:
     | ``options_file`` - Options file in JSON.
-    | ``customworkload`` - (Optional) Path to the custom workload in case one is used.
     | ``agent`` (Optional) File with the learning agent definition.
     | ``inmodel`` - (Optional) Path for previous model loading.
     | ``outmodel`` - (Optional) Path for saving new model.
@@ -43,8 +42,8 @@ Command line arguments:
     parser.add_argument('-n', '--platform_name', type=str, help='Name of the platform to simulate')
     parser.add_argument('-p', '--platform_file', type=str, help='File with a description of elements of the platform')
     parser.add_argument('-w', '--workload_file', type=str, help='File with the workload definition')
+    parser.add_argument('-o', '--output_dir', type=str, help='Directory for output files')
 
-    parser.add_argument('-cw', '--customworkload', type=str, help='Path for the custom workload')
     parser.add_argument('-a', '--agent', type=str, help='File with the learning agent definition')
     parser.add_argument('-im', '--inmodel', type=str, help='Path for previous model loading')
     parser.add_argument('-om', '--outmodel', type=str, help='Path for saving new model')
@@ -52,7 +51,7 @@ Command line arguments:
     args = parser.parse_args()
 
     # Default options
-    options = { 'seed': 0 }
+    options = { 'seed': 0, 'output_dir': '.' }
     # By default the library path is the data directory bundled with the code
     options['platform_library_path'] = path.join(path.dirname(__file__), 'data')
 
@@ -69,6 +68,8 @@ Command line arguments:
         options['platform_file'] = args.platform_file
     if args.workload_file:
         options['workload_file'] = args.workload_file
+    if args.workload_file:
+        options['output_dir'] = args.output_dir
     if args.agent:
         options['pybatsim']['agent']['file'] = path.abspath(args.agent)
     if args.inmodel:

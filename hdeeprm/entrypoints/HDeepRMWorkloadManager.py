@@ -57,21 +57,27 @@ Attributes:
         self.options = options
         #if objective change reset agent
         self.reward = options["env"]['objective']
+        reset_log_file = "%s/reset.log" % (options['output_dir'])
         try:
-            with open("reset.log", 'r') as reset:
+            with open(reset_log_file, 'r') as reset:
                 lines = reset.read()
                 logging.debug(lines)
                 if lines != self.reward:
                     self.load_agent = False
-
+        except OSError:
+            logging.info("Could not open {0} for reading".format(reset_log_file))
         except IOError:
-            logging.info("Not found reset.log")
+            logging.error("Error reading from {0}".format(reset_log_file))
 
         try:
-            with open("reset.log", 'w') as reset:
+            with open(reset_log_file, 'w') as reset:
                 reset.write(options["env"]['objective'])
+        except OSError as err:
+            logging.error("{0}".format(err))
+            raise
         except IOError:
-            logging.info("Not found reset.log")
+            logging.error("Error writing to {0}".format(reset_log_file))
+            raise
 
         self.env = Environment(self, options['env'])
         self.agent, self.optimizer = self.create_agent(options['agent'], options['seed'])
@@ -176,7 +182,7 @@ logged for observing performance.
         if self.options['agent']['type'] == 'LEARNING' and self.options['agent']['run'] == 'train':
             loss = self.agent.loss()
             logging.info('Loss %s', loss)
-            with open('losses.log', 'a+') as out_f:
+            with open('{0}/losses.log'.format(self.options['output_dir']), 'a+') as out_f:
                 out_f.write(f'{loss}\n')
             # Update parameters
             self.optimizer.zero_grad()
@@ -188,13 +194,13 @@ logged for observing performance.
                     'optimizer_state_dict': self.optimizer.state_dict()
                 }, self.options['agent']['output_model'])
         # Save metrics
-        with open('rewards.log', 'a+') as out_f:
+        with open('{0}/rewards.log'.format(self.options['output_dir']), 'a+') as out_f:
             out_f.write(f'{np.sum(self.agent.rewards)}\n')
-        with open('makespans.log', 'a+') as out_f:
+        with open('{0}/makespans.log'.format(self.options['output_dir']), 'a+') as out_f:
             out_f.write(f'{self.simulator.simulation_time}\n')
         if hasattr(self.agent, 'probs'):
-            if path.isfile('probs.json'):
-                with open('probs.json', 'r') as in_f:
+            if path.isfile('{0}/probs.json'.format(self.options['output_dir'])):
+                with open('{0}/probs.json'.format(self.options['output_dir']), 'r') as in_f:
                     probs = json.load(in_f)['probs']
                 for action, prob in zip(range(self.env.action_size), self.agent.probs):
                     probs[action].append(prob)
@@ -202,7 +208,7 @@ logged for observing performance.
                 probs = []
                 for prob in self.agent.probs:
                     probs.append([prob])
-            with open('probs.json', 'w+') as out_f:
+            with open('{0}/probs.json'.format(self.options['output_dir']), 'w+') as out_f:
                 json.dump({'probs': probs}, out_f)
 
     def onJobSubmission(self, job: Job) -> None:

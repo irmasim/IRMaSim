@@ -67,6 +67,7 @@ if __name__ == '__main__':
     with open('options.json', 'r') as in_f:
         options = json.load(in_f)
     options['seed'] = 0
+    options['pybatsim']['output_dir'] = '.'
     options['pybatsim']['seed'] = 0
     options['pybatsim']['agent']['file'] = path.abspath('../agent_examples/actor_critic.py')
     options['agent'] = options['pybatsim']['agent']
