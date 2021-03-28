@@ -68,7 +68,7 @@ Command line arguments:
         options['platform_file'] = args.platform_file
     if args.workload_file:
         options['workload_file'] = args.workload_file
-    if args.workload_file:
+    if args.output_dir:
         options['output_dir'] = args.output_dir
     if args.agent:
         options['pybatsim']['agent']['file'] = path.abspath(args.agent)
