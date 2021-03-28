@@ -52,8 +52,7 @@ Command line arguments:
     args = parser.parse_args()
 
     # Default options
-    options = { 'seed': 0, 'pybatsim': { 'agent': { } }  }
-    options['pybatsim']['seed'] = options['seed']
+    options = { 'seed': 0 }
     # By default the library path is the data directory bundled with the code
     options['platform_library_path'] = path.join(path.dirname(__file__), 'data')
 

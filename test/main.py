@@ -58,7 +58,7 @@ if __name__ == '__main__':
         'local_cores': []
     }
     platform["clusters"][0]["local_nodes"][0]['local_processors'].append(proc_el)
-    core = res.Core(proc_el, 0, 100, 50, 0.05, 32000, 1.75, 45000, -1.85e-05,3000,3500)
+    core = res.Core(proc_el, 0, 100, 50, 0.05, 45000, 0.05, 32000, 3000, 1.75, -1.85e-05)
     platform["clusters"][0]["local_nodes"][0]['local_processors'][0]['local_cores'].append(core)
     core_pool = [core]
 

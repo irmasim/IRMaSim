@@ -4,15 +4,17 @@ Utilities for parsing and generating Workloads, Platforms and Resource Hierarchi
 
 import json
 import os.path as path
+import heapq
 import numpy
 import numpy.random as nprnd
 import resource as res
 import logging
+from Job import Job
 
-min_speed = 0.005
+#TODO: Make configurable
 min_power = 0.005
 
-def generate_workload(workload_file: str, core_pool: dict) -> (dict, dict):
+def generate_workload(workload_file: str, core_pool: list) -> (dict, dict):
     """ Parse workload file
 
 Args:
@@ -23,23 +25,18 @@ Args:
     """
 
     # Load the reference speed for operations calculation
-    reference_speed = numpy.mean(numpy.array([core.processor['gflops_per_core'] for core in core_pool['pool']]))
+    reference_speed = numpy.mean(numpy.array([core.processor['gflops_per_core'] for core in core_pool]))
     # Load JSON workload file
     with open(workload_file, 'r') as in_f:
         workload = json.load(in_f)
-    num_instructions = workload.get("num_instructions")
-    
-    if num_instructions and num_instructions.lower() == "true":
-        for profile in workload['profiles'].values():
-            profile['cpu'] = profile['cpu'] / profile['ipc']
-            profile['req_ops'] = profile['cpu']
-            print("Req_ops y CPU %lf, %lf" % (profile['req_ops'], profile['cpu']))
-    # Adjust operations for every profile
-    else:
-        for profile in workload['profiles'].values():
-            profile['req_ops'] = reference_speed * profile['req_time'] * 1e9
-            profile['cpu'] = profile['req_ops']
-            print("Req_ops y CPU %lf, %lf" % (profile['req_ops'], profile['cpu']))
+
+    queue = []
+    job_id = 0
+    for job in workload['jobs']:
+        queue.append(Job(job_id, job['subtime'], job['res'], workload['profiles'][job['profile']]))
+        job_id = job_id + 1
+    heapq.heapify(queue)
+
     # Calculate the job limits from the Workload
     job_limits = {
         'max_time': numpy.percentile(numpy.array(
@@ -51,7 +48,7 @@ Args:
         'max_mem_vol': numpy.percentile(numpy.array(
             [workload['profiles'][job['profile']]['mem_vol'] for job in workload['jobs']]), 99)
     }
-    return job_limits, workload
+    return job_limits, queue
 
 def generate_platform(platform_name: str,platform_file_path: str, platform_library_path: str) -> (dict, list):
     """ Construct platform definition from platform name, file and library.
@@ -87,7 +84,7 @@ Args:
     print(f'Built platform with %s cluster, %s nodes, %s processors and %s cores' % (
           core_pool['counters']['cluster'], core_pool['counters']['node'],
           core_pool['counters']['processor'], core_pool['counters']['core']))
-    return platform, core_pool
+    return platform, core_pool['pool']
 
 def _build_library(platform_file_path: str, platform_library_path: str) -> dict:
     types = {}
@@ -128,11 +125,9 @@ def _generate_nodes(library: dict, cluster_desc: dict, core_pool: dict, cluster_
             _generate_processors(library, node_desc, core_pool, node_el)
 
 def _node_el(library: dict, node_desc: dict, core_pool: dict, cluster_el: dict) -> dict:
-    # Transform memory from GB to MB
-    max_mem = library['node'][node_desc['type']]['memory']['capacity'] * 1000
+    max_mem = library['node'][node_desc['type']]['memory']['capacity']
     node_el = {
         'cluster': cluster_el,
-        # Memory is tracked at Node-level
         'max_mem': max_mem,
         'current_mem': max_mem,
         'local_processors': []
@@ -164,8 +159,8 @@ def _calculate_pstates(gflops_per_core: float, dynamic_power_per_core: float, st
     # For each P-state it is compute the speed in fuction of the number of p-state
 
     p_state_with_speed = []
-    for i in reversed(range(res.number_p_states)):
-        p_state_with_speed.append((gflops_per_core) * (1 / (res.number_p_states)) * (i + 1))
+#    for i in reversed(range(res.number_p_states)):
+#        p_state_with_speed.append((gflops_per_core) * (1 / (res.number_p_states)) * (i + 1))
     return p_state_with_speed
 
 def _proc_el(library: dict, proc_desc: dict, gflops_per_core: float, power_per_core: float, core_pool: dict, node_el: dict) -> dict:
@@ -192,10 +187,9 @@ def _generate_cores(library: dict, proc_desc: dict, p_state_with_speed:list, cor
 
 def _core_el(library: dict, proc_desc: dict, p_state_with_speed:list, core_pool: dict, proc_el: dict) -> None:
     processor = library['processor'][proc_desc['type']]
-    core_el = res.Core(proc_el, core_pool['counters']['core'],
-                        processor['pa'], processor['pb'] / processor['cores'],
-                        min_power, p_state_with_speed, processor['c'],
-                        processor['da'], processor['dc'], processor['b'], processor['dd'], processor['db'])
+    core_el = res.Core(proc_el, core_pool['counters']['core'], 
+                        processor['pa'], processor['pb'] / processor['cores'], min_power,
+                        processor['b'], processor['c'], processor['da'], processor['db'], processor['dc'], processor['dd'])
 
     proc_el['node']['cluster']['platform']['total_cores'] += 1
     proc_el['local_cores'].append(core_el)

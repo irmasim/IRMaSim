@@ -4,7 +4,6 @@ from entrypoints.HDeepRMWorkloadManager import HDeepRMWorkloadManager
 
 from manager import JobScheduler, ResourceManager
 from Job import Job
-
 import heapq
 from Statistics import Statistics
 
