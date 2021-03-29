@@ -7,9 +7,9 @@ import os.path as path
 import heapq
 import numpy
 import numpy.random as nprnd
-import resource as res
 import logging
-from Job import Job
+import irmasim.resource as res
+from irmasim.Job import Job
 
 #TODO: Make configurable
 min_power = 0.05

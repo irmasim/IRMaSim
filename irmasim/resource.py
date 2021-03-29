@@ -1,8 +1,8 @@
 """
 Core class and functionality for defining the Resource Hierarchy in the Decision System.
 """
-import Job
 import logging
+from irmasim.Job import Job
 
 class Core:
     """Core representing a compute resource in the Platform.

@@ -10,13 +10,12 @@ import logging
 import os.path as path
 import numpy as np
 import torch
-from Job import Job
-from agent import Agent, ClassicAgent
-from environment import Environment
+from irmasim.Job import Job
+from irmasim.agent import Agent, ClassicAgent
+from irmasim.environment import Environment
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from Simulator import Simulator
-
+    from irmasim.Simulator import Simulator
 
 class HDeepRMWorkloadManager():
     """Entrypoint for Deep Reinforcement Learning experimentation.

@@ -3,7 +3,7 @@
 
 import sys
 
-sys.path.insert(0,'../hdeeprm')
+sys.path.insert(0,'../irmasim')
 
 from Simulator import Simulator
 import heapq

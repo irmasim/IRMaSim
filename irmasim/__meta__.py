@@ -12,12 +12,12 @@ Attributes:
     URL (str): online location for the GitHub repository of the package.
 """
 
-NAME = 'hdeeprm'
+NAME = 'irmasim'
 PATH = NAME
-VERSION = '0.3.1.b1'
-AUTHOR = 'Adrián Herrera'
-AUTHOR_EMAIL = 'adr.her.arc.95@gmail.com'
+VERSION = '0.1'
+AUTHOR = 'ATC'
+AUTHOR_EMAIL = 'mib995@alumnos.unican.es'
 DESCRIPTION = 'Evaluate Deep Reinforcement Learning policies for heterogeneous Workload Management'
 KEYWORDS = ('deep reinforcement learning workload management job scheduling resource simulator '
-            'framework heterogeneous cluster batsim')
-URL = 'https://github.com/RaMdsC/hdeeprm'
+            'framework heterogeneous cluster')
+URL = 'https://github.com/Takkarpool/HDeepRM'
