@@ -8,6 +8,7 @@ import json
 import sys
 import os
 import os.path as path
+import numpy as np
 import random as rnd
 from irmasim.util import generate_workload, generate_platform
 from irmasim.Simulator import Simulator
