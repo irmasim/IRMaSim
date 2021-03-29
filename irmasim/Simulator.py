@@ -5,12 +5,14 @@ from irmasim.entrypoints.HDeepRMWorkloadManager import HDeepRMWorkloadManager
 from irmasim.manager import JobScheduler, ResourceManager
 from irmasim.Job import Job
 from irmasim.Statistics import Statistics
+from requests_unixsocket import options
+
 
 class Simulator:
 
     def __init__(self, job_limits: dict, jobs_queue: heapq, core_pool: list, platform: dict, options: dict):
         self.job_scheduler = JobScheduler(jobs_queue)
-        self.resource_manager = ResourceManager(platform, core_pool, job_limits)
+        self.resource_manager = ResourceManager(platform, core_pool, job_limits, options)
         self.scheduler = HDeepRMWorkloadManager(options, self)
         self.statistics = Statistics()
         self.simulation_time = 0

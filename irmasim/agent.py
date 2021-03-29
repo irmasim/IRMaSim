@@ -115,7 +115,7 @@ Attributes:
 
     def __init__(self, options : dict) -> None:
         super().__init__()
-        self.gamma = options['agent']['gamma']
+        self.options = options
 
     def forward(self, observation: np.ndarray) -> typing.Any:
         """Process the given observation by forwarding through inner model.
@@ -162,7 +162,7 @@ Returns:
         treward = 0
         trewards = []
         for reward in self.rewards[::- 1]:
-            treward = reward + self.gamma * treward
+            treward = reward + self.options['agent']['gamma'] * treward
             trewards.insert(0, treward)
         # Scaling
         trewards = torch.tensor(trewards)
@@ -269,7 +269,7 @@ Returns:
         logging.info('Probs %s', probabilities)
         dist = Categorical(probabilities)
         action = dist.sample()
-        with open('actions.log', 'a+') as out_f:
+        with open('{0}/actions.log'.format(self.options['output_dir']), 'a+') as out_f:
             out_f.write(f'{action.item()}\n')
         self.save_log_prob(dist.log_prob(action))
         return action.item()
@@ -290,11 +290,11 @@ Returns:
         """
 
         policy_loss = []
-        with open('log_probs.log', 'a+') as out_f:
+        with open('{0}/log_probs.log'.format(self.options['output_dir']), 'a+') as out_f:
             out_f.write(f'{self.log_probs}\n')
         for log_prob, rew_or_adv in zip(self.log_probs, rews_or_advs):
             policy_loss.append(- log_prob * rew_or_adv)
-        with open('policy_loss.log', 'a+') as out_f:
+        with open('{0}/policy_loss.log'.format(self.options['output_dir']), 'a+') as out_f:
             out_f.write(f'{policy_loss}\n')
         return policy_loss
 
@@ -387,7 +387,7 @@ Returns:
         value_loss = []
         for value, rew in zip(self.values, rews):
             value_loss.append(F.smooth_l1_loss(value.reshape(torch.tensor([rew]).shape), torch.tensor([rew])))
-        with open('value_loss.log', 'a+') as out_f:
+        with open('{0}/value_loss.log'.format(self.options['output_dir']), 'a+') as out_f:
             out_f.write(f'{value_loss}, {self.values}, {rews}\n')
         logging.debug(f'VALUE LOSS{value_loss}, {self.values}, {rews}')
         return value_loss

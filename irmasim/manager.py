@@ -119,11 +119,12 @@ Attributes:
         Key defining the Core selection policy.
     """
 
-    def __init__(self, platform: dict, core_pool: list, job_limits: dict) -> None:
+    def __init__(self, platform: dict, core_pool: list, job_limits: dict, options : dict) -> None:
         self.platform = platform
         self.core_pool = sorted(core_pool) #TODO Ordered
         # Add the job resource requirement limits to the resource hierarchy
         self.platform['job_limits'] = job_limits
+        self.options = options
         self.sorting_key = None
 
     def update_cores(self, time: float):
@@ -282,5 +283,5 @@ Returns:
 
                 lcore.set_state("RUN", now, speedup=speedup)
 
-                with open("speedup.txt", 'a') as f_speed:
+                with open('{0}/speedup.log'.format(self.options['output_dir']), 'a') as f_speed:
                     f_speed.write(f'{lcore.id},{speedup},{now},{lcore.state["served_job"].id}, {x}, {y},{n}\n')
