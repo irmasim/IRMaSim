@@ -12,7 +12,7 @@ import logging
 from Job import Job
 
 #TODO: Make configurable
-min_power = 0.005
+min_power = 0.05
 
 def generate_workload(workload_file: str, core_pool: list) -> (dict, dict):
     """ Parse workload file
@@ -67,6 +67,7 @@ Args:
     """
 
     core_pool = {
+        # TODO If the simulator shows some platform statistics, this 'counters' dict is superfluous
         'counters': {'cluster': 0, 'node': 0, 'processor': 0, 'core': 0},
         # Core pool for filtering and selecting Cores is initially empty
         'pool': [],
@@ -142,28 +143,12 @@ def _generate_processors(library: dict, node_desc: dict, core_pool: dict, node_e
         # Computational capability per Core in FLOPs
         gflops_per_core = library['processor'][proc_desc['type']]['clock_rate'] *\
                           library['processor'][proc_desc['type']]['dpflops_per_cycle']
-        # Power consumption per Core in Watts
-        power_per_core = library['processor'][proc_desc['type']]['pa'] + \
-                         (library['processor'][proc_desc['type']]['pb'] /\
-                         library['processor'][proc_desc['type']]['cores'])
         proc_el = None
-        p_state_with_speed = _calculate_pstates(gflops_per_core, power_per_core,
-                                       library['processor'][proc_desc['type']]['pb'] /
-                                       library['processor'][proc_desc['type']]['cores'])
         for _ in range(proc_desc['number']):
-            proc_el = _proc_el(library, proc_desc, gflops_per_core, power_per_core, core_pool, node_el)
-            _generate_cores(library, proc_desc, p_state_with_speed, core_pool, proc_el)
+            proc_el = _proc_el(library, proc_desc, gflops_per_core, core_pool, node_el)
+            _generate_cores(library, proc_desc, core_pool, proc_el)
 
-def _calculate_pstates(gflops_per_core: float, dynamic_power_per_core: float, static_power_per_core: float) -> list:
-    # For each processor several P-states are defined based on the number of p-state, with to more statics P-state
-    # For each P-state it is compute the speed in fuction of the number of p-state
-
-    p_state_with_speed = []
-#    for i in reversed(range(res.number_p_states)):
-#        p_state_with_speed.append((gflops_per_core) * (1 / (res.number_p_states)) * (i + 1))
-    return p_state_with_speed
-
-def _proc_el(library: dict, proc_desc: dict, gflops_per_core: float, power_per_core: float, core_pool: dict, node_el: dict) -> dict:
+def _proc_el(library: dict, proc_desc: dict, gflops_per_core: float, core_pool: dict, node_el: dict) -> dict:
     #max_mem_bw = library['processor'][proc_desc['type']]['mem_bw']
     proc_el = {
         'node': node_el,
@@ -173,7 +158,6 @@ def _proc_el(library: dict, proc_desc: dict, gflops_per_core: float, power_per_c
         #'max_mem_bw': 0,
         'current_mem_bw': 0,
         'gflops_per_core': gflops_per_core,
-        'power_per_core': power_per_core,
         'local_cores': []
     }
     node_el['cluster']['platform']['total_processors'] += 1
@@ -181,14 +165,14 @@ def _proc_el(library: dict, proc_desc: dict, gflops_per_core: float, power_per_c
     core_pool['counters']['processor'] += 1
     return proc_el
 
-def _generate_cores(library: dict, proc_desc: dict, p_state_with_speed:list, core_pool: dict, proc_el: dict) -> None:
+def _generate_cores(library: dict, proc_desc: dict, core_pool: dict, proc_el: dict) -> None:
     for _ in range(library['processor'][proc_desc['type']]['cores']):
-        _core_el(library, proc_desc, p_state_with_speed, core_pool, proc_el)
+        _core_el(library, proc_desc, core_pool, proc_el)
 
-def _core_el(library: dict, proc_desc: dict, p_state_with_speed:list, core_pool: dict, proc_el: dict) -> None:
+def _core_el(library: dict, proc_desc: dict, core_pool: dict, proc_el: dict) -> None:
     processor = library['processor'][proc_desc['type']]
     core_el = res.Core(proc_el, core_pool['counters']['core'], 
-                        processor['pa'], processor['pb'] / processor['cores'], min_power,
+                        processor['dynamic_power'], processor['static_power'] / processor['cores'], min_power,
                         processor['b'], processor['c'], processor['da'], processor['db'], processor['dc'], processor['dd'])
 
     proc_el['node']['cluster']['platform']['total_cores'] += 1

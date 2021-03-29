@@ -2,9 +2,9 @@
    "nb_res": 60,
    "num_instructions": "TRUE",
    "jobs": [
-      {"id": "job57218", "subtime": 1, "res": 1, "profile": "tester"}
+      {"id": "job57218", "subtime": 2, "res": 1, "profile": "tester"}
    ],
    "profiles": {
-      "tester": {"type": "parallel_homogeneous", "req_ops": 1000000, "ipc": 2, "req_time": 10, "mem": 50, "mem_vol": 1000000 }
+      "tester": { "req_ops": 1000000, "ipc": 1, "req_time": 10, "mem": 50, "mem_vol": 1000000 }
    }
 }

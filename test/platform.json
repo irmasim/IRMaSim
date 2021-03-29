@@ -33,8 +33,8 @@
          "uarch": "basic_arch", "id": "n1134", "type": "CPU",
          "cores": 1, "clock_rate": 0.001,
          "llc_size": 8, "power": 100, "dpflops_per_cycle": 1,
-         "pa": 50, "pb": 50, 
-         "b": -1.85e-05, "c": 32000, "da": 1.7, "db": 35005, "dc": 45000, "dd": 3000
+         "static_power": 50, "dynamic_power": 100, 
+         "b": -1.85e-05, "c": 32000, "da": 1.75, "db": 3500, "dc": 45000, "dd": 3000
       }
    }
 }

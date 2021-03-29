@@ -21,7 +21,7 @@ if __name__ == '__main__':
     }
 
     job1 = Job(0, 2, 1, {"req_ops": 1000000, "mem": 50, "ipc": 1,
-                         "req_time":10, "mem_vol":1000000, "type":"parallel homogeneos"})
+                         "req_time":10, "mem_vol":1000000})
 
 
     cola = [job1]
@@ -54,11 +54,10 @@ if __name__ == '__main__':
         'id': 0,
         'current_mem_bw': 0,
         'gflops_per_core': 0.001,
-        'power_per_core': 100,
         'local_cores': []
     }
     platform["clusters"][0]["local_nodes"][0]['local_processors'].append(proc_el)
-    core = res.Core(proc_el, 0, 100, 50, 0.05, 45000, 0.05, 32000, 3000, 1.75, -1.85e-05)
+    core = res.Core(proc_el, 0, 100, 50, 0.05, -1.85e-05, 32000, 1.75, 3500, 45000, 3000)
     platform["clusters"][0]["local_nodes"][0]['local_processors'][0]['local_cores'].append(core)
     core_pool = [core]
 

@@ -51,6 +51,7 @@ Command line arguments:
     args = parser.parse_args()
 
     # Default options
+    # TODO Use the random seed
     options = { 'seed': 0, 'output_dir': '.' }
     # By default the library path is the data directory bundled with the code
     options['platform_library_path'] = path.join(path.dirname(__file__), 'data')
