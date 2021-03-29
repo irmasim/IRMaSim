@@ -11,7 +11,6 @@ class Job:
         self.req_time = profile['req_time']
         self.mem = profile['mem']
         self.mem_vol = profile['mem_vol']
-        self.type = profile['type']
         self.last_update = subtime
         self.allocation = []
         self.core_finish = []
