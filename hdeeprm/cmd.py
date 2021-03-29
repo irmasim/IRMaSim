@@ -9,6 +9,7 @@ import sys
 import os
 import os.path as path
 import random as rnd
+# TODO remove depencencies with pybatsim
 import evalys.jobset as ej
 import evalys.utils as eu
 import evalys.visu.core as evc
@@ -46,7 +47,8 @@ Command line arguments:
 
     parser.add_argument('-a', '--agent', type=str, help='File with the learning agent definition')
     parser.add_argument('-im', '--inmodel', type=str, help='Path for previous model loading')
-    parser.add_argument('-om', '--outmodel', type=str, help='Path for saving new model')
+    parser.add_argument('-om', '--outmodel', type=str, help='Path for saving new model, can be the same as the inmodel')
+    # TODO Probar con varias ejecuciones
     parser.add_argument('-nr', '--nbruns', type=int, default=1, help='Number of simulations to run')
     args = parser.parse_args()
 
@@ -72,13 +74,11 @@ Command line arguments:
     if args.output_dir:
         options['output_dir'] = args.output_dir
     if args.agent:
-        options['pybatsim']['agent']['file'] = path.abspath(args.agent)
+        options['agent']['file'] = path.abspath(args.agent)
     if args.inmodel:
-        options['pybatsim']['agent']['input_model'] = path.abspath(args.inmodel)
+        options['agent']['input_model'] = path.abspath(args.inmodel)
     if args.outmodel:
-        options['pybatsim']['agent']['output_model'] = path.abspath(args.outmodel)
-    if args.outmodel:
-        options['pybatsim']['agent']['output_model'] = path.abspath(args.outmodel)
+        options['agent']['output_model'] = path.abspath(args.outmodel)
 
     # Check for minimum operating parameters
     if not 'platform_name' in options:
