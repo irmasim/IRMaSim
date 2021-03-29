@@ -4,7 +4,7 @@ Setup for building HDeepRM package.
 
 import os.path as path
 import setuptools
-import hdeeprm.__meta__ as meta
+import irmasim.__meta__ as meta
 
 def main() -> None:
     """Entry point for the setup.
@@ -36,11 +36,7 @@ Executes the setup and installs the HDeepRM package.
         install_requires=requirements,
         entry_points={
             'console_scripts': [
-                'hdeeprm-launch = hdeeprm.cmd:launch',
-                'hdeeprm-visual = hdeeprm.cmd:visual',
-                'hdeeprm-metrics = hdeeprm.cmd:metrics',
-                'hdeeprm-jobstat = hdeeprm.cmd:jobstat',
-                'hdeeprm-clean = hdeeprm.cmd:clean'
+                'irmasim = irmasim.cmd:launch',
             ]
         },
         include_package_data=True)

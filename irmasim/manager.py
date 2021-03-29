@@ -3,8 +3,8 @@ Defines HDeepRM managers, which are in charge of mapping Jobs to resources.
 """
 
 import random
-from Job import Job
 import heapq
+from irmasim.Job import Job
 
 class JobScheduler:
     """Selects Jobs from the Job Queue to be processed in the Platform.

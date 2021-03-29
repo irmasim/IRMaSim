@@ -6,7 +6,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from hdeeprm.agent import PolicyLearningAgent
+from irmasim.agent import PolicyLearningAgent
 
 class ReinforceAgent(PolicyLearningAgent):
     """Class for the agent implementing the REINFORCE algorithm.

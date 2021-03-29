@@ -1,12 +1,10 @@
-from typing import TYPE_CHECKING
-
-from entrypoints.HDeepRMWorkloadManager import HDeepRMWorkloadManager
-
-from manager import JobScheduler, ResourceManager
-from Job import Job
-
 import heapq
-from Statistics import Statistics
+
+# TODO Consider removing the entrypoints folder/package
+from irmasim.entrypoints.HDeepRMWorkloadManager import HDeepRMWorkloadManager
+from irmasim.manager import JobScheduler, ResourceManager
+from irmasim.Job import Job
+from irmasim.Statistics import Statistics
 
 class Simulator:
 

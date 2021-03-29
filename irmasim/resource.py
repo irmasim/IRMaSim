@@ -1,8 +1,8 @@
 """
 Core class and functionality for defining the Resource Hierarchy in the Decision System.
 """
-import Job
 import logging
+from irmasim.Job import Job
 
 class Core:
     """Core representing a compute resource in the Platform.
@@ -58,18 +58,18 @@ Attributes:
     """
 
     def __init__(self, processor: dict, id: int, dynamic_power:float, static_power:float, min_power:float,
-                 c:int, da:int, dc:int, b:int, dd:int, db:int) -> None:
+                 b:int, c:int, da:int, db:int, dc:int, dd:int) -> None:
         self.processor = processor
         self.id = id
         self.dynamic_power = dynamic_power
         self.static_power = static_power
         self.min_power = min_power
+        self.b = b
         self.c = c
         self.da = da
-        self.dc = dc
-        self.b = b
-        self.dd = dd
         self.db = db
+        self.dc = dc
+        self.dd = dd
         # By default, core is idle
         self.state = {
             'speedup': 0.0,
