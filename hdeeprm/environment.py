@@ -98,8 +98,9 @@ Attributes:
         Last value of the job queue length. Used for calculating the variation ratio.
     """
 
-    def __init__(self, workload_manager, env_options: dict) -> None:
+    def __init__(self, workload_manager, options: dict) -> None:
         self.workload_manager = workload_manager
+        self.env_options = options['env']
         # Selection policies
         self.job_selections = OrderedDict({
             'random': None,
@@ -120,14 +121,14 @@ Attributes:
         })
         # Parse the actions selected by the user
         self.actions = []
-        if 'actions' in env_options:
-            for sel in env_options['actions']['selection']:
+        if 'actions' in self.env_options:
+            for sel in self.env_options['actions']['selection']:
                 for job_sel, core_sels in sel.items():
                     for core_sel in core_sels:
                         self.actions.append(
                             (self.job_selections[job_sel], self.core_selections[core_sel])
                         )
-            self.with_void = env_options['actions']['void']
+            self.with_void = self.env_options['actions']['void']
         else:
             for job_sel in self.job_selections.values():
                 for core_sel in self.core_selections.values():
@@ -159,8 +160,8 @@ Attributes:
             }
         }
         # Set the observation type
-        if 'observation' in env_options:
-            observation_type = env_options['observation']
+        if 'observation' in self.env_options:
+            observation_type = self.env_options['observation']
         else:
             observation_type = 'normal'
         self.observation = observation_types[observation_type]['observation']
@@ -178,8 +179,8 @@ Attributes:
             'energy_consumption': self.energy_consumption_reward,
             'edp': self.edp_reward
         }
-        self.reward = objective_to_reward[env_options['objective']]
-        self.queue_sensitivity = env_options['queue_sensitivity']
+        self.reward = objective_to_reward[self.env_options['objective']]
+        self.queue_sensitivity = self.env_options['queue_sensitivity']
         self.last_job_queue_length = 0
 
     @property

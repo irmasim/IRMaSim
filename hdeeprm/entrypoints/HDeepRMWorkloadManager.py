@@ -73,8 +73,8 @@ Attributes:
         except IOError:
             logging.info("Not found reset.log")
 
-        self.env = Environment(self, options['env'])
-        self.agent, self.optimizer = self.create_agent(options['agent'], options['seed'])
+        self.env = Environment(self, options)
+        self.agent, self.optimizer = self.create_agent(options)
         self.time_last_step = 0
         self.step = 0
         self.flow_flags = {
@@ -85,7 +85,7 @@ Attributes:
         }
 
 
-    def create_agent(self, agent_options: dict, seed: int) -> tuple:
+    def create_agent(self, options: dict) -> tuple:
         """Generates the Agent based on the agent options.
 
 The agent class is obtained from the user provided file. It is instantiated according to its parent
@@ -98,7 +98,7 @@ Args:
 Returns:
     A tuple with the created Agent and the optimizer in case of training.
         """
-
+        agent_options = options['agent']
         optimizer = None
         if agent_options['type'] == 'CLASSIC':
             #Selection of classic policy
@@ -134,8 +134,7 @@ Returns:
             agent_class = [cl for na, cl in inspect.getmembers(agent_module, inspect.isclass)
                            if getattr(cl, '__module__', None) == agent_module_name
                            and issubclass(cl, Agent)][0]
-            agent = agent_class(float(agent_options['gamma']), int(agent_options['hidden']),
-                                self.env.action_size, self.env.observation_size)
+            agent = agent_class(options, self.env.action_size, self.env.observation_size)
 
             # Load previously trained model if the user indicated as option
             optimizer : torch.optim = torch.optim.Adam(agent.parameters(), lr=float(agent_options['lr']))

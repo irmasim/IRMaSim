@@ -113,9 +113,9 @@ Attributes:
         viceversa.
     """
 
-    def __init__(self, gamma: float) -> None:
+    def __init__(self, options : dict) -> None:
         super().__init__()
-        self.gamma = gamma
+        self.gamma = options['agent']['gamma']
 
     def forward(self, observation: np.ndarray) -> typing.Any:
         """Process the given observation by forwarding through inner model.
@@ -185,8 +185,8 @@ Attributes:
         Log probabilities for loss calculation at the end of the simulation.
     """
 
-    def __init__(self, gamma: float) -> None:
-        super().__init__(gamma)
+    def __init__(self, options : dict) -> None:
+        super().__init__(options)
         self.probs = None
         self.log_probs = []
 
@@ -283,7 +283,7 @@ For higher rewards, losses are lower.
 Args:
     rews_or_advs (list):
         List with transformed rewards or advantages (see
-        `Actor-Critic example <TODO>`_).
+        `Actor-Critic example).
 
 Returns:
     List with the policy losses.
@@ -320,8 +320,8 @@ Attributes:
         Values for loss calculation at the end of the simulation.
     """
 
-    def __init__(self, gamma: float) -> None:
-        super().__init__(gamma)
+    def __init__(self, options : dict) -> None:
+        super().__init__(options)
         self.values = []
 
     def forward(self, observation: np.ndarray) -> torch.Tensor:

@@ -45,8 +45,10 @@ Attributes:
         The inner model implementation with the Actor and Critic.
     """
 
-    def __init__(self, gamma: float, hidden: int, action_size: int, observation_size: int) -> None:
-        super(ActorCriticAgent, self).__init__(gamma)
+    def __init__(self, options : dict, action_size: int, observation_size: int) -> None:
+        gamma = options['agent']['gamma']
+        hidden = options['agent']['hidden']
+        super(ActorCriticAgent, self).__init__(options)
         self.input = nn.Linear(observation_size, hidden)
         self.actor_hidden_0 = nn.Linear(hidden, hidden)
         self.actor_hidden_1 = nn.Linear(hidden, hidden)
