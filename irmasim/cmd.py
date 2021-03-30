@@ -63,6 +63,8 @@ Command line arguments:
         options['workload_file'] = args.workload_file
     if args.output_dir:
         options['output_dir'] = args.output_dir
+        if not path.exists(options['output_dir']):
+            os.mkdir(options['output_dir'])
     if args.agent:
         options['agent']['file'] = path.abspath(args.agent)
     if args.inmodel:
