@@ -40,13 +40,16 @@ Command line arguments:
     parser.add_argument('-om', '--outmodel', type=str, help='Path for saving new model, can be the same as the inmodel')
     # TODO Probar con varias ejecuciones
     parser.add_argument('-nr', '--nbruns', type=int, default=1, help='Number of simulations to run')
+    parser.add_argument('-v', '--verbose', action="store_true", help='Remove prints in stdout')
     args = parser.parse_args()
-
     # Default options
     # TODO Use the random seed
     options = { 'seed': 0, 'output_dir': '.' }
     # By default the library path is the data directory bundled with the code
     options['platform_library_path'] = path.join(path.dirname(__file__), 'data')
+
+    if args.verbose:
+        sys.stdout = open("/dev/null", "w")
 
     # Load options from config file
     if args.options_file:
@@ -71,6 +74,7 @@ Command line arguments:
         options['agent']['input_model'] = path.abspath(args.inmodel)
     if args.outmodel:
         options['agent']['output_model'] = path.abspath(args.outmodel)
+
 
     # Check for minimum operating parameters
     if not 'platform_name' in options:

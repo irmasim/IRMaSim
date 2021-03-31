@@ -39,6 +39,7 @@ In order to download and install it, the following software is needed:
 - Pip, the Python package manager. If not already available with the Python
   installation, follow the
   `official guide <https://pip.pypa.io/en/stable/installing/>`_.
+-Python pytest sudo apt-get install python3-pytest ejecutar pytest-3 #TODO
 
 Installation
 ~~~~~~~~~~~~
