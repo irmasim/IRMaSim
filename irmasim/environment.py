@@ -298,21 +298,21 @@ Returns:
                          reqn, pmin, p25, pmed, p75, pmax)
             observation.extend([pmin, p25, pmed, p75, pmax])
         # Fraction of queue variation since last observation
-        if not self.last_job_queue_length and self.workload_manager.simulator.nb_pending_jobs:
+        if not self.last_job_queue_length and self.workload_manager.simulator.nb_pending_jobs():
             # Past queue was empty and current queue has jobs
             variation_ratio = 1.0
         else:
             # 0.0 when current queue is 1 x queue_sensitivity less than past queue
             # 1.0 when current queue is 1 x queue_sensitivity more than past queue
             # 0.5 indicates no variability
-            variation = self.workload_manager.simulator.nb_pending_jobs \
+            variation = self.workload_manager.simulator.nb_pending_jobs() \
                         - self.last_job_queue_length
             variation_ratio = to_range(
-                variation / min(self.workload_manager.simulator.nb_pending_jobs,
+                variation / min(self.workload_manager.simulator.nb_pending_jobs(),
                                 self.last_job_queue_length)
             )
         observation.append(variation_ratio)
-        self.last_job_queue_length = self.workload_manager.simulator.nb_pending_jobs
+        self.last_job_queue_length = self.workload_manager.simulator.nb_pending_jobs()
         return np.array(observation, dtype=np.float32)
 
     def step(self, action: int) -> None:
@@ -527,10 +527,16 @@ Returns:
     """
 
     def edp_reward(self) -> float:
-        return -1 * self.workload_manager.simulator.get_edp_last_period()
+        if not self.workload_manager.last_reward:
+            return -1 * self.workload_manager.simulator.get_edp_last_period()
+        else:
+            return -1 * self.workload_manager.simulator.get_final_edp()
 
     def energy_consumption_reward(self) -> float:
-        return -1 * self.workload_manager.simulator.get_energy_last_period()
+        if not self.workload_manager.last_reward:
+            return -1 * self.workload_manager.simulator.get_energy_last_period()
+        else:
+            return -1 * self.workload_manager.simulator.get_final_energy()
 
     def render(self, mode='human'):
         """Not used."""

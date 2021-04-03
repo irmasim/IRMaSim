@@ -1,4 +1,5 @@
 import heapq
+import math
 
 # TODO Consider removing the entrypoints folder/package
 from irmasim.entrypoints.HDeepRMWorkloadManager import HDeepRMWorkloadManager
@@ -14,7 +15,7 @@ class Simulator:
         self.job_scheduler = JobScheduler(jobs_queue)
         self.resource_manager = ResourceManager(platform, core_pool, job_limits, options)
         self.scheduler = HDeepRMWorkloadManager(options, self)
-        self.statistics = Statistics()
+        self.statistics = Statistics(options)
         self.simulation_time = 0
         self.start_simulation()
 
@@ -35,7 +36,9 @@ class Simulator:
             self.finish_jobs_now()
             self.scheduler.onNoMoreEvents()
             next_step = self.calculate_next_scheduler_step()
-            self.statistics.calculate_energy_and_edp(self.resource_manager.core_pool, next_step - self.simulation_time)
+            self.statistics.calculate_energy_and_edp(self.resource_manager.core_pool,
+                                                     round(next_step - self.simulation_time,9),
+                                                     all_jobs_scheduler=(self.job_scheduler.nb_jobs_queue_left == 0))
             self.simulation_time = next_step
             self.resource_manager.update_cores(self.simulation_time)
 
@@ -49,13 +52,17 @@ class Simulator:
             self.scheduler.onNoMoreEvents()
             next_step = self.calculate_next_scheduler_step()
             if next_step != float("inf"):
-                self.statistics.calculate_energy_and_edp(self.resource_manager.core_pool, next_step - self.simulation_time)
+                self.statistics.calculate_energy_and_edp(self.resource_manager.core_pool,
+                                                         round(next_step - self.simulation_time,9),
+                                                         all_jobs_scheduler=True)
                 self.simulation_time = next_step
                 self.resource_manager.update_cores(self.simulation_time)
         self.end_simulation()
 
     def end_simulation(self) -> None:
         self.scheduler.onSimulationEnds()
+        self.statistics.write_results(self.simulation_time)
+        print("Finish Simulation")
 
     def nb_pending_jobs(self) -> int:
         return self.job_scheduler.nb_pending_jobs
@@ -63,17 +70,16 @@ class Simulator:
     def finish_jobs_now(self) -> None:
         finish_jobs = []
         for job in self.job_scheduler.jobs_running:
-            core_job = self.resource_manager.core_pool[job.allocation[0]]
-            all_inactive = all(not core.state['served_job']
-                                   for core in core_job.processor['local_cores'])
-            if all_inactive:
+
+            all_finish = all(self.resource_manager.core_pool[id].state['job_remaining_ops'] == 0
+                                   for id in job.allocation)
+            if all_finish:
                 finish_jobs.append(job)
 
         for job in finish_jobs:
             self.scheduler.onJobCompletion(job)
             self.job_scheduler.jobs_running.remove(job)
-            self.resource_manager.update_state(job, [x for x in job.allocation], 'FREE',
-                                               self.simulation_time, free_resource_job=True)
+            job.allocation = None
 
     def peek_jobs_now(self) -> None:
         while self.job_scheduler.nb_jobs_queue_left > 0 and \
@@ -105,9 +111,10 @@ class Simulator:
         time_finish_one_core = float("inf")
         for job in self.job_scheduler.jobs_running:
 
-            time_finish_core_job = min([self.resource_manager.core_pool[id].state['job_remaining_ops'] / \
-                                self.resource_manager.core_pool[id].state['current_gflops'] for id in job.allocation
-                                     if self.resource_manager.core_pool[id].state['job_remaining_ops'] != 0])
+            time_finish_core_job = min([math.ceil(self.resource_manager.core_pool[id].state['job_remaining_ops'] / \
+                                self.resource_manager.core_pool[id].state['current_gflops'] * 1e9)/1e9
+                                for id in job.allocation
+                                if self.resource_manager.core_pool[id].state['job_remaining_ops'] != 0])
 
             if time_finish_one_core > time_finish_core_job:
                 time_finish_one_core = time_finish_core_job
@@ -115,8 +122,8 @@ class Simulator:
 
         if self.job_scheduler.nb_jobs_queue_left > 0:
             time_min_job_start = self.job_scheduler.show_first_job_in_queue().subtime
-            if time_min_job_start <= time_finish_one_core:
-                return self.simulation_time + time_min_job_start
+            if time_min_job_start <= self.simulation_time + time_finish_one_core:
+                return time_min_job_start
 
         return self.simulation_time + time_finish_one_core
 
@@ -152,6 +159,12 @@ class Simulator:
 
     def get_edp_last_period(self) -> float:
         return self.statistics.edp[-1]
+
+    def get_final_edp(self) -> float:
+        return sum(self.statistics.latest_edp)
+
+    def get_final_energy(self) -> float:
+        return sum(self.statistics.latest_energy)
 
     def no_more_static_jobs(self) -> bool:
         return len(self.job_scheduler.jobs_running) > 0

@@ -279,7 +279,7 @@ Returns:
                     else:
                         return lcore.b*(x-lcore.c)+1
 
-                speedup = perf(x, y, n)
+                speedup = round(perf(x, y, n),9)
 
                 lcore.set_state("RUN", now, speedup=speedup)
 

@@ -11,7 +11,6 @@ class Job:
         self.req_time = profile['req_time']
         self.mem = profile['mem']
         self.mem_vol = profile['mem_vol']
-        self.last_update = subtime
         self.allocation = []
         self.core_finish = []
 
@@ -22,4 +21,6 @@ class Job:
         return self.subtime < other.subtime
 
     def __eq__(self, other):
+        if other == None:
+            return False
         return self.id == other.id

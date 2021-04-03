@@ -3,6 +3,7 @@ Core class and functionality for defining the Resource Hierarchy in the Decision
 """
 import logging
 from irmasim.Job import Job
+import math
 
 class Core:
     """Core representing a compute resource in the Platform.
@@ -79,7 +80,8 @@ Attributes:
             'job_remaining_ops': 0.0,
             # When active, the Core is serving a Job which is stored as part of its state
             # Remaining operations and updates along simulation are tracked
-            'served_job': None
+            'served_job': None,
+            'last_update' : 0.0
         }
 
     def set_state(self, state: str, now: float, speedup : float = 1, new_served_job: Job = None) -> None:
@@ -103,6 +105,7 @@ Args:
                 new_served_job.last_update = now
                 self.state['served_job'] = new_served_job
                 self.state['job_remaining_ops'] = new_served_job.req_ops
+                self.state['last_update'] = now
                 self.state['current_mem_bw'] = new_served_job.mem_vol / \
                                                (new_served_job.req_ops / (self.processor['gflops_per_core'] * 1e9))
 
@@ -144,13 +147,13 @@ Args:
         Current simulation time in seconds.
         """
         if self.state['served_job'] is not None:
-            time_delta = now - self.state['served_job'].last_update
-            self.state['job_remaining_ops'] -= self.state['current_gflops'] * time_delta
+            time_delta = round(now - self.state['last_update'], 9)
+            self.state['job_remaining_ops'] -= math.ceil(self.state['current_gflops'] * time_delta)
             if self.state['job_remaining_ops'] <= 0:
                 self.processor['current_mem_bw'] -= self.state['current_mem_bw']
                 self.state['current_mem_bw'] = 0.0
                 self.state['job_remaining_ops'] = 0
-            self.state['served_job'].last_update = now
+            self.state['last_update'] = now
 
     def get_remaining_per(self) -> float:
         """Provides the remaining percentage of the Job being served.

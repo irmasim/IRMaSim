@@ -207,7 +207,7 @@ logged for observing performance.
                 for prob in self.agent.probs:
                     probs.append([prob])
             with open('{0}/probs.json'.format(self.options['output_dir']), 'w+') as out_f:
-                json.dump({'probs': probs}, out_f)
+                json.dump({'probs': probs}, out_f, indent=4)
 
     def onJobSubmission(self, job: Job) -> None:
         """Set the "jobs_submitted" flag to ``True``.
@@ -231,7 +231,7 @@ Further details on this handler on the base
         """
 
         if self.flow_flags['action_taken'] and self.reward != "makespan" and (self.simulator.nb_pending_jobs() != 0
-                                                                    or self.simulator.no_more_static_jobs == False):
+                                                                    or not self.simulator.no_more_static_jobs()):
             # The Agent is rewarded
             self.agent.rewarded(self.env)
             self.time_last_step = self.simulator.simulation_time

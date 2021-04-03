@@ -1,0 +1,11 @@
+{
+   "nb_res": 60,
+   "num_instructions": "TRUE",
+   "jobs": [
+      {"id": "job57218", "subtime": 2, "res": 1, "profile": "tester"},
+	{"id": "job57219", "subtime": 2.5, "res": 1, "profile": "tester"}
+   ],
+   "profiles": {
+      "tester": { "req_ops": 1000000, "ipc": 1, "req_time": 10, "mem": 50, "mem_vol": 1000000 }
+   }
+}
