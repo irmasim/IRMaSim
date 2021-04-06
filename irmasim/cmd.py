@@ -4,12 +4,15 @@ Command line scripts for managing HDeepRM experiments.
 
 import argparse as ap
 import csv
+import copy
 import json
 import sys
 import os
+import pickle
 import os.path as path
 import numpy as np
 import random as rnd
+import shutil
 from irmasim.util import generate_workload, generate_platform
 from irmasim.Simulator import Simulator
 
@@ -38,7 +41,6 @@ Command line arguments:
     parser.add_argument('-a', '--agent', type=str, help='File with the learning agent definition')
     parser.add_argument('-im', '--inmodel', type=str, help='Path for previous model loading')
     parser.add_argument('-om', '--outmodel', type=str, help='Path for saving new model, can be the same as the inmodel')
-    # TODO Probar con varias ejecuciones
     parser.add_argument('-nr', '--nbruns', type=int, default=1, help='Number of simulations to run')
     parser.add_argument('-v', '--verbose', action="store_true", help='Remove prints in stdout')
     args = parser.parse_args()
@@ -102,8 +104,15 @@ Command line arguments:
     jobs = None
     job_limit, jobs = generate_workload(options['workload_file'], core_pool)
 
-    # Launch both PyBatsim and Batsim instances for running the simulation
-    for _ in range(args.nbruns):
-        Simulator(job_limit, jobs, core_pool, platform, options)
-    sys.exit(0)
+    data = {"job_limit" : job_limit, "jobs": jobs, "platform": platform, "core_pool": core_pool}
+    with open('{0}/data_tmp.pickle'.format(options['output_dir']), 'wb') as out_f:
+        pickle.dump(data, out_f)
 
+    for _ in range(args.nbruns):
+        with open('{0}/data_tmp.pickle'.format(options['output_dir']), 'rb') as in_f:
+            data = pickle.load(in_f)
+        Simulator(data["job_limit"], data["jobs"], data["core_pool"],
+                  data["platform"], copy.deepcopy(options))
+
+    shutil.rmtree(options['output_dir']+"/data_tmp.pickle")
+    sys.exit(0)

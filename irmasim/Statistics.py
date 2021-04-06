@@ -10,7 +10,7 @@ class Statistics:
         self.options = options
 
     def calculate_energy_and_edp(self, core_pool : list, diff_time : float, all_jobs_scheduler = False):
-        total_power = sum([core.state['current_power'] for core in core_pool])
+        total_power = round(sum([core.state['current_power'] for core in core_pool]),9)
         self.energy.append(total_power * diff_time)
         self.edp.append(round(total_power * (diff_time ** 2),9))
         if all_jobs_scheduler:

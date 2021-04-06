@@ -73,12 +73,12 @@ class Simulator:
 
             all_finish = all(self.resource_manager.core_pool[id].state['job_remaining_ops'] == 0
                                    for id in job.allocation)
-            if all_finish:
+            if job.is_job_finished():
                 finish_jobs.append(job)
 
         for job in finish_jobs:
             self.scheduler.onJobCompletion(job)
-            self.job_scheduler.jobs_running.remove(job)
+            self.job_scheduler.job_complete(job)
             job.allocation = None
 
     def peek_jobs_now(self) -> None:
@@ -98,6 +98,7 @@ class Simulator:
             resources = self.resource_manager.get_resources(job, self.simulation_time)
             if not resources:
                 serviceable = False
+
             else:
                 job.allocation = resources
                 scheduled_jobs.append(job)
@@ -105,7 +106,7 @@ class Simulator:
         # Execute the jobs if they exist
         if scheduled_jobs:
             self.job_scheduler.nb_active_jobs += len(scheduled_jobs)
-            self.job_scheduler.jobs_running.extend(scheduled_jobs)
+            self.job_scheduler.run_jobs(scheduled_jobs)
 
     def calculate_next_scheduler_step(self) -> float:
         time_finish_one_core = float("inf")

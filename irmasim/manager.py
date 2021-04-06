@@ -76,8 +76,8 @@ It uses the cached peeked Job for removal.
     def pop_first_job_in_queue(self) -> Job:
         return heapq.heappop(self.jobs_queue)
 
-    def run_job(self, job : Job) -> None:
-        self.jobs_running.append(job)
+    def run_jobs(self, jobs : list) -> None:
+        self.jobs_running.extend(jobs)
 
     def job_complete(self, job: Job):
         self.jobs_running.remove(job)
@@ -130,7 +130,8 @@ Attributes:
     def update_cores(self, time: float):
         for core in self.core_pool:
             core.update_completion(time)
-            if core.state['job_remaining_ops'] == 0:
+            if core.state['job_remaining_ops'] == 0 and core.state['served_job'] is not None:
+                core.state['served_job'].core_finish.append(core.id)
                 self.update_state(core.state['served_job'], [core.id], "FREE", time)
 
     def get_resources(self, job: Job, now: float) -> list or None:

@@ -262,7 +262,7 @@ Returns:
                              )
                         if otype != 'small':
                             for core in processor['local_cores']:
-                                if not core.state['served_job']:
+                                if core.state['served_job'] is None:
                                     # If the core is not active, remaining percentage is 0.0
                                     remaining_per = 0.0
                                 else:
