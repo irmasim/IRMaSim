@@ -12,7 +12,6 @@ import pickle
 import os.path as path
 import numpy as np
 import random as rnd
-import shutil
 from irmasim.util import generate_workload, generate_platform
 from irmasim.Simulator import Simulator
 
@@ -114,5 +113,5 @@ Command line arguments:
         Simulator(data["job_limit"], data["jobs"], data["core_pool"],
                   data["platform"], copy.deepcopy(options))
 
-    shutil.rmtree(options['output_dir']+"/data_tmp.pickle")
+    os.remove(options['output_dir']+"/data_tmp.pickle")
     sys.exit(0)

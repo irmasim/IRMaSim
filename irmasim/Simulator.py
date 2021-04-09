@@ -23,7 +23,6 @@ class Simulator:
         first_job = self.job_scheduler.pop_first_job_in_queue()
         self.simulation_time = first_job.subtime
         self.statistics.calculate_energy_and_edp(self.resource_manager.core_pool, self.simulation_time)
-        first_job.time_left = first_job.req_time
         self.scheduler.onJobSubmission(first_job)
         self.job_scheduler.new_job(first_job)
         self.start_static_jobs()
@@ -124,8 +123,9 @@ class Simulator:
         if self.job_scheduler.nb_jobs_queue_left > 0:
             time_min_job_start = self.job_scheduler.show_first_job_in_queue().subtime
             if time_min_job_start <= self.simulation_time + time_finish_one_core:
+                print("TRABAJO",time_min_job_start)
                 return time_min_job_start
-
+        print("ACABA TRABAJO",self.simulation_time + time_finish_one_core)
         return self.simulation_time + time_finish_one_core
 
 

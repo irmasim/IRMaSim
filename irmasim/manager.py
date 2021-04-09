@@ -177,6 +177,7 @@ Returns:
             else:
                 # There are no sufficient resources, revert the state of the
                 # temporarily selected
+                print("Memoria Insuficiente")
                 self.update_state(job, selected, 'FREE', now, free_resource_job=True)
                 return None
         return selected
