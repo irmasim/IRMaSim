@@ -27,7 +27,7 @@ class Statistics:
             }
             json.dump(data, out_f, indent=4)
         with open('{0}/jobs.log'.format(self.options['output_dir']), 'w') as out_f:
-            jobs = "Name, subtime ,start_runing, finish, execution_time, profile\n"
+            jobs = "Name, subtime ,start_runing, finish, execution_time, instructions, profile\n"
             for i in finished_jobs:
-                jobs += i.name+","+str(i.start_running)+","+str(i.finish)+","+str(i.finish-i.start_running)+","+str(i.type)+"\n"
+                jobs += i.name+","+str(i.start_running)+","+str(i.finish)+","+str(i.finish-i.start_running)+","+str(i.req_ops)+","+str(i.type)+"\n"
             out_f.write(jobs)

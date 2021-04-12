@@ -1,3 +1,4 @@
+import math
 class Job:
 
 
@@ -8,7 +9,7 @@ class Job:
         self.profile = profile
         self.subtime = subtime
         self.resources = resources
-        self.req_ops = profile['req_ops']
+        self.req_ops = math.ceil(profile['req_ops'] / profile['ipc'])
         self.ipc = profile['ipc']
         self.req_time = profile['req_time']
         self.mem = profile['mem']
