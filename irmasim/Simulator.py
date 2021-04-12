@@ -6,7 +6,6 @@ from irmasim.entrypoints.HDeepRMWorkloadManager import HDeepRMWorkloadManager
 from irmasim.manager import JobScheduler, ResourceManager
 from irmasim.Job import Job
 from irmasim.Statistics import Statistics
-from requests_unixsocket import options
 
 
 class Simulator:
