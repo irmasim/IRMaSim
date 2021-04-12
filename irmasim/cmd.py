@@ -12,6 +12,7 @@ import pickle
 import os.path as path
 import numpy as np
 import random as rnd
+import time
 from irmasim.util import generate_workload, generate_platform
 from irmasim.Simulator import Simulator
 
@@ -29,7 +30,7 @@ Command line arguments:
     | ``nbruns`` - (Optional) Number of train runs for the learning agent.
     """
 
-
+    start_time = time.time()
     parser = ap.ArgumentParser(description='Launches IRMaSim experiments')
     parser.add_argument('options_file', type=str, nargs='?', help='File defining the experiment in json format')
     parser.add_argument('-n', '--platform_name', type=str, help='Name of the platform to simulate')
@@ -114,4 +115,5 @@ Command line arguments:
                   data["platform"], copy.deepcopy(options))
 
     os.remove(options['output_dir']+"/data_tmp.pickle")
+    print("Execution time " + time.time()-start_time + " seconds")
     sys.exit(0)
