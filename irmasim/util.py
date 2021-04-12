@@ -33,7 +33,7 @@ Args:
     queue = []
     job_id = 0
     for job in workload['jobs']:
-        queue.append(Job(job_id, job['subtime'], job['res'], workload['profiles'][job['profile']]))
+        queue.append(Job(job_id, job["id"], job['subtime'], job['res'], workload['profiles'][job['profile']],job['profile']))
         job_id = job_id + 1
     heapq.heapify(queue)
 

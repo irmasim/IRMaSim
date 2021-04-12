@@ -115,5 +115,5 @@ Command line arguments:
                   data["platform"], copy.deepcopy(options))
 
     os.remove(options['output_dir']+"/data_tmp.pickle")
-    print("Execution time " + time.time()-start_time + " seconds")
+    print("Execution time " + str(time.time()-start_time) + " seconds")
     sys.exit(0)

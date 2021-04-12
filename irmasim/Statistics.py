@@ -17,7 +17,7 @@ class Statistics:
             self.latest_energy.append(self.energy[-1])
             self.latest_edp.append(self.edp[-1])
 
-    def write_results(self, time):
+    def write_results(self, time : float, finished_jobs : list):
         with open('{0}/statistics.json'.format(self.options['output_dir']), 'w') as out_f:
             data = {
                 #TODO EN INGLES JULIOS QUE NO ME HE FIJADO
@@ -26,4 +26,8 @@ class Statistics:
                 "Makespan (seconds)": time
             }
             json.dump(data, out_f, indent=4)
-
+        with open('{0}/jobs.log'.format(self.options['output_dir']), 'w') as out_f:
+            jobs = "Name, subtime ,start_runing, finish, execution_time, profile\n"
+            for i in finished_jobs:
+                jobs += i.name+","+str(i.start_running)+","+str(i.finish)+","+str(i.finish-i.start_running)+","+str(i.type)+"\n"
+            out_f.write(jobs)

@@ -60,7 +60,7 @@ class Simulator:
 
     def end_simulation(self) -> None:
         self.scheduler.onSimulationEnds()
-        self.statistics.write_results(self.simulation_time)
+        self.statistics.write_results(self.simulation_time, self.job_scheduler.finished_jobs)
         print("Finish Simulation")
 
     def nb_pending_jobs(self) -> int:
@@ -77,7 +77,7 @@ class Simulator:
 
         for job in finish_jobs:
             self.scheduler.onJobCompletion(job)
-            self.job_scheduler.job_complete(job)
+            self.job_scheduler.job_complete(job, self.simulation_time)
             job.allocation = None
 
     def peek_jobs_now(self) -> None:
@@ -105,7 +105,7 @@ class Simulator:
         # Execute the jobs if they exist
         if scheduled_jobs:
             self.job_scheduler.nb_active_jobs += len(scheduled_jobs)
-            self.job_scheduler.run_jobs(scheduled_jobs)
+            self.job_scheduler.run_jobs(scheduled_jobs, self.simulation_time)
 
     def calculate_next_scheduler_step(self) -> float:
         time_finish_one_core = float("inf")
@@ -123,9 +123,7 @@ class Simulator:
         if self.job_scheduler.nb_jobs_queue_left > 0:
             time_min_job_start = self.job_scheduler.show_first_job_in_queue().subtime
             if time_min_job_start <= self.simulation_time + time_finish_one_core:
-                print("TRABAJO",time_min_job_start)
                 return time_min_job_start
-        print("ACABA TRABAJO",self.simulation_time + time_finish_one_core)
         return self.simulation_time + time_finish_one_core
 
 

@@ -76,10 +76,14 @@ It uses the cached peeked Job for removal.
     def pop_first_job_in_queue(self) -> Job:
         return heapq.heappop(self.jobs_queue)
 
-    def run_jobs(self, jobs : list) -> None:
+    def run_jobs(self, jobs : list, now : float) -> None:
+        for i in jobs:
+            i.start_running = now
         self.jobs_running.extend(jobs)
 
-    def job_complete(self, job: Job):
+    def job_complete(self, job: Job, now: float):
+        job.finish = now
+        self.finished_jobs.append(job)
         self.jobs_running.remove(job)
 
 

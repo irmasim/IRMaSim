@@ -1,8 +1,10 @@
 class Job:
 
 
-    def __init__(self, id: int, subtime : float, resources: int, profile : dict):
+    def __init__(self, id: int, name : str,subtime : float, resources: int, profile : dict, type : str):
         self.id = id
+        self.name = name
+        self.type = type
         self.profile = profile
         self.subtime = subtime
         self.resources = resources
