@@ -19,6 +19,6 @@ def test_two_core_two_job_mem():
     with open(file+outpul_dir+"/"+"statistics.json") as stats:
         data = json.load(stats)
         assert float(data["Makespan (seconds)"]) == 4.6
-        assert float(data["Energy_Consumed (Julios)"]) == 555
+        assert float(data["Energy_Consumed (J)"]) == 555
 
     shutil.rmtree(file+outpul_dir)

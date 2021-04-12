@@ -22,7 +22,7 @@ def test_agent_load():
     with open(file+outpul_dir+"/"+"statistics.json") as stats:
         data = json.load(stats)
         assert float(data["Makespan (seconds)"]) == 3.8
-        assert float(data["Energy_Consumed (Julios)"]) == 355
+        assert float(data["Energy_Consumed (J)"]) == 355
 
     try:
         f = open(file+outpul_dir+"/"+model)

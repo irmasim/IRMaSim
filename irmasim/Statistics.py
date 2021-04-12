@@ -20,8 +20,9 @@ class Statistics:
     def write_results(self, time):
         with open('{0}/statistics.json'.format(self.options['output_dir']), 'w') as out_f:
             data = {
-                "Energy_Consumed (Julios)" : sum(self.energy),
-                "EDP (Julios*seconds)" : sum(self.edp),
+                #TODO EN INGLES JULIOS QUE NO ME HE FIJADO
+                "Energy_Consumed (J)" : sum(self.energy),
+                "EDP (J*seconds)" : sum(self.edp),
                 "Makespan (seconds)": time
             }
             json.dump(data, out_f, indent=4)

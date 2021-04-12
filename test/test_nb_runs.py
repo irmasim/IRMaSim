@@ -20,7 +20,7 @@ def test_nb_runs():
     with open(file+outpul_dir+"/"+"statistics.json") as stats:
         data = json.load(stats)
         assert float(data["Makespan (seconds)"]) == 3.8
-        assert float(data["Energy_Consumed (Julios)"]) == 355
+        assert float(data["Energy_Consumed (J)"]) == 355
 
     with open(file+outpul_dir+"/"+"rewards.log") as rew:
         for i, l in enumerate(rew):

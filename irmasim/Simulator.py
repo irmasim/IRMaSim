@@ -37,7 +37,8 @@ class Simulator:
             next_step = self.calculate_next_scheduler_step()
             self.statistics.calculate_energy_and_edp(self.resource_manager.core_pool,
                                                      round(next_step - self.simulation_time,9),
-                                                     all_jobs_scheduler=(self.job_scheduler.nb_jobs_queue_left == 0))
+                                                     all_jobs_scheduler=(self.job_scheduler.nb_jobs_queue_left == 0
+                                                                         and self.job_scheduler.nb_pending_jobs == 0))
             self.simulation_time = next_step
             self.resource_manager.update_cores(self.simulation_time)
 
@@ -53,7 +54,7 @@ class Simulator:
             if next_step != float("inf"):
                 self.statistics.calculate_energy_and_edp(self.resource_manager.core_pool,
                                                          round(next_step - self.simulation_time,9),
-                                                         all_jobs_scheduler=True)
+                                                         all_jobs_scheduler=self.job_scheduler.nb_pending_jobs == 0)
                 self.simulation_time = next_step
                 self.resource_manager.update_cores(self.simulation_time)
         self.end_simulation()

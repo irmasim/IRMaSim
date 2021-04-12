@@ -242,16 +242,14 @@ Returns:
                     # Node: current fraction of memory available
                     observation.append(node['current_mem'] / node['max_mem'])
                     max_mem_bw_proccesor = 0
-                    #for processor in node['local_processors']:
-                    #    if max_mem_bw_proccesor < processor['current_mem_bw']:
-                    #        max_mem_bw_proccesor = processor['current_mem_bw']
+                    for processor in node['local_processors']:
+                        if max_mem_bw_proccesor < processor['current_mem_bw']:
+                            max_mem_bw_proccesor = processor['current_mem_bw']
                     for processor in node['local_processors']:
                         # Processor: current fraction of memory BW available
                         # Memory bandwidth is not bounded, since several jobs might be
                         # overutilizing it, clip it to a minimum
-                        #observation.append(
-                        #    max(0.0, processor['current_mem_bw']) / processor['max_mem_bw']
-                        #)
+
                         if max_mem_bw_proccesor == 0:
                             observation.append(
                                 0.0
