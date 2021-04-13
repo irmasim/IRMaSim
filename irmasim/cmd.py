@@ -70,6 +70,8 @@ Command line arguments:
         options['output_dir'] = args.output_dir
         if not path.exists(options['output_dir']):
             os.mkdir(options['output_dir'])
+    else:
+        options['output_dir'] = "."
     if args.agent:
         options['agent']['file'] = path.abspath(args.agent)
     if args.inmodel:
