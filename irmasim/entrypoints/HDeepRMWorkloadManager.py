@@ -56,6 +56,7 @@ Attributes:
         self.options = options
         #if objective change reset agent
         self.reward = options["env"]['objective']
+        self.last_time = 0
         reset_log_file = "%s/reset.log" % (options['output_dir'])
         try:
             with open(reset_log_file, 'r') as reset:
@@ -80,7 +81,6 @@ Attributes:
 
         self.env = Environment(self, options)
         self.agent, self.optimizer = self.create_agent(options)
-        self.time_last_step = 0
         self.step = 0
         self.flow_flags = {
             'jobs_submitted': False,
@@ -174,7 +174,6 @@ logged for observing performance.
             # The Agent is rewarded
             self.last_reward = True
             self.agent.rewarded(self.env)
-            self.time_last_step = self.simulator.simulation_time
             self.flow_flags['action_taken'] = False
 
         if self.options['agent']['type'] == 'LEARNING' and self.options['agent']['run'] == 'train':
@@ -219,7 +218,6 @@ Further details on this handler on the base
         if self.flow_flags['action_taken'] and self.reward != "makespan":
             # The Agent is rewarded
             self.agent.rewarded(self.env)
-            self.time_last_step = self.simulator.simulation_time
             self.flow_flags['action_taken'] = False
         self.flow_flags['jobs_submitted'] = True
 
@@ -234,7 +232,6 @@ Further details on this handler on the base
                                                                     or not self.simulator.no_more_static_jobs()):
             # The Agent is rewarded
             self.agent.rewarded(self.env)
-            self.time_last_step = self.simulator.simulation_time
             self.flow_flags['action_taken'] = False
         self.flow_flags['jobs_completed'] = True
 
@@ -249,10 +246,12 @@ When there are no more events in the current time step, the following flow occur
         """
 
 
-        if self.flow_flags['action_taken'] and self.reward == "makespan":
+        if self.reward == "makespan":
             # The Agent is rewarded
             self.agent.rewarded(self.env)
             self.flow_flags['action_taken'] = False
+
+        self.last_time = self.simulator.simulation_time
 
         if (self.flow_flags['jobs_submitted'] or self.flow_flags['jobs_completed'] or
             (self.simulator.no_more_static_jobs() and self.flow_flags['void_taken'])) and\
@@ -270,9 +269,6 @@ When there are no more events in the current time step, the following flow occur
                 self.flow_flags['void_taken'] = False
             # The Agent alters the Environment
             self.agent.alter(action, self.env)
-            #Check initial time simulation
-            if self.step == 0:
-                self.time_last_step = self.simulator.simulation_time
             self.step += 1
             self.flow_flags['action_taken'] = True
             self.flow_flags['jobs_submitted'] = self.flow_flags['jobs_completed'] = False

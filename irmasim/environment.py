@@ -396,8 +396,7 @@ Returns:
     Current total GFLOPs provided by the data centre service.
         """
 
-        return (sum([core.state['current_gflops'] for core
-                    in self.workload_manager.resource_manager.core_pool]))
+        return self.workload_manager.simulator.simulation_time - self.workload_manager.last_time
 
 
     #TODO viejo cálculo hay que comprobar que el nuevo calculo funciona correctamente
