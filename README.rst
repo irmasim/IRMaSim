@@ -26,7 +26,7 @@ The installation procedure is straightforward. Clone the repository, or download
    $ apt install python3-pip
    $ pip install IRMaSim
 
-After taking these steps, you should be able to execute irmasim from the command line.
+After taking these steps, you should be able to execute IRMaSim from the command line.
 
 Usage
 -----
