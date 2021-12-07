@@ -11,9 +11,6 @@ import logging
 import irmasim.resource as res
 from irmasim.Job import Job
 
-#TODO: Make configurable
-min_power = 0.05
-
 def generate_workload(workload_file: str, core_pool: list) -> (dict, dict):
     """ Parse workload file
 
@@ -170,10 +167,13 @@ def _generate_cores(library: dict, proc_desc: dict, core_pool: dict, proc_el: di
         _core_el(library, proc_desc, core_pool, proc_el)
 
 def _core_el(library: dict, proc_desc: dict, core_pool: dict, proc_el: dict) -> None:
-    processor = library['processor'][proc_desc['type']]
-    core_el = res.Core(proc_el, core_pool['counters']['core'], 
-                        processor['dynamic_power'], processor['static_power'] / processor['cores'], min_power,
-                        processor['b'], processor['c'], processor['da'], processor['db'], processor['dc'], processor['dd'])
+    profile_version = library['processor'][proc_desc['type']].get('profile_version')
+    if profile_version == None or profile_version == 1:
+        core_el = res.Core_profile_1(proc_el, core_pool['counters']['core'], library['processor'][proc_desc['type']])
+    elif profile_version == 2:
+        core_el = res.Core_profile_2(proc_el, core_pool['counters']['core'], library['processor'][proc_desc['type']])
+    else:
+        print('The profile version specified ('+str(profile_version)+') in one processor has not been implemented.')
 
     proc_el['node']['cluster']['platform']['total_cores'] += 1
     proc_el['local_cores'].append(core_el)

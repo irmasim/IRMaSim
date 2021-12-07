@@ -264,28 +264,7 @@ Returns:
                 y = lcore.state['current_mem_bw']
                 n = served_jobs_processor - 1
 
-                def ss(x):
-                    if x < 0:
-                        return 1
-                    elif x > 1:
-                        return 0
-                    else:
-                        return (1 - x*x*x*(x*(x*6-15)+10))
-
-                def d(y, n):
-                    aux = (y-(lcore.da-n)*lcore.db)/(lcore.dc-n*lcore.dd)
-                    aux = ss(aux)
-                    return aux * (n*0.6/(1+n*0.6))+1/(1+n*0.6)
-
-                def perf(x, y, n):
-                    if x < lcore.c:
-                        return 1
-                    elif x > ((d(y,n)+lcore.b*lcore.c-1)/lcore.b):
-                        return d(y,n)
-                    else:
-                        return lcore.b*(x-lcore.c)+1
-
-                speedup = round(perf(x, y, n),9)
+                speedup = round(lcore.speedup(x, y, n),9)
 
                 lcore.set_state("RUN", now, speedup=speedup)
 

@@ -117,7 +117,7 @@ Attributes:
                                               if c.state['served_job']]),
             'high_mem': lambda core: - core.processor['node']['current_mem'],
             'high_mem_bw': lambda core: core.processor['current_mem_bw'],
-            'low_power': lambda core: core.static_power+core.dynamic_power
+            'low_power': lambda core: core.power()
         })
         # Parse the actions selected by the user
         self.actions = []
@@ -268,7 +268,7 @@ Returns:
                                     remaining_per = core.get_remaining_per()
                                 observation.extend(
                                     [core.state['current_gflops'] / processor['gflops_per_core'],
-                                     core.state['current_power'] / (core.static_power+core.dynamic_power),
+                                     core.state['current_power'] / core.power(),
                                      remaining_per]
                                 )
         req_time = np.array(

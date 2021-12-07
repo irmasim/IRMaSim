@@ -4,6 +4,10 @@ Core class and functionality for defining the Resource Hierarchy in the Decision
 import logging
 from irmasim.Job import Job
 import math
+#from abc import ABC, abstractmethod
+
+#TODO: Make configurable
+min_power = 0.05
 
 class Core:
     """Core representing a compute resource in the Platform.
@@ -58,25 +62,14 @@ Attributes:
       | served_job (batim.batsim.Job) - Job being served by the Core.
     """
 
-    def __init__(self, processor: dict, id: int, dynamic_power:float, static_power:float, min_power:float,
-                 b:int, c:int, da:int, db:int, dc:int, dd:int) -> None:
+    def __init__(self, processor: dict, id: int) -> None:
         self.processor = processor
         self.id = id
-        self.dynamic_power = dynamic_power
-        self.static_power = static_power
-        self.min_power = min_power
-        self.b = b
-        self.c = c
-        self.da = da
-        self.db = db
-        self.dc = dc
-        self.dd = dd
         # By default, core is idle
         self.state = {
             'speedup': 0.0,
             'current_gflops': 0.0,
             'current_mem_bw': 0.0,
-            'current_power': min_power * self.static_power,
             'job_remaining_ops': 0.0,
             # When active, the Core is serving a Job which is stored as part of its state
             # Remaining operations and updates along simulation are tracked
@@ -91,8 +84,8 @@ It modifies the availability, computing speed and power consumption. It also est
 served Job in case the Core is now active.
 
 Args:
-    new_pstate (int):
-        New P-state for the Core.
+    state:
+        New state for the Core.
     now (float):
         Current simulation time in seconds.
     new_served_job (batsim.batsim.Job):
@@ -113,7 +106,6 @@ Args:
                 self.processor['node']['current_mem'] -= new_served_job.mem
             else:
                 self.update_completion(now)
-            # 100% Power
             self.state['current_power'] = self.dynamic_power + self.static_power
             self.state['speedup'] = speedup
             self.state['current_gflops'] = self.processor['gflops_per_core'] * speedup * 1e9
@@ -127,15 +119,10 @@ Args:
             # 0% GFLOPS
             self.state['speedup'] = 0.0
             self.state['current_gflops'] = 0.0
-            if state == "NEIGHBOURS-RUNNING":
-                # Static Power
-                self.state['current_power'] = self.static_power
-            else:
-                # Min Power
-                self.state['current_power'] = self.min_power * self.static_power
         else:
             raise ValueError('Error: unknown State')
         self.state['speedup'] = speedup
+        self.state['current_power'] = self.power(state)
 
     def update_completion(self, now: float) -> None:
         """Updates the Job operations left.
@@ -169,3 +156,88 @@ Calculated by dividing the remaining operations by the total requested on arriva
 
     def __lt__(self, other):
         return self.id < other.id
+
+class Core_profile_1(Core):
+    def __init__(self, proc_el: dict, id: int, config: dict) -> None:
+        super().__init__(proc_el,id)
+        self.dynamic_power = config['dynamic_power']
+        self.static_power = config['static_power'] / config['cores']
+        self.min_power = min_power
+        self.b = config['b']
+        self.c = config['c']
+        self.da = config['da']
+        self.db = config['db']
+        self.dc = config['dc']
+        self.dd = config['dd']
+        self.state['current_power'] = min_power * self.static_power
+
+    def speedup(self, x: float, y: float, n: int):
+        def ss(x):
+            if x < 0:
+                return 1
+            elif x > 1:
+                return 0
+            else:
+                return (1 - x*x*x*(x*(x*6-15)+10))
+
+        def d(y, n):
+            aux = (y-(self.da-n)*self.db)/(self.dc-n*self.dd)
+            aux = ss(aux)
+            return aux * (n*0.6/(1+n*0.6))+1/(1+n*0.6)
+
+        if x < self.c:
+            return 1
+        elif x > ((d(y,n)+self.b*self.c-1)/self.b):
+            return d(y,n)
+        else:
+            return self.b*(x-self.c)+1
+
+    def power(self, state="RUN"):
+        if state == "RUN":
+            # 100% Power
+            return self.static_power+self.dynamic_power
+        elif state == "NEIGHBOURS-RUNNING":
+            # Static Power
+            return self.static_power
+        else:
+            # Min Power
+            return self.min_power * self.static_power
+
+
+class Core_profile_2(Core):
+    def __init__(self, proc_el: dict, id: int, config: dict) -> None:
+        super().__init__(proc_el,id)
+        self.aaa = config['aaa']
+        self.aab = config['aab']
+        self.aba = config['aba']
+        self.abb = config['abb']
+        self.baa = config['baa']
+        self.bab = config['bab']
+        self.bba = config['bba']
+        self.bbb = config['bbb']
+        self.caa = config['caa']
+        self.cab = config['cab']
+        self.cba = config['cba']
+        self.cbb = config['cbb']
+        self.cca = config['cca']
+        self.ccb = config['ccb']
+        self.daa = config['daa']
+        self.dab = config['dab']
+        self.dba = config['dba']
+        self.dbb = config['dbb']
+        self.p00 = config['p00']
+        self.p01 = config['p01']
+        self.p02 = config['p02']
+        self.p10 = config['p10']
+        self.p11 = config['p11']
+        self.p20 = config['p20']
+        self.dynamic_power = 1
+        self.static_power = 1
+        self.min_power = 1
+        self.state['current_power'] = 0
+    
+    def speedup(self, x: float, y: float, n: int):
+        return 1
+
+    def power(self, state="RUN"):
+        return 1
