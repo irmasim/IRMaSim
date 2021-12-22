@@ -4,7 +4,6 @@ Core class and functionality for defining the Resource Hierarchy in the Decision
 import logging
 from irmasim.Job import Job
 import math
-#from abc import ABC, abstractmethod
 
 #TODO: Make configurable
 min_power = 0.05
@@ -236,8 +235,29 @@ class Core_profile_2(Core):
         self.min_power = 1
         self.state['current_power'] = 0
     
-    def speedup(self, x: float, y: float, n: int):
-        return 1
+    def speedup(self, all_bw: float, int_bw: float, other: int):
+        all_bw=all_bw*1e-6
+        int_bw=int_bw*1e-6
+        ab = self.abb + other * self.aba
+        aa = self.aab + other * self.aaa
+
+        bb = self.bbb + other * self.bba
+        ba = self.bab + other * self.baa
+
+        ca = self.cab + other * self.caa
+        cb = self.cbb + other * self.cba
+        cc = self.ccb + other * self.cca
+
+        db = self.dbb + other * self.dba
+        da = self.dab + other * self.daa
+
+        a = ab + int_bw * aa
+        b = bb + int_bw * ba
+        c = cc + int_bw * cb + int_bw**2 * ca
+        d = db + int_bw * da
+
+        model = b+(c-b)*math.exp(-math.exp(a*(all_bw-d)))
+        return model
 
     def power(self, state="RUN"):
         return 1

@@ -119,15 +119,11 @@ class Simulator:
             if time_finish_one_core > time_finish_core_job:
                 time_finish_one_core = time_finish_core_job
 
-
         if self.job_scheduler.nb_jobs_queue_left > 0:
             time_min_job_start = self.job_scheduler.show_first_job_in_queue().subtime
             if time_min_job_start <= self.simulation_time + time_finish_one_core:
                 return time_min_job_start
         return self.simulation_time + time_finish_one_core
-
-
-
 
     def total_nodes_platform(self) -> int:
         return self.resource_manager.platform['total_nodes']

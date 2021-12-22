@@ -268,5 +268,5 @@ Returns:
 
                 lcore.set_state("RUN", now, speedup=speedup)
 
-                with open('{0}/speedup.log'.format(self.options['output_dir']), 'a') as f_speed:
-                    f_speed.write(f'{lcore.id},{speedup},{now},{lcore.state["served_job"].name}, {x}, {y},{n}\n')
+                with open('{0}/cores.log'.format(self.options['output_dir']), 'a') as f_speed:
+                    f_speed.write(f'{lcore.id},{speedup},{now},{lcore.state["served_job"].name},{x},{y},{n},{lcore.state["current_power"]}\n')
