@@ -227,7 +227,7 @@ Returns:
                     if lcore.state['served_job'] is None:
                         x = processor['current_mem_bw']
                         n = served_jobs_processor
-                        power = round(lcore.power("RUN",x,n),9)
+                        power = round(lcore.power("NEIGHBOURS-RUNNING",x,n),9)
                         lcore.set_state("NEIGHBOURS-RUNNING", now, power=power)
                     else:
                         served_jobs_processor += 1
@@ -248,7 +248,7 @@ Returns:
                     if all_inactive:
                         x = processor['current_mem_bw']
                         n = served_jobs_processor
-                        power = round(lcore.power("RUN",x,n),9)
+                        power = round(lcore.power("IDLE",x,n),9)
                         lcore.set_state("IDLE", now, power=power)
                     if lcore.state['served_job'] != None:
                         served_jobs_processor += 1
@@ -271,7 +271,6 @@ Returns:
 
                 speedup = round(lcore.speedup(x, y, n-1),9)
                 power = round(lcore.power("RUN",x,n),9)
-
                 lcore.set_state("RUN", now, speedup=speedup, power=power)
 
                 with open('{0}/cores.log'.format(self.options['output_dir']), 'a') as f_speed:
