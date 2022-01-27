@@ -236,8 +236,8 @@ class Core_profile_2(Core):
         self.state['current_power'] = self.power(state="IDLE", all_bw=0, job_count=0)
     
     def speedup(self, all_bw: float, int_bw: float, other: int):
-        all_bw=all_bw*1e-6
-        int_bw=int_bw*1e-6
+        all_bw=all_bw*1e-3
+        int_bw=int_bw*1e-3
         ab = self.abb + other * self.aba
         aa = self.aab + other * self.aaa
 
