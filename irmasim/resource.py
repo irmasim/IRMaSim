@@ -76,7 +76,7 @@ Attributes:
             'last_update' : 0.0
         }
 
-    def set_state(self, state: str, now: float, speedup : float = 1, new_served_job: Job = None) -> None:
+    def set_state(self, state: str, now: float, speedup : float = 1, power : float = 0, new_served_job: Job = None) -> None:
         """Sets the state of the Core.
 
 It modifies the availability, computing speed and power consumption. It also establishes a new
@@ -105,7 +105,7 @@ Args:
                 self.processor['node']['current_mem'] -= new_served_job.mem
             else:
                 self.update_completion(now)
-            self.state['current_power'] = self.dynamic_power + self.static_power
+            self.state['current_power'] = power
             self.state['speedup'] = speedup
             self.state['current_gflops'] = self.processor['gflops_per_core'] * speedup * 1e9
         # Inactive core
@@ -121,7 +121,7 @@ Args:
         else:
             raise ValueError('Error: unknown State')
         self.state['speedup'] = speedup
-        self.state['current_power'] = self.power(state)
+        self.state['current_power'] = power
 
     def update_completion(self, now: float) -> None:
         """Updates the Job operations left.
@@ -168,7 +168,7 @@ class Core_profile_1(Core):
         self.db = config['db']
         self.dc = config['dc']
         self.dd = config['dd']
-        self.state['current_power'] = min_power * self.static_power
+        self.state['current_power'] = self.power(state="IDLE", all_bw=0, job_count=0)
 
     def speedup(self, x: float, y: float, n: int):
         def ss(x):
@@ -191,7 +191,10 @@ class Core_profile_1(Core):
         else:
             return self.b*(x-self.c)+1
 
-    def power(self, state="RUN"):
+    def max_power(self):
+        return self.static_power+self.dynamic_power
+
+    def power(self, state="RUN", all_bw=0.0, job_count=0):
         if state == "RUN":
             # 100% Power
             return self.static_power+self.dynamic_power
@@ -201,7 +204,6 @@ class Core_profile_1(Core):
         else:
             # Min Power
             return self.min_power * self.static_power
-
 
 class Core_profile_2(Core):
     def __init__(self, proc_el: dict, id: int, config: dict) -> None:
@@ -224,16 +226,14 @@ class Core_profile_2(Core):
         self.dab = config['dab']
         self.dba = config['dba']
         self.dbb = config['dbb']
+        self.pidle = config['pidle']
         self.p00 = config['p00']
         self.p01 = config['p01']
         self.p02 = config['p02']
         self.p10 = config['p10']
         self.p11 = config['p11']
         self.p20 = config['p20']
-        self.dynamic_power = 1
-        self.static_power = 1
-        self.min_power = 1
-        self.state['current_power'] = 0
+        self.state['current_power'] = self.power(state="IDLE", all_bw=0, job_count=0)
     
     def speedup(self, all_bw: float, int_bw: float, other: int):
         all_bw=all_bw*1e-6
@@ -259,5 +259,17 @@ class Core_profile_2(Core):
         model = b+(c-b)*math.exp(-math.exp(a*(all_bw-d)))
         return model
 
-    def power(self, state="RUN"):
-        return 1
+    def max_power(self):
+        return 100
+
+    def power(self, state="RUN", all_bw=0.0, job_count=0):
+        if job_count == 0:
+            print(f"{all_bw},{job_count} -> {self.pidle}")
+            return self.pidle/4
+        all_bw=all_bw*1e-6
+        p = self.p00 + \
+            self.p10 * all_bw + self.p20 * all_bw**2 + \
+            self.p01 * job_count + self.p02 * job_count**2 + \
+            self.p11 * all_bw * job_count 
+        print(f"{all_bw},{job_count} -> {p}")
+        return p/4

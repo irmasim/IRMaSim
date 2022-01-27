@@ -8,9 +8,13 @@ class Statistics:
         self.latest_energy = []
         self.latest_edp = []
         self.options = options
+        with open('{0}/power.log'.format(self.options['output_dir']), 'w') as out_f:
+            out_f.write(f"now,total_power\n")
 
-    def calculate_energy_and_edp(self, core_pool : list, diff_time : float, all_jobs_scheduler = False):
+    def calculate_energy_and_edp(self, core_pool : list, diff_time : float, now: float, all_jobs_scheduler = False):
         total_power = round(sum([core.state['current_power'] for core in core_pool]),9)
+        with open('{0}/power.log'.format(self.options['output_dir']), 'a') as out_f:
+            out_f.write(f"{now},{total_power}\n")
         self.energy.append(total_power * diff_time)
         self.edp.append(round(total_power * (diff_time ** 2),9))
         if all_jobs_scheduler:

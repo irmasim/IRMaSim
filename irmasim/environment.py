@@ -268,7 +268,7 @@ Returns:
                                     remaining_per = core.get_remaining_per()
                                 observation.extend(
                                     [core.state['current_gflops'] / processor['gflops_per_core'],
-                                     core.state['current_power'] / core.power(),
+                                     core.state['current_power'] / core.max_power(),
                                      remaining_per]
                                 )
         req_time = np.array(

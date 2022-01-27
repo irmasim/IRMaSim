@@ -19,9 +19,10 @@ class Simulator:
         self.start_simulation()
 
     def start_simulation(self) -> None:
+        self.statistics.calculate_energy_and_edp(self.resource_manager.core_pool, self.simulation_time, now=self.simulation_time)
         first_job = self.job_scheduler.pop_first_job_in_queue()
         self.simulation_time = first_job.subtime
-        self.statistics.calculate_energy_and_edp(self.resource_manager.core_pool, self.simulation_time)
+        self.statistics.calculate_energy_and_edp(self.resource_manager.core_pool, self.simulation_time, now=self.simulation_time)
         self.scheduler.onJobSubmission(first_job)
         self.job_scheduler.new_job(first_job)
         self.start_static_jobs()
@@ -35,7 +36,7 @@ class Simulator:
             self.scheduler.onNoMoreEvents()
             next_step = self.calculate_next_scheduler_step()
             self.statistics.calculate_energy_and_edp(self.resource_manager.core_pool,
-                                                     round(next_step - self.simulation_time,9),
+                                                     round(next_step - self.simulation_time,9),now=next_step,
                                                      all_jobs_scheduler=(self.job_scheduler.nb_jobs_queue_left == 0
                                                                          and self.job_scheduler.nb_pending_jobs == 0))
             self.simulation_time = next_step
@@ -52,7 +53,7 @@ class Simulator:
             next_step = self.calculate_next_scheduler_step()
             if next_step != float("inf"):
                 self.statistics.calculate_energy_and_edp(self.resource_manager.core_pool,
-                                                         round(next_step - self.simulation_time,9),
+                                                         round(next_step - self.simulation_time,9),now=next_step,
                                                          all_jobs_scheduler=self.job_scheduler.nb_pending_jobs == 0)
                 self.simulation_time = next_step
                 self.resource_manager.update_cores(self.simulation_time)
