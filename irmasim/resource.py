@@ -194,7 +194,7 @@ class Core_profile_1(Core):
     def max_power(self):
         return self.static_power+self.dynamic_power
 
-    def power(self, state="RUN", all_bw=0.0, job_count=0):
+    def power(self, state="RUN", all_bw=0.0, job_count=0, cores=1):
         if state == "RUN":
             # 100% Power
             return self.static_power+self.dynamic_power
@@ -262,14 +262,12 @@ class Core_profile_2(Core):
     def max_power(self):
         return 100
 
-    def power(self, state="RUN", all_bw=0.0, job_count=0):
+    def power(self, state="RUN", all_bw=0.0, job_count=0, cores=1):
         if job_count == 0:
-            print(f"{all_bw},{job_count} -> {self.pidle}")
-            return self.pidle/4
+            return self.pidle/cores
         all_bw=all_bw*1e-6
         p = self.p00 + \
             self.p10 * all_bw + self.p20 * all_bw**2 + \
             self.p01 * job_count + self.p02 * job_count**2 + \
             self.p11 * all_bw * job_count 
-        print(f"{all_bw},{job_count} -> {p}")
-        return p/4
+        return p/cores
