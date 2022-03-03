@@ -61,9 +61,10 @@ Attributes:
       | served_job (batim.batsim.Job) - Job being served by the Core.
     """
 
-    def __init__(self, processor: dict, id: int) -> None:
+    def __init__(self, processor: dict, id: int, node_type: str) -> None:
         self.processor = processor
         self.id = id
+        self.node_type = node_type
         # By default, core is idle
         self.state = {
             'speedup': 0.0,
@@ -157,8 +158,8 @@ Calculated by dividing the remaining operations by the total requested on arriva
         return self.id < other.id
 
 class Core_profile_1(Core):
-    def __init__(self, proc_el: dict, id: int, config: dict) -> None:
-        super().__init__(proc_el,id)
+    def __init__(self, proc_el: dict, id: int, config: dict, node_type: str) -> None:
+        super().__init__(proc_el,id,node_type)
         self.dynamic_power = config['dynamic_power']
         self.static_power = config['static_power'] / config['cores']
         self.min_power = min_power
@@ -206,8 +207,8 @@ class Core_profile_1(Core):
             return self.min_power * self.static_power
 
 class Core_profile_2(Core):
-    def __init__(self, proc_el: dict, id: int, config: dict) -> None:
-        super().__init__(proc_el,id)
+    def __init__(self, proc_el: dict, id: int, config: dict, node_type: str) -> None:
+        super().__init__(proc_el,id, node_type)
         self.aaa = config['aaa']
         self.aab = config['aab']
         self.aba = config['aba']

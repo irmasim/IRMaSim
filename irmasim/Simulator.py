@@ -61,7 +61,7 @@ class Simulator:
 
     def end_simulation(self) -> None:
         self.scheduler.onSimulationEnds()
-        self.statistics.write_results(self.simulation_time, self.job_scheduler.finished_jobs)
+        self.statistics.write_results(self.simulation_time, self.job_scheduler.finished_jobs, self.resource_manager.core_pool)
         print("Finish Simulation")
 
     def nb_pending_jobs(self) -> int:

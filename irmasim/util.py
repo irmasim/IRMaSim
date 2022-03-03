@@ -143,7 +143,7 @@ def _generate_processors(library: dict, node_desc: dict, core_pool: dict, node_e
         proc_el = None
         for _ in range(proc_desc['number']):
             proc_el = _proc_el(library, proc_desc, gflops_per_core, core_pool, node_el)
-            _generate_cores(library, proc_desc, core_pool, proc_el)
+            _generate_cores(library, proc_desc, core_pool, proc_el, node_desc['type'])
 
 def _proc_el(library: dict, proc_desc: dict, gflops_per_core: float, core_pool: dict, node_el: dict) -> dict:
     #max_mem_bw = library['processor'][proc_desc['type']]['mem_bw']
@@ -162,16 +162,16 @@ def _proc_el(library: dict, proc_desc: dict, gflops_per_core: float, core_pool: 
     core_pool['counters']['processor'] += 1
     return proc_el
 
-def _generate_cores(library: dict, proc_desc: dict, core_pool: dict, proc_el: dict) -> None:
+def _generate_cores(library: dict, proc_desc: dict, core_pool: dict, proc_el: dict, node_type: str) -> None:
     for _ in range(library['processor'][proc_desc['type']]['cores']):
-        _core_el(library, proc_desc, core_pool, proc_el)
+        _core_el(library, proc_desc, core_pool, proc_el, node_type)
 
-def _core_el(library: dict, proc_desc: dict, core_pool: dict, proc_el: dict) -> None:
+def _core_el(library: dict, proc_desc: dict, core_pool: dict, proc_el: dict, node_type: str) -> None:
     profile_version = library['processor'][proc_desc['type']].get('profile_version')
     if profile_version == None or profile_version == 1:
-        core_el = res.Core_profile_1(proc_el, core_pool['counters']['core'], library['processor'][proc_desc['type']])
+        core_el = res.Core_profile_1(proc_el, core_pool['counters']['core'], library['processor'][proc_desc['type']], node_type)
     elif profile_version == 2:
-        core_el = res.Core_profile_2(proc_el, core_pool['counters']['core'], library['processor'][proc_desc['type']])
+        core_el = res.Core_profile_2(proc_el, core_pool['counters']['core'], library['processor'][proc_desc['type']], node_type)
     else:
         print('The profile version specified ('+str(profile_version)+') in one processor has not been implemented.')
 

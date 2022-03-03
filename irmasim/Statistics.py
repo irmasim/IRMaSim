@@ -21,7 +21,7 @@ class Statistics:
             self.latest_energy.append(self.energy[-1])
             self.latest_edp.append(self.edp[-1])
 
-    def write_results(self, time : float, finished_jobs : list):
+    def write_results(self, time : float, finished_jobs : list, core_pool: list):
         with open('{0}/statistics.json'.format(self.options['output_dir']), 'w') as out_f:
             data = {
                 "Energy_Consumed (J)" : sum(self.energy),
@@ -32,6 +32,7 @@ class Statistics:
         with open('{0}/jobs.log'.format(self.options['output_dir']), 'w') as out_f:
             jobs = "Name, subtime ,start_runing, finish, execution_time, instructions, profile, cores\n"
             for i in sorted(finished_jobs, key= lambda x: x.name):
-                jobs += i.name+","+str(i.subtime)+","+str(i.start_running)+","+str(i.finish)+","+str(i.finish-i.start_running)+","+\
-                        str(i.req_ops)+","+str(i.type)+","+str(i.core_finish)+"\n"
+                jobs += i.name+","+str(i.subtime)+","+str(i.start_running)+","+str(i.finish)+","+\
+                        str(i.finish-i.start_running)+","+str(i.req_ops)+","+str(i.type)+","+\
+                        " ".join([ str(c)+":"+str(core_pool[c].node_type) for c in i.core_finish ])+"\n"
             out_f.write(jobs)
