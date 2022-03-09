@@ -266,7 +266,7 @@ class Core_profile_2(Core):
     def power(self, state="RUN", all_bw=0.0, job_count=0, cores=1):
         if job_count == 0:
             return self.pidle/cores
-        all_bw=all_bw*1e-6
+        all_bw=all_bw*1e-3
         p = self.p00 + \
             self.p10 * all_bw + self.p20 * all_bw**2 + \
             self.p01 * job_count + self.p02 * job_count**2 + \
