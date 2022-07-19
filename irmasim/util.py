@@ -33,9 +33,9 @@ Args:
     queue = []
     job_id = 0
     for job in workload['jobs']:
-        queue.append(Job(job_id, job["id"], job['subtime'], job['res'], workload['profiles'][job['profile']],job['profile']))
+        queue.append(Job(job_id, job["id"], job['subtime'], job['res'], workload['profiles'][job['profile']],job['profile'], job['estimated_execution_time']))
         job_id = job_id + 1
-    heapq.heapify(queue)
+    #heapq.heapify(queue)
 
     # Calculate the job limits from the Workload
     job_limits = {

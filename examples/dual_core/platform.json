@@ -25,7 +25,7 @@
          "processors": [
          { "type": "proc_n1134", "number": 1 }
          ],
-         "memory": { "type": "DDR3-1600", "capacity": 100}
+         "memory": { "type": "DDR3-1600", "capacity": 1000}
       }
    },
    "processor": {

@@ -3,6 +3,7 @@ import math
 
 # TODO Consider removing the entrypoints folder/package
 from irmasim.entrypoints.HDeepRMWorkloadManager import HDeepRMWorkloadManager
+from irmasim.entrypoints.BackfillingWorkloadManager import BackfillingWorkloadManager
 from irmasim.manager import JobScheduler, ResourceManager
 from irmasim.Job import Job
 from irmasim.Statistics import Statistics
@@ -10,10 +11,11 @@ from irmasim.Statistics import Statistics
 
 class Simulator:
 
-    def __init__(self, job_limits: dict, jobs_queue: heapq, core_pool: list, platform: dict, options: dict):
+    def __init__(self, job_limits: dict, jobs_queue, core_pool: list, platform: dict, options: dict):
         self.job_scheduler = JobScheduler(jobs_queue)
         self.resource_manager = ResourceManager(platform, core_pool, job_limits, options)
-        self.scheduler = HDeepRMWorkloadManager(options, self)
+        #self.scheduler = HDeepRMWorkloadManager(options, self)
+        self.scheduler = BackfillingWorkloadManager(options, self)
         self.statistics = Statistics(options)
         self.simulation_time = 0
         self.start_simulation()
@@ -80,6 +82,7 @@ class Simulator:
             self.job_scheduler.job_complete(job, self.simulation_time)
             job.allocation = None
 
+    # Añade Jobs a la lista de pendientes si quedan Jobs en la job_queue y su submit time es igual al tiempo de simulación actual
     def peek_jobs_now(self) -> None:
         while self.job_scheduler.nb_jobs_queue_left > 0 and \
                 self.job_scheduler.show_first_job_in_queue().subtime == self.simulation_time:
@@ -126,8 +129,13 @@ class Simulator:
                 return time_min_job_start
         return self.simulation_time + time_finish_one_core
 
-
-
+    def find_init_time(self, resources: int) -> float:
+        """
+        Calculo el momento en el que el job bloqueado tendrá los recursos disponibles
+        """
+        available_resources = self.resource_manager.available_resources()
+        needed_resources = resources - available_resources
+        return self.job_scheduler.backfilling_best_option(needed_resources)
 
     def total_nodes_platform(self) -> int:
         return self.resource_manager.platform['total_nodes']

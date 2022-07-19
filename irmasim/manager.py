@@ -25,7 +25,7 @@ Attributes:
         Key defining the Job selection policy.
     """
 
-    def __init__(self, jobs_queue : heapq) -> None:
+    def __init__(self, jobs_queue) -> None:
         self.jobs_queue = jobs_queue
         self.pending_jobs = []
         self.nb_active_jobs = 0
@@ -46,7 +46,8 @@ Returns:
         """
 
         if not self.sorting_key:
-            self.peeked_job = random.choice(self.pending_jobs)
+            #self.peeked_job = random.choice(self.pending_jobs)
+            self.peeked_job = self.pending_jobs[0]
         else:
             self.pending_jobs.sort(key=self.sorting_key)
             self.peeked_job = self.pending_jobs[0]
@@ -74,7 +75,8 @@ It uses the cached peeked Job for removal.
         return self.jobs_queue[0]
 
     def pop_first_job_in_queue(self) -> Job:
-        return heapq.heappop(self.jobs_queue)
+        #return heapq.heappop(self.jobs_queue)
+        return self.jobs_queue.pop(0)
 
     def run_jobs(self, jobs : list, now : float) -> None:
         for i in jobs:
@@ -85,12 +87,37 @@ It uses the cached peeked Job for removal.
         job.finish = now
         self.finished_jobs.append(job)
         self.jobs_running.remove(job)
+    
+    def get_N_pending_job(self, pos: int) -> Job:
+        """
+        Obtiene el job en la posición 'pos' de la cola de pending jobs
+        """
+        self.peeked_job = self.pending_jobs[pos]
+        return self.peeked_job
+        
+    def backfilling_best_option(self, needed_resources: int) -> int:
+        """
+        Recorre los Jobs que están ejecutando buscando el mejor tiempo posible para backfilling
+        """
+        print("Necesito:", needed_resources)
+        options = self.jobs_running.copy()
+        print("Jobs corriendo:", self.nb_running_jobs)
+        options.sort(key=lambda x: x.estimated_finish_time, reverse=False)
+        res = 0
+        i = 0
+        while res < needed_resources:
+            print("Job:", options[i].id, "tiene", options[i].resources)
+            res += options[i].resources
+            i += 1
+        return options[i-1].estimated_finish_time
 
+    def see_pending_jobs(self) -> None:
+        for job in self.pending_jobs:
+            print("Trabajo:", job.id)
 
     @property
     def nb_jobs_queue_left(self) -> int:
         return len(self.jobs_queue)
-
 
     @property
     def nb_pending_jobs(self) -> int:
@@ -99,7 +126,7 @@ It uses the cached peeked Job for removal.
 
     @property
     def nb_running_jobs(self) -> int:
-        return len(self.pending_jobs)
+        return len(self.jobs_running)
 
 
 class ResourceManager:
@@ -159,6 +186,7 @@ Returns:
 
         available = [core for core in self.core_pool if not core.state['served_job']]
         if len(available) < job.resources:
+            print("Cores Insuficientes. Disponibles: ", len(available), " Requeridos: ", job.resources, "Job: ", job.id)
             return None
         for _ in range(job.resources):
             mem_available = [
@@ -291,3 +319,13 @@ Returns:
 
                 with open('{0}/speedup.log'.format(self.options['output_dir']), 'a') as f_speed:
                     f_speed.write(f'{lcore.id},{speedup},{now},{lcore.state["served_job"].name}, {x}, {y},{n}\n')
+    
+    def available_resources(self) -> int:
+        """
+        Retorna los cores disponibles en el sistema
+        """
+        return len([core for core in self.core_pool if not core.state['served_job']])
+
+    @property
+    def num_cores(self) -> int:
+        return len(self.core_pool)

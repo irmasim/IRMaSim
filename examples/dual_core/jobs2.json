@@ -1,0 +1,13 @@
+{
+    "nb_res": 60,
+    "num_instructions": "TRUE",
+    "jobs": [
+       {"id": "job57218", "subtime": 2, "res": 1, "profile": "tester", "estimated_execution_time": 10},
+       {"id": "job57219", "subtime": 2.5, "res": 2, "profile": "tester", "estimated_execution_time": 12},
+       {"id": "job57220", "subtime": 2.7, "res": 1, "profile": "tester", "estimated_execution_time": 8},
+       {"id": "job57221", "subtime": 2.8, "res": 1, "profile": "tester", "estimated_execution_time": 5}
+    ],
+    "profiles": {
+       "tester": { "req_ops": 1000000, "ipc": 1, "req_time": 10, "mem": 50, "mem_vol": 1 }
+    }
+ }

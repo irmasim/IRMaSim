@@ -7,7 +7,7 @@ import logging
 import random
 import numpy as np
 from procset import ProcSet
-import Job
+from irmasim.Job import Job
 from manager import JobScheduler, ResourceManager
 from Changes_Cores import ChangesCores
 from resource import number_p_states

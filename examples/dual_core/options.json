@@ -2,8 +2,8 @@
     "seed": 0,
     "log_level": "DEBUG",
     "platform_name": "example",
-    "platform_file": "platform.json",
-    "workload_file": "jobs.json",
+    "platform_file": "platformWorkload2.json",
+    "workload_file": "workload2.json",
     "env": {
         "objective": "energy_consumption",
         "queue_sensitivity": 0.005
