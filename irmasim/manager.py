@@ -28,7 +28,9 @@ Attributes:
     def __init__(self, jobs_queue : heapq) -> None:
         self.jobs_queue = jobs_queue
         self.pending_jobs = []
+        # TODO Change name to nb_jobs_running
         self.nb_active_jobs = 0
+        #TODO Change name to nb_finished_jobs
         self.nb_completed_jobs = 0
         self.peeked_job = None
         self.sorting_key = None
