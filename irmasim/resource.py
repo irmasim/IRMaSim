@@ -172,6 +172,9 @@ class Core_profile_1(Core):
         self.state['current_power'] = self.power(state="IDLE", all_bw=0, job_count=0)
 
     def speedup(self, x: float, y: float, n: int):
+        # TODO is this correct?
+        x = x * 1e3
+        y = y * 1e3
         def ss(x):
             if x < 0:
                 return 1
