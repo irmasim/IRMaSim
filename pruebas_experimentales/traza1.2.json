@@ -1,0 +1,16 @@
+{
+   "nb_res": 60,
+   "num_instructions": "TRUE",
+   "jobs": [
+   
+	{"id": "job57218", "job_type": 1, "subtime": 0, "res": 6, "profile": "tester"},
+	{"id": "job57219", "job_type": 1, "subtime": 0, "res": 6, "profile": "tester"},
+	{"id": "job57220", "job_type": 1, "subtime": 0, "res": 4, "profile": "tester"}
+   ],
+   
+   "profiles": {
+	"tester": { "req_ops": 1000000, "ipc": 1, "req_time": 10, "mem": 10, "mem_vol": 10 },
+	"prof_task": { "req_ops": 5000000, "ipc": 5, "req_time": 15, "mem": 10, "mem_vol": 10 },
+	"prof_job": { "req_ops": 1, "ipc": 1, "req_time": 1, "mem": 1, "mem_vol": 1 }
+   }
+}

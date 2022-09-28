@@ -9,10 +9,15 @@ import numpy
 import numpy.random as nprnd
 import logging
 import irmasim.resource as res
+from irmasim.Job_seq import Job_seq
+from irmasim.Job_MPI import Job_MPI
+from irmasim.Task import Task
 from irmasim.Job import Job
 
 #TODO: Make configurable
 min_power = 0.05
+
+DEBUG = 1 #TODO acordarme de quitarlo 
 
 def generate_workload(workload_file: str, core_pool: list) -> (dict, dict):
     """ Parse workload file
@@ -32,10 +37,36 @@ Args:
 
     queue = []
     job_id = 0
+    tasks_list = []
     for job in workload['jobs']:
-        queue.append(Job(job_id, job["id"], job['subtime'], job['res'], workload['profiles'][job['profile']],job['profile']))
+        if job['job_type'] == 1:
+            queue.append(Job_seq(job_id, job["id"], job['job_type'], job['subtime'], job['res'], workload['profiles'][job['profile']], job['profile']))
+        # si el job es MPI, entra el job en la queue pero luego se ejecutaran sus tareas
+        if job['job_type'] == 2:
+            #queue.append(Job_MPI(job_id, job["id"], job['job_type'], job['subtime'], job['res'], workload['profiles'][job['profile']], job['profile'],job['num_nodes'], job['tasks'], job['comm_vol'], job['t_compute']))
+            for task in job['tasks']:
+                t = Task(task['id_task'], job_id, job['id'], job['subtime'], job['res'], job['comm_vol'], job['t_compute'], workload['profiles'][task['profile_task']], task['profile_task'], job['tasks'])
+                tasks_list.append(t)
+                queue.append(t)
+                #tasks_list.append(Task(task['id_task'], task['job_id'], workload['profiles'][task['profile_task']], task['profile_task']))
+                #queue[job_id].tasks.append(Task(task['id_task'], task['job_id'], workload['profiles'][task['profile_task']], task['profile_task'])) #TODO: por que no funciona esto
+            queue[job_id].tasks = tasks_list
         job_id = job_id + 1
     heapq.heapify(queue)
+
+    # comprobaciones workload
+
+    if DEBUG:
+    
+        print()
+        print('Num jobs en workload: ' + str(len(queue)))
+        for job in queue:
+            if job.job_type == 1:
+                print('Job: ' + str(job.job_id) + ', type: ' + str(job.job_type) + ', num tasks: ' + str(job.resources))
+            if job.job_type == 2:
+                print('Task: ' + str(job.id_task) + ', type: ' + str(job.job_type) + ', job: ' + str(job.job_id))
+                #for task in job.tasks:
+                    #print('Task ' + str(task.id_task) + ', de job ' + str(task.job_id) + ' con ' + str(task.profile_task))
 
     # Calculate the job limits from the Workload
     job_limits = {
@@ -82,6 +113,7 @@ Args:
         'clusters': []
     }
     _generate_clusters(library, platform_description, core_pool, platform)
+    print()
     print(f'Built platform with %s cluster, %s nodes, %s processors and %s cores' % (
           core_pool['counters']['cluster'], core_pool['counters']['node'],
           core_pool['counters']['processor'], core_pool['counters']['core']))
@@ -126,12 +158,19 @@ def _generate_nodes(library: dict, cluster_desc: dict, core_pool: dict, cluster_
             _generate_processors(library, node_desc, core_pool, node_el)
 
 def _node_el(library: dict, node_desc: dict, core_pool: dict, cluster_el: dict) -> dict:
+    id = library['node'][node_desc['type']]['id']
     max_mem = library['node'][node_desc['type']]['memory']['capacity']
+    #print()
+    #print('Comm_vol nodo: ' + str(library['node'][node_desc['type']]['comm_vol']))
+    comm_vol = library['node'][node_desc['type']]['comm_vol']
     node_el = {
+        'id': id,
         'cluster': cluster_el,
         'max_mem': max_mem,
         'current_mem': max_mem,
-        'local_processors': []
+        'local_processors': [],
+        'comm_vol' : comm_vol,
+        'current_comm_vol' : 0,
     }
     cluster_el['platform']['total_nodes'] += 1
     cluster_el['local_nodes'].append(node_el)

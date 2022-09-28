@@ -8,6 +8,7 @@ import random
 import numpy as np
 from procset import ProcSet
 import Job
+import Job_seq
 from manager import JobScheduler, ResourceManager
 from Changes_Cores import ChangesCores
 from resource import number_p_states
@@ -91,7 +92,6 @@ Args:
     job (batsim.batsim.Job):
         The completed Job.
         """
-
         # Record memory bandwidth over-utilization releases
         modified, mem_bw_utilization_changes = self.resource_manager.update_state(
             job, list(job.allocation), 'FREE', self.bs.time()
@@ -150,6 +150,7 @@ pending Jobs or no more resources available for the next selected.
                 serviceable = False
             else:
                 job.allocation = resources
+                job.allocation = (list(job.tasks))
                 scheduled_jobs.append(job)
                 self.job_scheduler.remove_job()
         # Execute the jobs if they exist

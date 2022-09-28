@@ -4,7 +4,11 @@ Defines HDeepRM managers, which are in charge of mapping Jobs to resources.
 
 import random
 import heapq
+from irmasim.Job_seq import Job_seq
+from irmasim.Job_MPI import Job_MPI
+from irmasim.Task import Task
 from irmasim.Job import Job
+
 
 class JobScheduler:
     """Selects Jobs from the Job Queue to be processed in the Platform.
@@ -62,6 +66,11 @@ Args:
         Incoming Job to be inserted into the Job Queue.
         """
         self.pending_jobs.append(job)
+        #print()
+        #print('Lista pending tasks: ')
+        #for task in self.pending_jobs:
+            #print('Task ' + str(task.id_task) + ', pending tasks: ' + str(task.pending_tasks))
+        #print()
 
     def remove_job(self) -> None:
         """Removes the first selected job from the queue.
@@ -69,6 +78,15 @@ Args:
 It uses the cached peeked Job for removal.
         """
         self.pending_jobs.remove(self.peeked_job)
+        for task in self.pending_jobs:
+            if task.job_type == 2 and self.peeked_job.job_type == 2 and self.peeked_job.job_id == task.job_id:
+                task.task_executed()
+        #print()
+        #print('Lista pending tasks: ')
+        #for task in self.pending_jobs:
+            #print('Task ' + str(task.id_task) + ', pending tasks: ' + str(task.pending_tasks))
+        #print()
+
 
     def show_first_job_in_queue(self) -> Job:
         return self.jobs_queue[0]
@@ -152,14 +170,68 @@ Args:
 Returns:
     Set of Cores as a :class:`~procset.ProcSet`. None if not enough resources available.
         """
+        prueba = []
+        available = []
 
         # Save the temporarily selected cores. We might not be able to provide the
         # asked amount of cores, so we would need to return them back
         selected = []
 
-        available = [core for core in self.core_pool if not core.state['served_job']]
-        if len(available) < job.resources:
+        # las tareas MPI se pueden planificar en cualquier core libre del sistema
+        if job.job_type == 2:
+            available = [core for core in self.core_pool if not core.state['served_job']]
+
+        copia = [ core for core in self.core_pool if not core.state['served_job']]
+
+        #print('Id job: ' + str(job.job_id) + ', Job type: ' + str(job.job_type) + ', available: ' + str(len(available)))
+
+        # se asigna el primer nodo que cumpla que tenga el numero suficiente de cores
+        # first fit en vez de best fit
+
+        print()
+
+        if job.job_type == 1:
+            i = 0
+            while i < len(copia):
+                prueba = []
+                prueba.append(copia[i])
+                for core in copia:
+                    if core not in prueba and ((copia[i].processor)['node'])['id'] == ((core.processor)['node'])['id']:
+                        prueba.append(core)
+                if (len(prueba) >= job.resources):
+                    break
+                else:
+                    i = i + len(prueba)
+
+        # modifico lista available por si lo que hacia estaba mal no estar
+        # tocandola innecesariamente
+        if job.job_type == 1:
+            available = prueba.copy()
+
+        #print('Quedan por ejecutar ' + str(job.num_tasks_job_pending) + ' tareas')
+
+        #print()
+        #print('Len available: ' + str(len(available)))
+
+        print('job ' + str(job.job_id))
+
+        if job.job_type == 1 and len(available) < job.resources:
+            print()
+            print('ERROR: job ' + str(job.job_id))
+            print('len available: ' + str(len(available)) + ', job resources: ' + str(job.resources))
             return None
+        elif job.job_type == 2 and len(available) < job.pending_tasks:
+            print()
+            print('ERROR: task ' + str(job.id_task) + ' del job ' + str(job.job_id))
+            print('len available: ' + str(len(available)) + ', pending tasks: ' + str(job.pending_tasks))
+            return None
+
+        # la ejecucion se bloquea si no hay recursos suficientes
+        """if job.job_type == 1 and len(available) < job.resources:
+            return None
+        elif job.job_type == 2 and len(available) < len(job.tasks):
+            return None"""
+
         for _ in range(job.resources):
             mem_available = [
                 core for core in available if core.processor['node']['current_mem'] >= job.mem
@@ -172,11 +244,22 @@ Returns:
                 else:
                     mem_available.sort(key=self.sorting_key)
                     selected_id = mem_available[0].id
+                    # forma de comprobar que los jobs secuenciales esperan que haya un nodo con los cores suficientes
+                    #selected_id = mem_available[len(mem_available) - 1].id (esta linea es mia, no del simulador)
                 # Update the core state
                 self.update_state(job, [selected_id], 'LOCKED', now)
 
                 # Add its ID to the temporarily selected core buffer
                 selected.append(selected_id)
+
+                # prueba para ver la contencion de memoria
+                """print('Capacidad de memoria del nodo: ')
+                print((mem_available[0].processor)['node']['max_mem'])
+                print()
+                print('Memoria utilizada por las tareas del job: ')
+                print(job.profile['mem'])
+                print()"""
+
                 available = [core for core in available if core.id not in selected]
             else:
                 # There are no sufficient resources, revert the state of the
@@ -184,6 +267,17 @@ Returns:
                 print("Memoria Insuficiente")
                 self.update_state(job, selected, 'FREE', now, free_resource_job=True)
                 return None
+
+            #TODO: arreglar este codigo
+            print()
+            if job.job_type == 1:
+                print('Job ' + str(job.job_id) + ': planificado')
+            elif job.job_type == 2:
+                print('Task ' + str(job.id_task) + ': planificada del job ' + str(job.job_id))
+            print('Se ejecuta en los cores: ')
+            for id in selected:
+                print(id)
+
         return selected
 
     def update_state(self, job: Job, id_list: list, new_state: str, now: float, free_resource_job : bool = False) -> None:
@@ -211,6 +305,10 @@ Returns:
         # Modify states of the cores
         # Associate each affected core with a new P-State
 
+        """print('Cores cuyos estados van a ser modificados')
+        for id in id_list:
+            print('core ' + str(id) + ', estado ' + str(new_state))"""
+
         for id in id_list:
             score = self.core_pool[id]
             processor = score.processor
@@ -228,9 +326,10 @@ Returns:
                         served_jobs_processor += 1
 
                 self.overutilization_mem_bw_change_speed(now, processor,
-                                                         served_jobs_processor)
+                                                         served_jobs_processor, job)
 
             elif new_state == 'FREE':
+
                 if free_resource_job:
                     job.allocation = []
                 score.set_state("NEIGHBOURS-RUNNING", now)
@@ -247,13 +346,41 @@ Returns:
                         served_jobs_processor += 1
 
                 self.overutilization_mem_bw_change_speed(now, processor,
-                                                         served_jobs_processor)
+                                                         served_jobs_processor, job)
 
             else:
                 raise ValueError('Error: unknown state')
 
+            """elif new_state == 'FREE' and job.job_type == 3:
+
+                for core in self.core_pool:
+                    if core.state['served_job'] and core.state['served_job'].job_id == job.job_id:
+                        if job.pending_tasks == 1:
+
+                            if free_resource_job:
+                                core.state['served_job'].allocation = []
+                            core.set_state("NEIGHBOURS-RUNNING", now)
+                            all_inactive = all(not lcore.state['served_job']
+                                               for lcore in processor['local_cores'])
+
+                            served_jobs_processor = 0
+                            for lcore in processor['local_cores']:
+                                # If this was the last core being utilized, lower all
+                                # cores of processor from indirect energy consuming
+                                if all_inactive:
+                                    lcore.set_state("IDLE", now)
+                                if lcore.state['served_job'] != None:
+                                    served_jobs_processor += 1
+
+                            self.overutilization_mem_bw_change_speed(now, processor,
+                                                                     served_jobs_processor, job)
+                        # TODO: probando a arreglar cosas
+                        core.state['current_gflops'] = 0"""
+
+
+
     def overutilization_mem_bw_change_speed(self, now, processor,
-                                            served_jobs_processor):
+                                            served_jobs_processor, job):
         # Check mem_bw in proccessor
         for lcore in processor['local_cores']:
             # If the memory bandwidth capacity is now overutilized,
@@ -285,9 +412,62 @@ Returns:
                     else:
                         return lcore.b*(x-lcore.c)+1
 
-                speedup = round(perf(x, y, n),9)
+                # cambiando los speedups
+                speedup_mem = round(perf(x, y, n),9)
+                speedup_comm = self.overutilization_comm_bw_change_speed(now, processor, served_jobs_processor, job)
+
+                if lcore.state['served_job'].job_type == 1:
+                    speedup = speedup_mem
+                elif lcore.state['served_job'].job_type == 2:
+                    speedup = ((1 - lcore.state['served_job'].t_compute) * speedup_comm) + (speedup_mem * lcore.state['served_job'].t_compute)
 
                 lcore.set_state("RUN", now, speedup=speedup)
 
                 with open('{0}/speedup.log'.format(self.options['output_dir']), 'a') as f_speed:
                     f_speed.write(f'{lcore.id},{speedup},{now},{lcore.state["served_job"].name}, {x}, {y},{n}\n')
+
+    def overutilization_comm_bw_change_speed(self, now, processor, served_jobs_processor, job) -> float:
+
+        node_task = processor['node']
+        speedup = 1
+        tasks = []
+
+
+        id_node = len(node_task['local_processors'])
+        #print()
+        #print('Node ' + str(id_node))
+
+        """for processor in processor['node']['local_processors']:
+            for core in processor['local_cores']:
+                print('Core id ' + str(core.id) + ', comm_vol ' + str(core.state['current_comm_vol']))"""
+
+        # recorrido de todos los cores de la plataforma
+        for node in processor['node']['cluster']['local_nodes']:
+            if node != node_task:
+                node_comm_vol = 0
+                for processor in node['local_processors']:
+                    for core in processor['local_cores']:
+                        if core.state['current_comm_vol'] > 0 and core.state['served_job'].job_id == job.job_id:
+                            #print('EXISTE OTRA TAREA CON LA QUE COMUNICARSE')
+                            node_comm_vol = node_comm_vol + core.state['current_comm_vol']
+            else:
+                for processor in node['local_processors']:
+                    for core in processor['local_cores']:
+                        if core.state['served_job'] and core.state['served_job'].job_id == job.job_id and core.state['served_job'] not in tasks:
+                            tasks.append(core.state['served_job'])
+                            #print('Sumando core ' + str(core.id))
+
+        node_comm_vol = node_comm_vol * len(tasks)
+        node['current_comm_vol'] = node_comm_vol
+        """print('num tasks node: ' + str(num_task_node))
+        print('node comm vol: ' + str(node_comm_vol))
+        print()"""
+
+        if node_comm_vol > node_task['comm_vol']:
+            print()
+            print('Se esta superando el comm bw del nodo ' + str(id_node) + ' por culpa del job ' + str(job.job_id))
+            print('node comm vol ini: ' + str(node_comm_vol / len(tasks)) + ', num tasks node ' + str(len(tasks)))
+            print('Node comm bw: ' + str(node_task['comm_vol']) + ', node comm vol: ' + str(node_comm_vol))
+            speedup = 0.8
+
+        return speedup

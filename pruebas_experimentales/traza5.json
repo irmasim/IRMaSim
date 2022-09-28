@@ -1,0 +1,25 @@
+{
+   "nb_res": 60,
+   "num_instructions": "TRUE",
+   "jobs": [
+   
+		{"id": "job57218", "job_type": 2, "subtime": 0, "res": 1, "profile": "prof_job", "num_nodes" : 1, "tasks" : [
+				{"id_task" : 1, "profile_task" : "prof_task"},
+				{"id_task" : 2, "profile_task" : "prof_task"},
+				{"id_task" : 3, "profile_task" : "prof_task"},
+				{"id_task" : 4, "profile_task" : "prof_task"},
+				{"id_task" : 5, "profile_task" : "prof_task"},
+				{"id_task" : 6, "profile_task" : "prof_task"},
+				{"id_task" : 7, "profile_task" : "prof_task"},
+				{"id_task" : 8, "profile_task" : "prof_task"},
+				{"id_task" : 9, "profile_task" : "prof_task"}], 
+		"comm_vol" : 100, "t_compute" : 0.90}
+
+   ],
+   
+   "profiles": {
+	"tester": { "req_ops": 1000000, "ipc": 1, "req_time": 10, "mem": 10, "mem_vol": 10 },
+	"prof_task": { "req_ops": 5000007, "ipc": 5, "req_time": 15, "mem": 10, "mem_vol": 10 },
+	"prof_job": { "req_ops": 1, "ipc": 1, "req_time": 1, "mem": 1, "mem_vol": 1 }
+   }
+}

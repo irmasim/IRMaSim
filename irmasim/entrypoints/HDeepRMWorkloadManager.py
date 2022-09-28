@@ -10,6 +10,9 @@ import logging
 import os.path as path
 import numpy as np
 import torch
+from irmasim.Job_seq import Job_seq
+from irmasim.Job_MPI import Job_MPI
+from irmasim.Task import Task
 from irmasim.Job import Job
 from irmasim.agent import Agent, ClassicAgent
 from irmasim.environment import Environment

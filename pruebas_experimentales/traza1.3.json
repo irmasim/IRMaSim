@@ -1,0 +1,38 @@
+{
+   "nb_res": 60,
+   "num_instructions": "TRUE",
+   "jobs": [
+   
+	{"id": "job57218", "job_type": 1, "subtime": 0, "res": 2, "profile": "tester"},
+	
+	{"id": "job57219", "job_type": 2, "subtime": 0, "res": 1, "profile": "prof_job", "num_nodes" : 1, "tasks" : [
+				{"id_task" : 1, "profile_task" : "prof_task"},
+				{"id_task" : 2, "profile_task" : "prof_task"},
+				{"id_task" : 3, "profile_task" : "prof_task"},
+				{"id_task" : 4, "profile_task" : "prof_task"},
+				{"id_task" : 5, "profile_task" : "prof_task"},
+				{"id_task" : 6, "profile_task" : "prof_task"},
+				{"id_task" : 7, "profile_task" : "prof_task"},
+				{"id_task" : 8, "profile_task" : "prof_task"},
+				{"id_task" : 9, "profile_task" : "prof_task"},
+				{"id_task" : 10, "profile_task" : "prof_task"},
+				{"id_task" : 11, "profile_task" : "prof_task"},
+				{"id_task" : 12, "profile_task" : "prof_task"}], 
+		"comm_vol" : 5, "t_compute" : 0.90},
+	
+	{"id": "job57220", "job_type": 2, "subtime": 0, "res": 1, "profile": "prof_job", "num_nodes" : 1, "tasks" : [
+				{"id_task" : 1, "profile_task" : "prof_task"},
+				{"id_task" : 2, "profile_task" : "prof_task"},
+				{"id_task" : 3, "profile_task" : "prof_task"},
+				{"id_task" : 4, "profile_task" : "prof_task"}], 
+		"comm_vol" : 5, "t_compute" : 0.90}
+	
+	
+   ],
+   
+   "profiles": {
+	"tester": { "req_ops": 1000000, "ipc": 1, "req_time": 10, "mem": 5, "mem_vol": 5 },
+	"prof_task": { "req_ops": 5000000, "ipc": 5, "req_time": 15, "mem": 2, "mem_vol": 2 },
+	"prof_job": { "req_ops": 1, "ipc": 1, "req_time": 1, "mem": 1, "mem_vol": 1 }
+   }
+}

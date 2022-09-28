@@ -235,9 +235,17 @@ Returns:
             # Clip it
             return max(0.0, min(1.0, variation_ratio))
 
+        list = []
+
         observation = []
         if otype != 'minimal':
             for cluster in self.workload_manager.simulator.clusters_platform():
+                #probando
+                for node in cluster['local_nodes']:
+                    for processor in node['local_processors']:
+                        for core in processor['local_cores']:
+                            list.append(core)
+
                 for node in cluster['local_nodes']:
                     # Node: current fraction of memory available
                     observation.append(node['current_mem'] / node['max_mem'])

@@ -17,12 +17,13 @@ class Statistics:
             self.latest_energy.append(self.energy[-1])
             self.latest_edp.append(self.edp[-1])
 
-    def write_results(self, time : float, finished_jobs : list):
+    def write_results(self, time : float, finished_jobs : list, total_comm_vol : float):
         with open('{0}/statistics.json'.format(self.options['output_dir']), 'w') as out_f:
             data = {
                 "Energy_Consumed (J)" : sum(self.energy),
                 "EDP (J*seconds)" : sum(self.edp),
-                "Makespan (seconds)": time
+                "Makespan (seconds)": time,
+                "Total communication volume (B)" : total_comm_vol
             }
             json.dump(data, out_f, indent=4)
         with open('{0}/jobs.log'.format(self.options['output_dir']), 'w') as out_f:

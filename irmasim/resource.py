@@ -2,6 +2,9 @@
 Core class and functionality for defining the Resource Hierarchy in the Decision System.
 """
 import logging
+from irmasim.Job_seq import Job_seq
+from irmasim.Job_MPI import Job_MPI
+from irmasim.Task import Task
 from irmasim.Job import Job
 import math
 
@@ -76,6 +79,7 @@ Attributes:
             'speedup': 0.0,
             'current_gflops': 0.0,
             'current_mem_bw': 0.0,
+            'current_comm_vol': 0.0,
             'current_power': min_power * self.static_power,
             'job_remaining_ops': 0.0,
             # When active, the Core is serving a Job which is stored as part of its state
@@ -107,10 +111,12 @@ Args:
                 self.state['job_remaining_ops'] = new_served_job.req_ops
                 self.state['last_update'] = now
                 self.state['current_mem_bw'] = new_served_job.mem_vol / \
-                                               (new_served_job.req_ops / (self.processor['gflops_per_core'] * 1e9))
-
+                                                   (new_served_job.req_ops / (self.processor['gflops_per_core'] * 1e9))
+                if new_served_job.job_type == 2:
+                    self.state['current_comm_vol'] = new_served_job.comm_vol
                 self.processor['current_mem_bw'] += self.state['current_mem_bw']
                 self.processor['node']['current_mem'] -= new_served_job.mem
+
             else:
                 self.update_completion(now)
             # 100% Power
@@ -123,7 +129,24 @@ Args:
                 self.processor['current_mem_bw'] -= self.state['current_mem_bw']
                 self.processor['node']['current_mem'] += self.state['served_job'].mem
                 self.state['current_mem_bw'] = 0
-                self.state['served_job'] = None
+                self.state['current_comm_vol'] = 0 #TODO: posible fallo
+                print()
+                if self.state['served_job'].job_type == 1:
+                    print('Finish task ' + str(self.state['served_job'].allocation) + ', job ' + str(self.state['served_job'].job_id))
+                else:
+                    print('Finish task ' + str(self.state['served_job'].id_task) + ', job ' + str(self.state['served_job'].job_id))
+                #TODO: inventando para intentar arrreglar el fallo de la division entre 0
+                if self.state['served_job'].job_type == 2 and self.state['served_job'].pending_tasks == 1:
+                    for node in self.processor['node']['cluster']['local_nodes']:
+                        for processor in node['local_processors']:
+                            for core in processor['local_cores']:
+                                if core.state['served_job'] and self.state['served_job']:
+                                    if core.state['served_job'].job_id == self.state['served_job'].job_id:
+                                        self.state['served_job'] = None #TODO: esta linea es la que tiene que estar seguro
+                elif self.state['served_job'].job_type == 1:
+                    self.state['served_job'] = None
+
+                print('Core ' + str(self.id) + ', time ' + str(now))
             # 0% GFLOPS
             self.state['speedup'] = 0.0
             self.state['current_gflops'] = 0.0
@@ -152,6 +175,7 @@ Args:
             if self.state['job_remaining_ops'] <= 0:
                 self.processor['current_mem_bw'] -= self.state['current_mem_bw']
                 self.state['current_mem_bw'] = 0.0
+                self.state['current_comm_vol'] = 0 #TODO: posible fallo
                 self.state['job_remaining_ops'] = 0
             self.state['last_update'] = now
 
@@ -164,7 +188,7 @@ Calculated by dividing the remaining operations by the total requested on arriva
         return self.state['job_remaining_ops'] / self.state['served_job'].req_ops
 
     def __str__(self):
-        return str(self.id) + ": " + str(self.processor['current_mem_bw']) + " " + str(
+        return "Core " + str(self.id) + ": " + str(self.processor['current_mem_bw']) + " " + str(
             self.processor['gflops_per_core'])
 
     def __lt__(self, other):

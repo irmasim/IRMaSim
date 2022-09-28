@@ -1,9 +1,13 @@
 import heapq
 import math
+import matplotlib.pyplot as plt
 
 # TODO Consider removing the entrypoints folder/package
 from irmasim.entrypoints.HDeepRMWorkloadManager import HDeepRMWorkloadManager
 from irmasim.manager import JobScheduler, ResourceManager
+from irmasim.Job_seq import Job_seq
+from irmasim.Job_MPI import Job_MPI
+from irmasim.Task import Task
 from irmasim.Job import Job
 from irmasim.Statistics import Statistics
 
@@ -59,8 +63,42 @@ class Simulator:
         self.end_simulation()
 
     def end_simulation(self) -> None:
+
+        # TODO: probando a escribir volumen total de comunicaciones
+
+        total_comm_vol = 0
+
+        for cluster in self.resource_manager.platform['clusters']:
+            for node in cluster['local_nodes']:
+                if node['current_comm_vol'] > total_comm_vol:
+                    total_comm_vol = node['current_comm_vol']
+
+        print()
+        print('Total comm vol ' + str(total_comm_vol))
+
         self.scheduler.onSimulationEnds()
-        self.statistics.write_results(self.simulation_time, self.job_scheduler.finished_jobs)
+        self.statistics.write_results(self.simulation_time, self.job_scheduler.finished_jobs, total_comm_vol)
+        print()
+
+
+
+        # VAMOS A HACER AQUI LAS GRAFICAS
+
+        """ 
+        ## Declaramos valores para el eje y, en este caso son categorias
+        eje_x = ['Job 1 (seq)', 'Job 2 (MPI)', 'Job 3 (MPI)']
+
+        ## Declaramos valores para el eje x, ahora son los valores
+        eje_y = [1, 1.020408164, 1]
+
+        ## Creamos Gráfica y ponesmos las barras de color verde
+        plt.barh(eje_x, eje_y, color="grey", alpha=0.5)
+
+        plt.ylabel('Jobs de la traza')
+        plt.xlabel('Tiempo de espera + Tiempo de ejecución, (s)')
+        plt.title('Ejecución cuarta traza')
+        plt.show() """
+
         print("Finish Simulation")
 
     def nb_pending_jobs(self) -> int:
@@ -97,11 +135,15 @@ class Simulator:
             resources = self.resource_manager.get_resources(job, self.simulation_time)
             if not resources:
                 serviceable = False
+                print('De momento no se puede planificar el job ' + str(job.job_id))
 
             else:
                 job.allocation = resources
                 scheduled_jobs.append(job)
+                print()
+                print('Comienza a ejecutarse el job ' + str(job.job_id) + ' en el instante ' + str(self.simulation_time))
                 self.job_scheduler.remove_job()
+
         # Execute the jobs if they exist
         if scheduled_jobs:
             self.job_scheduler.nb_active_jobs += len(scheduled_jobs)
@@ -111,6 +153,7 @@ class Simulator:
         time_finish_one_core = float("inf")
         for job in self.job_scheduler.jobs_running:
 
+            #TODO: intentando arreglar
             time_finish_core_job = min([math.ceil(self.resource_manager.core_pool[id].state['job_remaining_ops'] / \
                                 self.resource_manager.core_pool[id].state['current_gflops'] * 1e9)/1e9
                                 for id in job.allocation
@@ -124,7 +167,7 @@ class Simulator:
             time_min_job_start = self.job_scheduler.show_first_job_in_queue().subtime
             if time_min_job_start <= self.simulation_time + time_finish_one_core:
                 return time_min_job_start
-        return self.simulation_time + time_finish_one_core
+        return self.simulation_time + (time_finish_one_core) # * 1.25)   este es el tiempo a multiplicar por 1.25
 
 
 
