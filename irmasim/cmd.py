@@ -1,9 +1,4 @@
-"""
-Command line scripts for managing HDeepRM experiments.
-"""
-
 import argparse as ap
-import csv
 import copy
 import json
 import sys
@@ -16,19 +11,8 @@ import time
 from irmasim.util import generate_workload, generate_platform
 from irmasim.Simulator import Simulator
 
+
 def launch() -> None:
-    """Utility for launching HDeepRM experiments.
-
-It takes care of creating the Platform XML file, the Workload JSON file and the Resource Hierarcy.
-It also runs both Batsim and PyBatsim.
-
-Command line arguments:
-    | ``options_file`` - Options file in JSON.
-    | ``agent`` (Optional) File with the learning agent definition.
-    | ``inmodel`` - (Optional) Path for previous model loading.
-    | ``outmodel`` - (Optional) Path for saving new model.
-    | ``nbruns`` - (Optional) Number of train runs for the learning agent.
-    """
 
     start_time = time.time()
     parser = ap.ArgumentParser(description='Launches IRMaSim experiments')
@@ -46,7 +30,7 @@ Command line arguments:
     args = parser.parse_args()
     # Default options
     # TODO Use the random seed
-    options = { 'seed': 0, 'output_dir': '.' }
+    options = {'seed': 0, 'output_dir': '.'}
     # By default the library path is the data directory bundled with the code
     options['platform_library_path'] = path.join(path.dirname(__file__), 'data')
 
@@ -55,9 +39,9 @@ Command line arguments:
 
     # Load options from config file
     if args.options_file:
-       print(f'Loading options from {args.options_file}')
-       with open(args.options_file, 'r') as in_f:
-           options.update(json.load(in_f))
+        print(f'Loading options from {args.options_file}')
+        with open(args.options_file, 'r') as in_f:
+            options.update(json.load(in_f))
 
     # Override config file options with command line arguments
     if args.platform_name:
@@ -79,17 +63,16 @@ Command line arguments:
     if args.outmodel:
         options['agent']['output_model'] = path.abspath(args.outmodel)
 
-
     # Check for minimum operating parameters
-    if not 'platform_name' in options:
-       parser.print_help()
-       print('Need to specify a platform to simulate. Either with -n or in an options_file.')
-       sys.exit(1)
+    if 'platform_name' not in options:
+        parser.print_help()
+        print('Need to specify a platform to simulate. Either with -n or in an options_file.')
+        sys.exit(1)
 
-    if not 'workload_file' in options:
-       parser.print_help()
-       print('Need to specify a workload to simulate. Either with -w or in an options_file.')
-       sys.exit(1)
+    if 'workload_file' not in options:
+        parser.print_help()
+        print('Need to specify a workload to simulate. Either with -w or in an options_file.')
+        sys.exit(1)
 
     # Set the seed for pseudo-random number generators
     print(f'Setting the random seed to {options["seed"]}')
@@ -97,16 +80,13 @@ Command line arguments:
     np.random.seed(options['seed'])
 
     # Generate the Platform and Resource Hierarchy
-    platform = None
-    core_pool = None
-    platform, core_pool = generate_platform( options['platform_name'], options.get('platform_file'), options['platform_library_path'])
+    platform = generate_platform(options['platform_name'], options.get('platform_file'),
+                                            options['platform_library_path'])
 
     # Generate the Workload
-    job_limit = None
-    jobs = None
     job_limit, jobs = generate_workload(options['workload_file'], core_pool)
 
-    data = {"job_limit" : job_limit, "jobs": jobs, "platform": platform, "core_pool": core_pool}
+    data = {"job_limit": job_limit, "jobs": jobs, "platform": platform, "core_pool": core_pool}
     with open('{0}/data_tmp.pickle'.format(options['output_dir']), 'wb') as out_f:
         pickle.dump(data, out_f)
 
@@ -116,6 +96,6 @@ Command line arguments:
         Simulator(data["job_limit"], data["jobs"], data["core_pool"],
                   data["platform"], copy.deepcopy(options))
 
-    os.remove(options['output_dir']+"/data_tmp.pickle")
-    print("Execution time " + str(time.time()-start_time) + " seconds")
+    os.remove(options['output_dir'] + "/data_tmp.pickle")
+    print("Execution time " + str(time.time() - start_time) + " seconds")
     sys.exit(0)

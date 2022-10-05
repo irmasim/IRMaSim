@@ -1,5 +1,6 @@
 from irmasim.Job import Job
 
+
 class Task:
 
     def __init__(self, job: Job, resource: list, ops: float, opc: float, memory: float, memory_volume: float):
@@ -9,4 +10,3 @@ class Task:
         self.opc = opc
         self.memory = memory
         self.memory_volume = memory_volume
-

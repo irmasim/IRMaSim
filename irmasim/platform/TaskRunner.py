@@ -1,13 +1,11 @@
-from irmasim.Job import Job
 from irmasim.platform.Resource import Resource
 from irmasim.platform.EnergyConsumer import EnergyConsumer
 
 
 class TaskRunner(Resource, EnergyConsumer):
 
-    def __init__(self, id: str):
-        super(TaskRunner, self).__init__(id=id)
-        pass
+    def __init__(self, id: str, config: dict):
+        super(TaskRunner, self).__init__(id=id, config=config)
 
     """
     {
@@ -44,3 +42,9 @@ class TaskRunner(Resource, EnergyConsumer):
 
     def get_joules(self, delta_time: float):
         return sum([child.get_joules() for child in self.children])
+
+    def enumerate_resources(self):
+        if self.children:
+            return [self.id + child.enumerate_resources() for child in self.children]
+        else:
+            return [self.id]

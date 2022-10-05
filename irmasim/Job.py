@@ -1,8 +1,9 @@
 import math
+
+
 class Job:
 
-
-    def __init__(self, id: int, name : str,subtime : float, resources: int, profile : dict, type : str):
+    def __init__(self, id: int, name: str, subtime: float, resources: int, profile: dict, type: str):
         self.id = id
         self.name = name
         self.type = type
@@ -19,13 +20,12 @@ class Job:
         self.tasks = []
 
     def is_job_finished(self):
-        return sum([(1) for task in self.tasks if task.ops > 0.0]) == 0
-
+        return sum([1 for task in self.tasks if task.ops > 0.0]) == 0
 
     def __lt__(self, other):
         return self.subtime < other.subtime
 
     def __eq__(self, other):
-        if other == None:
+        if other is None:
             return False
         return self.id == other.id

@@ -72,7 +72,7 @@ It uses the cached peeked Job for removal.
         """
         self.pending_jobs.remove(self.peeked_job)
 
-    def show_first_job_in_queue(self) -> Job:
+    def peek_job(self) -> Job:
         return self.jobs_queue[0]
 
     def pop_first_job_in_queue(self) -> Job:

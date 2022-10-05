@@ -272,13 +272,13 @@ Returns:
                                      remaining_per]
                                 )
         req_time = np.array(
-            [job.req_time for job in self.workload_manager.simulator.pending_jobs()])
+            [job.req_time for job in self.workload_manager.simulator.future_jobs()])
         req_core = np.array(
-            [job.resources for job in self.workload_manager.simulator.pending_jobs()])
+            [job.resources for job in self.workload_manager.simulator.future_jobs()])
         req_mem = np.array(
-            [job.mem for job in self.workload_manager.simulator.pending_jobs()])
+            [job.mem for job in self.workload_manager.simulator.future_jobs()])
         req_mem_vol = np.array(
-            [job.mem_vol for job in self.workload_manager.simulator.pending_jobs()])
+            [job.mem_vol for job in self.workload_manager.simulator.future_jobs()])
         # Calculate percentiles for each requested resource
         # Each percentile is tranformed into a fraction relative to the maximum value
         job_limits = self.workload_manager.simulator.job_limits()
@@ -347,7 +347,7 @@ Returns:
         """
 
         pending_jobs_req_time = [
-            job.req_time for job in self.workload_manager.job_scheduler.pending_jobs
+            job.req_time for job in self.workload_manager.job_scheduler.future_jobs
         ]
         active_jobs = set(core.state['served_job'] for core \
                           in self.workload_manager.resource_manager.core_pool \

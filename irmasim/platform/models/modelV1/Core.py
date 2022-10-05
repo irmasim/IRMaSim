@@ -2,28 +2,29 @@ from irmasim.platform.BasicCore import BasicCore
 from irmasim.platform.models.modelV1.Processor import Processor
 from irmasim.platform.models.modelV1.Node import Node
 from irmasim.Job import Job
+import math
+
 
 class Core (BasicCore):
 
-    def __init__(self, id: str, dynamic_power: float, static_power: float, min_power: float,
-                 b: int, c: int, da: int, db: int, dc: int, dd: int):
-        super().__init__(id=id)
-        self.dynamic_power = dynamic_power
-        self.static_power = static_power
-        self.min_power = min_power
-        self.b = b
-        self.c = c
-        self.da = da
-        self.db = db
-        self.dc = dc
-        self.dd = dd
+    def __init__(self, id: str, config: dict):
+        super().__init__(id=id, config=config)
+        self.dynamic_power = config['dynamic_power']
+        self.static_power = config['static_power']
+        self.min_power = config['min_power']
+        self.b = config['b']
+        self.c = config['c']
+        self.da = config['da']
+        self.db = config['db']
+        self.dc = config['dc']
+        self.dd = config['dd']
         self.mops = 0.0
         self.speedup = 1.0
         self.task = None
         self.current_memory_bandwidth = 0.0
         # TODO change to attributes
         self.state = {
-            'current_power': min_power * self.static_power,
+            'current_power': self.min_power * self.static_power,
             'last_update': 0.0
         }
 
@@ -39,7 +40,10 @@ class Core (BasicCore):
 
 
     def get_next_step(self):
-        return self.task.ops / (self.mops * 1e6 * self.speedup)
+        if not self.task:
+            return math.inf
+        else:
+            return self.task.ops / (self.mops * 1e6 * self.speedup)
 
     def advance(self, delta_time: float):
         if self.task != None:

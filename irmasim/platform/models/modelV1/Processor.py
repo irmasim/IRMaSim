@@ -4,8 +4,8 @@ from irmasim.Job import Job
 
 class Processor (BasicProcessor):
 
-    def __init__(self):
-        super(Processor, self).__init__()
+    def __init__(self, id: str, config: dict):
+        super(Processor, self).__init__(id=id, config=config)
         self.requested_memory_bandwidth = 0.0
         self.mops_per_core = 0
 
