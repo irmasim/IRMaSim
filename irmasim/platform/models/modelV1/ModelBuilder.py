@@ -10,57 +10,89 @@ from irmasim.platform.models.modelV1.Core import Core
 
 class ModelBuilder:
 
-    def __init__(self, platform_description: dict, library: dict):
-        self.platform_description = platform_description
-        self.library = library
+    def __init__(self, platform_description: dict = None, library: dict = None, builder: "ModelBuilder" = None):
+        if builder is not None:
+            self.platform_description = builder.platform_description
+            self.library = builder.library
+        else:
+            self.platform_description = platform_description
+            self.library = library
 
     def build_platform(self):
         pprint.pprint(self.library)
         pprint.pprint(self.platform_description)
         platform = Resource(self.platform_description["id"], {})
-        for cluster_definition in self.platform_description["clusters"]:
+        builder = ClusterBuilder(builder= self)
+        self.build_children(builder, self.platform_description, platform, "clusters", "cluster")
+        print(platform.pstr(""))
+        return platform
+
+    def build_resource(self, id: str, definition: dict):
+        pass
+
+    def build_children(self, builder, definition: dict, resource, key, default_id):
+        for child_definition in definition[key]:
             number = 1
-            if "number" in cluster_definition.keys():
-                number = cluster_definition["number"]
-
+            if "number" in child_definition.keys():
+                number = child_definition["number"]
             for i in range(number):
-                cluster = self.build_resource(Cluster, cluster_definition["id"] + str(i), cluster_definition)
-                platform.add_child(cluster)
-
-
-    def build_resource(self, class_name, id: str, definition: dict):
-        child_class = None
-        key = None
-        if class_name == Cluster:
-            child_class = Node
-            key = "nodes"
-        elif class_name == Node:
-            child_class = Processor
-            key = "processors"
-        elif class_name == Processor:
-            child_class = Core
-            key = "cores"
-
-        if "type" in definition.keys() and key is not None:
-            definition = self.library[str(class_name.__name__).lower()][definition["type"]]
-            resource = class_name(id, definition)
-        elif class_name == Core:
-            resource = class_name(id, definition)
-        else:
-            resource = class_name(id, {})
-
-        if key is not None:
-            if key != "cores":
-                pprint.pprint(definition)
-                for child_definition in definition[key]:
-                    number = 1
-                    if "number" in child_definition.keys():
-                        number = child_definition["number"]
-            else:
-                number = definition[key]
-                child_definition = definition
-            for i in range(number):
-                child = self.build_resource(child_class, definition["id"] + str(i), child_definition)
+                if "id" not in child_definition.keys():
+                    child_id = default_id
+                else:
+                    child_id = child_definition["id"]
+                child = builder.build_resource(child_id + str(i), child_definition)
                 resource.add_child(child)
-        print(resource)
+
+
+class ClusterBuilder(ModelBuilder):
+
+    def __init__(self, platform_description: dict = None, library: dict = None, builder: "ModelBuilder" = None):
+        super(ClusterBuilder, self).__init__(platform_description=platform_description,
+                                             library=library, builder=builder)
+
+    def build_resource(self, id: str, definition: dict):
+        resource = Cluster(id, {})
+        builder = NodeBuilder(builder= self)
+        self.build_children(builder, definition, resource, "nodes", "node")
         return resource
+
+
+class NodeBuilder(ModelBuilder):
+
+    def __init__(self, platform_description: dict = None, library: dict = None, builder: "ModelBuilder" = None):
+        super(NodeBuilder, self).__init__(platform_description=platform_description,
+                                          library=library, builder=builder)
+
+    def build_resource(self, id: str, definition: dict):
+        definition = self.library["node"][definition["type"]]
+        resource = Node(id, definition)
+        builder = ProcessorBuilder(builder= self)
+        self.build_children(builder, definition, resource, "processors", "processor")
+        return resource
+
+
+class ProcessorBuilder(ModelBuilder):
+
+    def __init__(self, platform_description: dict = None, library: dict = None, builder: "ModelBuilder" = None):
+        super(ProcessorBuilder, self).__init__(platform_description=platform_description,
+                                               library=library, builder=builder)
+
+    def build_resource(self, id: str, definition: dict):
+        definition = self.library["processor"][definition["type"]]
+        resource = Processor(id, definition)
+        builder = CoreBuilder(builder= self)
+        for i in range(definition["cores"]):
+            child = builder.build_resource("core" + str(i), definition)
+            resource.add_child(child)
+
+        return resource
+
+
+class CoreBuilder(ModelBuilder):
+
+    def __init__(self, platform_description: dict = None, library: dict = None, builder: "ModelBuilder" = None):
+        super(CoreBuilder, self).__init__(platform_description=platform_description,
+                                          library=library, builder=builder)
+
+    def build_resource(self, id: str, definition: dict):
+        return Core(id, definition)

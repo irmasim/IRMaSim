@@ -27,7 +27,8 @@ class Core (BasicCore):
             'current_power': self.min_power * self.static_power,
             'last_update': 0.0
         }
-
+    def details(self):
+        return self.id+" ( dynamic_power="+str(self.dynamic_power)+" )"
     def schedule(self, tasks: list):
         if len(tasks) != 1:
             Exception("This core does not model oversubscription")

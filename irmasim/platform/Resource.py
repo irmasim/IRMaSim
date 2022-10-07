@@ -19,4 +19,10 @@ class Resource:
         child.parent = self
 
     def __str__(self):
+        return self.id + " ( " + ", ".join(map(str, self.children)) + " )"
+
+    def pstr(self, indent: str):
+        return indent + self.details() + "\n" + "".join(map(lambda x: x.pstr(indent+" - "), self.children))
+
+    def details(self):
         return self.id

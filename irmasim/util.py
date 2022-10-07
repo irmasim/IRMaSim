@@ -9,9 +9,6 @@ from irmasim.platform.TaskRunner import TaskRunner
 from irmasim.Job import Job
 import importlib
 
-#TODO: Make configurable
-min_power = 0.05
-
 
 def generate_workload(workload_file: str, core_pool: list) -> (dict, dict):
 
@@ -69,7 +66,7 @@ def build_platform(platform_name: str, platform_file_path: str, platform_library
     print(f'Using platform {platform_name}')
     mod = importlib.import_module("irmasim.platform.models."+platform_description["model_name"]+".ModelBuilder")
     klass = getattr(mod, 'ModelBuilder')
-    model_builder = klass(platform_description, library)
+    model_builder = klass(platform_description=platform_description, library=library)
     return model_builder.build_platform()
     """
     clusters = []
