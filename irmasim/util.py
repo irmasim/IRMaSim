@@ -4,12 +4,12 @@ Utilities for parsing and generating Workloads, Platforms and Resource Hierarchi
 
 import json
 import os.path as path
-import heapq
 import numpy
-import irmasim.resource as res
+from irmasim.platform.TaskRunner import TaskRunner
 from irmasim.Job import Job
+import importlib
 
-# TODO: Make configurable
+#TODO: Make configurable
 min_power = 0.05
 
 
@@ -61,25 +61,23 @@ def _build_library(platform_file_path: str, platform_library_path: str) -> dict:
                 types[group].update(types_from_file[group])
     return types
 
-def generate_platform(platform_name: str, platform_file_path: str, platform_library_path: str):
+
+def build_platform(platform_name: str, platform_file_path: str, platform_library_path: str):
 
     library = _build_library(platform_file_path, platform_library_path)
     platform_description = library['platform'][platform_name]
     print(f'Using platform {platform_name}')
-    import pprint
-    pprint.pprint(library)
-    Exception("AAAAAAAAAAAAAAAAAAA")
-    return generate_cluster(platform_description)
-
-def generate_cluster(platform_description: dict):
-    pass
-    """clusters = []
+    mod = importlib.import_module("irmasim.platform.models."+platform_description["model_name"]+".ModelBuilder")
+    klass = getattr(mod, 'ModelBuilder')
+    model_builder = klass(platform_description, library)
+    return model_builder.build_platform()
+    """
+    clusters = []
     for cluster in platform_description['clusters']:
         # TODO parseo del cluster json
         aux = Cluster(id, config))
         aux.children = generate_nodes(cluster, aux)
     return clusters
 """
-
 
 

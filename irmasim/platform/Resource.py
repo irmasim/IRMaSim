@@ -14,5 +14,9 @@ class Resource:
     def get_parent(self):
         return self.parent
 
-    def build(self, library: dict, resource_name: str):
-        pass
+    def add_child(self, child: "Resource"):
+        self.children.append(child)
+        child.parent = self
+
+    def __str__(self):
+        return self.id

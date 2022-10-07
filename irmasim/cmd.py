@@ -8,7 +8,7 @@ import os.path as path
 import numpy as np
 import random as rnd
 import time
-from irmasim.util import generate_workload, generate_platform
+from irmasim.util import generate_workload, build_platform
 from irmasim.Simulator import Simulator
 
 
@@ -80,8 +80,9 @@ def launch() -> None:
     np.random.seed(options['seed'])
 
     # Generate the Platform and Resource Hierarchy
-    platform = generate_platform(options['platform_name'], options.get('platform_file'),
-                                            options['platform_library_path'])
+    # TODO change model name to options data
+    platform = build_platform(options['platform_name'], options.get('platform_file'),
+                                            options['platform_library_path'] )
 
     # Generate the Workload
     job_limit, jobs = generate_workload(options['workload_file'], core_pool)
