@@ -1,6 +1,7 @@
 from irmasim.Job import Job
 import math
 
+
 class JobQueue:
 
     def __init__(self):

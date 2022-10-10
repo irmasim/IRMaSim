@@ -8,7 +8,7 @@ import math
 class Core (BasicCore):
 
     def __init__(self, id: str, config: dict):
-        super().__init__(id=id, config=config)
+        super(Core, self).__init__(id=id, config=config)
         self.dynamic_power = config['dynamic_power']
         self.static_power = config['static_power']
         self.min_power = config['min_power']
@@ -21,7 +21,7 @@ class Core (BasicCore):
         self.mops = 0.0
         self.speedup = 1.0
         self.task = None
-        self.current_memory_bandwidth = 0.0
+        self.requested_memory_bandwidth = 0.0
         # TODO change to attributes
         self.state = {
             'current_power': self.min_power * self.static_power,
@@ -55,7 +55,7 @@ class Core (BasicCore):
     def schedule(self, tasks: list):
         if len(tasks) != 1:
             Exception("This core does not model oversubscription")
-        if tasks[0] != self.tasks:
+        if tasks[0] != self.task:
             Exception("Cannot reap task from resource")
 
         self.task = None

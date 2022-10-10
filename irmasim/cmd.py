@@ -3,17 +3,16 @@ import copy
 import json
 import sys
 import os
+import dill
 import pickle
 import os.path as path
 import numpy as np
 import random as rnd
 import time
-from irmasim.util import generate_workload, build_platform
 from irmasim.Simulator import Simulator
-
+from irmasim.Options import Options
 
 def launch() -> None:
-
     start_time = time.time()
     parser = ap.ArgumentParser(description='Launches IRMaSim experiments')
     parser.add_argument('options_file', type=str, nargs='?', help='File defining the experiment in json format')
@@ -28,14 +27,11 @@ def launch() -> None:
     parser.add_argument('-nr', '--nbruns', type=int, default=1, help='Number of simulations to run')
     parser.add_argument('-v', '--verbose', action="store_true", help='Remove prints in stdout')
     args = parser.parse_args()
-    # Default options
-    # TODO Use the random seed
-    options = {'seed': 0, 'output_dir': '.'}
-    # By default the library path is the data directory bundled with the code
-    options['platform_library_path'] = path.join(path.dirname(__file__), 'data')
 
     if args.verbose:
         sys.stdout = open("/dev/null", "w")
+
+    options = Options().get()
 
     # Load options from config file
     if args.options_file:
@@ -79,24 +75,15 @@ def launch() -> None:
     rnd.seed(options['seed'])
     np.random.seed(options['seed'])
 
-    # Generate the Platform and Resource Hierarchy
-    # TODO change model name to options data
-    platform = build_platform(options['platform_name'], options.get('platform_file'),
-                                            options['platform_library_path'] )
-
-    # Generate the Workload
-    job_limit, jobs = generate_workload(options['workload_file'], core_pool)
-
-    data = {"job_limit": job_limit, "jobs": jobs, "platform": platform, "core_pool": core_pool}
-    with open('{0}/data_tmp.pickle'.format(options['output_dir']), 'wb') as out_f:
-        pickle.dump(data, out_f)
+    simulator = Simulator()
+    with open('{0}/simulator.pickle'.format(options['output_dir']), 'wb') as out_f:
+        pickle.dump(simulator, out_f)
 
     for _ in range(args.nbruns):
-        with open('{0}/data_tmp.pickle'.format(options['output_dir']), 'rb') as in_f:
-            data = pickle.load(in_f)
-        Simulator(data["job_limit"], data["jobs"], data["core_pool"],
-                  data["platform"], copy.deepcopy(options))
+        with open('{0}/simulator.pickle'.format(options['output_dir']), 'rb') as in_f:
+            simulator = pickle.load(in_f)
+        simulator.start_simulation()
 
-    os.remove(options['output_dir'] + "/data_tmp.pickle")
+    os.remove(options['output_dir'] + "/simulator.pickle")
     print("Execution time " + str(time.time() - start_time) + " seconds")
     sys.exit(0)

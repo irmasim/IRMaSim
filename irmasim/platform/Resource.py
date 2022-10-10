@@ -5,11 +5,13 @@ class Resource:
         self.children = []
         self.parent = None
 
-    def find_child(self, id: str) -> object:
+    def find_child(self, id: str):
         for child in self.children:
             if child.id == id:
                 return child
-        Exception("Resource " + self.id + " does not have child " + id)
+        print("Holaaa")
+        print(id)
+        print("Resource " + self.id + " does not have child " + id)
 
     def get_parent(self):
         return self.parent

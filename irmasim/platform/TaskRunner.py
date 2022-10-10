@@ -21,8 +21,11 @@ class TaskRunner(Resource, EnergyConsumer):
 
     def schedule(self, tasks: list):
         for task in tasks:
-            child = self.find_child(task.resource.pop(0))
-            self.pre_schedule([task])
+            x = task.resource.pop(0)
+            import pprint
+            pprint.pprint(x)
+            child = self.find_child(x)
+            self.pre_schedule()
             child.schedule([task])
 
     def pre_schedule(self):
@@ -41,10 +44,18 @@ class TaskRunner(Resource, EnergyConsumer):
             child.reap([task])
 
     def get_joules(self, delta_time: float):
-        return sum([child.get_joules() for child in self.children])
+        return sum([child.get_joules(delta_time) for child in self.children])
 
     def enumerate_resources(self):
         if self.children:
-            return [self.id + child.enumerate_resources() for child in self.children]
+            import pprint
+            child_ids = []
+            for child in self.children:
+                child_ids += child.enumerate_resources()
+
+            for child_id in child_ids:
+                child_id.insert(0, self.id)
+            return child_ids
+
         else:
-            return [self.id]
+            return [[self.id]]
