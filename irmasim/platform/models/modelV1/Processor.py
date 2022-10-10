@@ -1,4 +1,5 @@
 from irmasim.platform.BasicProcessor import BasicProcessor
+from irmasim.Task import Task
 
 
 class Processor (BasicProcessor):
@@ -8,16 +9,16 @@ class Processor (BasicProcessor):
         self.requested_memory_bandwidth = 0.0
         self.mops_per_core = 0
 
-    def schedule(self, tasks: list):
-        super().schedule(tasks)
+    def schedule(self, task: Task, resource_id: list):
+        super().schedule(task, resource_id)
         self.update_speedup()
 
     def advance(self, delta_time: float):
         super().advance(delta_time)
         self.update_speedup()
 
-    def reap(self, tasks: list):
-        super().reap(tasks)
+    def reap(self, task: Task, resource_id: list):
+        super().reap(task, resource_id)
         self.update_speedup()
 
     def get_joules(self, delta_time: float):

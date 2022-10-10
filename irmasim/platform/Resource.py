@@ -9,9 +9,7 @@ class Resource:
         for child in self.children:
             if child.id == id:
                 return child
-        print("Holaaa")
-        print(id)
-        print("Resource " + self.id + " does not have child " + id)
+        raise Exception("Resource " + self.id + " does not have child " + id)
 
     def get_parent(self):
         return self.parent

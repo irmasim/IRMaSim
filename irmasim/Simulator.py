@@ -33,15 +33,17 @@ class Simulator:
         self.scheduler.on_job_submission(first_jobs)
 
         delta_time_platform = self.platform.get_next_step()
-        delta_time_queue = self.job_queue.get_next_step()
+        # TODO unify get_next_step return value
+        delta_time_queue = self.job_queue.get_next_step() - self.simulation_time
 
         delta_time = min([delta_time_platform, delta_time_queue])
-
+        print(self.simulation_time)
         while delta_time != math.inf:
             if delta_time != 0:
                 self.platform.advance(delta_time)
                 joules += self.platform.get_joules(delta_time)
                 self.simulation_time += delta_time
+                print(self.simulation_time)
 
             if delta_time == delta_time_queue:
                 jobs = self.job_queue.get_next_jobs(self.simulation_time)
@@ -49,19 +51,25 @@ class Simulator:
 
             if delta_time == delta_time_platform:
                 jobs = self.job_queue.finish_jobs()
-                self.platform.reap([task for job in jobs for task in job.tasks])
+                self.reap([task for job in jobs for task in job.tasks])
                 self.scheduler.on_job_completion(jobs)
 
             delta_time_platform = self.platform.get_next_step()
             delta_time_queue = self.job_queue.get_next_step()
-
+            print(delta_time_platform)
             delta_time = min([delta_time_platform, delta_time_queue])
 
     def schedule(self, tasks: list):
         for task in tasks:
-            resource_id = task.resource.pop(0)
+            resource_id = task.resource[0]
             if resource_id == self.platform.id:
-                self.platform.schedule([task])
+                self.platform.schedule(task, task.resource[1:])
+
+    def reap(self, tasks: list):
+        for task in tasks:
+            resource_id = task.resource[0]
+            if resource_id == self.platform.id:
+                self.platform.reap(task, task.resource[1:])
 
     def get_next_step(self) -> float:
         return min([self.platform.get_next_step(), self.job_queue.get_next_step()])

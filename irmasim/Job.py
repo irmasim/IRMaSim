@@ -4,6 +4,7 @@ from irmasim.Task import Task
 class Job:
 
     def __init__(self, id: int, name: str, subtime: float, resources: int, profile: dict, type: str):
+        self.tasks = None
         self.id = id
         self.name = name
         self.type = type

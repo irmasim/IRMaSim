@@ -1,5 +1,6 @@
 from irmasim.platform.Resource import Resource
 from irmasim.platform.EnergyConsumer import EnergyConsumer
+from irmasim.Task import Task
 
 
 class TaskRunner(Resource, EnergyConsumer):
@@ -19,17 +20,9 @@ class TaskRunner(Resource, EnergyConsumer):
     
     """
 
-    def schedule(self, tasks: list):
-        for task in tasks:
-            x = task.resource.pop(0)
-            import pprint
-            pprint.pprint(x)
-            child = self.find_child(x)
-            self.pre_schedule()
-            child.schedule([task])
-
-    def pre_schedule(self):
-        pass
+    def schedule(self, task: Task, resource_id: list):
+        child = self.find_child(resource_id.pop(0))
+        child.schedule(task, resource_id)
 
     def get_next_step(self):
         return min([child.get_next_step() for child in self.children])
@@ -38,17 +31,15 @@ class TaskRunner(Resource, EnergyConsumer):
         for child in self.children:
             child.advance(delta_time)
 
-    def reap(self, tasks: list):
-        for task in tasks:
-            child = self.find_child(task.resource.pop(0))
-            child.reap([task])
+    def reap(self, task: Task, resource_id: list):
+        child = self.find_child(resource_id.pop(0))
+        child.reap(task, resource_id)
 
     def get_joules(self, delta_time: float):
         return sum([child.get_joules(delta_time) for child in self.children])
 
     def enumerate_resources(self):
         if self.children:
-            import pprint
             child_ids = []
             for child in self.children:
                 child_ids += child.enumerate_resources()

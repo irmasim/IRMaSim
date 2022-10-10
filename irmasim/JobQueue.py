@@ -24,7 +24,7 @@ class JobQueue:
             self.future_jobs = [job for job in self.future_jobs if job not in submitted_jobs]
             return submitted_jobs
         else:
-            Exception("No jobs in queue")
+            raise Exception("No jobs in queue")
 
     def get_next_step(self):
         if self.future_jobs:

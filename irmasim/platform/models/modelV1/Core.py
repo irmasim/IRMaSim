@@ -1,11 +1,9 @@
 from irmasim.platform.BasicCore import BasicCore
-from irmasim.platform.models.modelV1.Processor import Processor
-from irmasim.platform.models.modelV1.Node import Node
-from irmasim.Job import Job
+from irmasim.Task import Task
 import math
 
 
-class Core (BasicCore):
+class Core(BasicCore):
 
     def __init__(self, id: str, config: dict):
         super(Core, self).__init__(id=id, config=config)
@@ -18,7 +16,7 @@ class Core (BasicCore):
         self.db = config['db']
         self.dc = config['dc']
         self.dd = config['dd']
-        self.mops = 0.0
+        self.mops = config['clock_rate'] * config['dpflops_per_cycle'] * 1e3
         self.speedup = 1.0
         self.task = None
         self.requested_memory_bandwidth = 0.0
@@ -27,18 +25,20 @@ class Core (BasicCore):
             'current_power': self.min_power * self.static_power,
             'last_update': 0.0
         }
+
     def details(self):
-        return self.id+" ( dynamic_power="+str(self.dynamic_power)+" )"
-    def schedule(self, tasks: list):
-        if len(tasks) != 1:
+        return self.id + " ( dynamic_power=" + str(self.dynamic_power) + " )"
+
+    def schedule(self, task: Task, resource_id: list):
+        if self.task is not None:
             Exception("This core does not model oversubscription")
 
-        #tasks[0].last_update = now
-        self.task = tasks[0]
-        self.requested_memory_bandwidth = tasks[0].memory_volume / \
-                                           (tasks[0].ops / (self.mops * 1e6))
-        #self.state['last_update'] = now
-
+        # tasks[0].last_update = now
+        self.task = task
+        print(self.id, " allocates ", self.task.job.id)
+        self.requested_memory_bandwidth = task.memory_volume / \
+                                          (task.ops / (self.mops * 1e6))
+        # self.state['last_update'] = now
 
     def get_next_step(self):
         if not self.task:
@@ -52,15 +52,12 @@ class Core (BasicCore):
             if self.task.ops <= 0.0:
                 self.requested_memory_bandwidth = 0
 
-    def schedule(self, tasks: list):
-        if len(tasks) != 1:
-            Exception("This core does not model oversubscription")
-        if tasks[0] != self.task:
-            Exception("Cannot reap task from resource")
+    def reap(self, task: Task,  resource_id: list):
+        if self.task is None or self.task != task:
+            raise Exception("Cannot reap task from resource")
 
         self.task = None
         self.requested_memory_bandwidth = 0
-
 
     def delme(self):
         """
