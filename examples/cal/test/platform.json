@@ -1,0 +1,51 @@
+{
+   "platform": {
+      "the_platform": {
+         "id": "the_platform",
+         "clusters": [
+            { "id": "cluster0",
+               "nodes": [
+                  { "type": "n1113", "number": 1 },
+                  { "type": "n1112", "number": 1 }
+               ],
+            "local_links":{
+                "type":"InfiniBand QDR",
+               "latency":"0us"
+            }
+            }
+         ],
+         "global_links":{
+            "type":"InfiniBand QDR",
+            "latency":"0us"
+         }
+      }
+   },
+   "node": {
+      "n1113": {
+         "id": "n1113",
+         "processors": [
+            {"type": "proc_n1113", "number": 1 }
+         ],
+         "memory": {"type": "DDR3-1600", "capacity": 32}
+      },
+      "n1112": {
+         "id": "n1112",
+         "processors": [
+            {"type": "proc_n1112", "number": 1 }
+         ],
+         "memory": {"type": "DDR3-1600", "capacity": 32}
+      }
+   },
+   "processor": {
+      "proc_n1113": {
+         "uarch": "basic_arch", "id": "n1113", "type": "CPU",
+         "cores": 4, "clock_rate": 1.7,
+         "llc_size": 8, "power": 100, "dpflops_per_cycle": 1,
+         "cbb": 20.319665, "bab": 0, "caa": 413.418618, "aab": 0, "dba": 0.005859, "dab": 1.181983, "p11": 0.596069, "cab": -789.893931, "baa": 0, "daa": -0.193115, "bba": 0, "p02": -0.006362, "cca": 0.02862, "pidle": 1, "aaa": 0, "p01": 1.374746, "p10": 18.848542, "p00": 1.997208, "p20": -24.348324, "cba": -19.931867, "abb": -91.048471, "dbb": 0.007893, "ccb": 0.978553, "aba": 0, "bbb": 1, "profile_version": 2 },
+      "proc_n1112": {
+         "uarch": "basic_arch", "id": "n1112", "type": "CPU",
+         "cores": 4, "clock_rate": 3.4,
+         "llc_size": 8, "power": 100, "dpflops_per_cycle": 1,
+         "cbb": 20.319665, "caa": 413.418618, "bab": 0, "dba": 0.005859, "aab": 0, "dab": 1.181983, "p11": -0.438645, "baa": 0, "cab": -789.893931, "daa": -0.193115, "bba": 0, "p01": 4.564307, "p10": 19.8565, "p02": 0.051191, "cca": 0.02862, "pidle": 1, "aaa": 0, "p20": -17.366718, "p00": 4.552872, "cba": -19.931867, "abb": -91.048471, "dbb": 0.007893, "aba": 0, "ccb": 0.978553, "profile_version": 2, "bbb": 1 }
+   }
+}

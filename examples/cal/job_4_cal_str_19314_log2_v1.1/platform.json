@@ -1,0 +1,39 @@
+{
+   "platform": {
+      "the_platform": {
+         "id": "the_platform",
+         "clusters": [
+            { "id": "cluster0",
+               "nodes": [
+                  { "type": "n1112", "number": 1 }
+               ],
+            "local_links":{
+                "type":"InfiniBand QDR",
+               "latency":"0us"
+            }
+            }
+         ],
+         "global_links":{
+            "type":"InfiniBand QDR",
+            "latency":"0us"
+         },
+         "model_name" : "modelV1"
+      }
+   },
+   "node": {
+      "n1112": {
+         "id": "n1112",
+         "processors": [
+            {"type": "proc_n1112", "number": 1 }
+         ],
+         "memory": {"type": "DDR3-1600", "capacity": 32}
+      }
+   },
+   "processor": {
+      "proc_n1112": {
+         "uarch": "basic_arch", "id": "n1112", "type": "CPU",
+         "cores": 4, "clock_rate": 3.4,
+         "llc_size": 8, "power": 100, "dpflops_per_cycle": 1, "min_power" : 0.005,
+         "dc": 50000, "dynamic_power": 10000, "da": 1.75, "static_power": 8, "dd": 6000, "c": 32000, "db": 2000, "b": -1.85e-05 }
+   }
+}

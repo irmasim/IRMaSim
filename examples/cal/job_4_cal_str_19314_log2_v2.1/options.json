@@ -1,0 +1,15 @@
+{
+   "seed": 0,
+   "log_level": "DEBUG",
+   "platform_name": "the_platform",
+   "platform_file": "platform.json",
+   "workload_file": "workload.json",
+   "env": {
+      "objective": "energy_consumption",
+      "queue_sensitivity": 0.005
+   },
+   "agent": {
+       "type": "CLASSIC",
+       "policy_pair": "shortest-high_gflops"
+   }
+}

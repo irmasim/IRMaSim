@@ -1,6 +1,4 @@
-import heapq
 import math
-
 from irmasim.Job import Job
 from irmasim.JobQueue import JobQueue
 from irmasim.Statistics import Statistics
@@ -11,6 +9,7 @@ import os.path as path
 import json
 import numpy
 
+
 class Simulator:
 
     def __init__(self):
@@ -19,17 +18,17 @@ class Simulator:
         print(self.platform.pstr(" - "))
         self.scheduler = BasicWorkloadManager(self)
         # TODO
-        #self.statistics = Statistics(options)
+        # self.statistics = Statistics(options)
         self.simulation_time = 0
 
     def start_simulation(self) -> None:
         first_jobs = self.job_queue.get_next_jobs(self.job_queue.get_next_step())
         self.simulation_time += first_jobs[0].subtime
         self.platform.advance(self.simulation_time)
-        # TODO do somenthing with joules
+        # TODO do something with joules
         joules = self.platform.get_joules(self.simulation_time)
 
-        #self.statistics.calculate_energy_and_edp(self.resource_manager.core_pool, self.simulation_time)
+        # self.statistics.calculate_energy_and_edp(self.resource_manager.core_pool, self.simulation_time)
         self.scheduler.on_job_submission(first_jobs)
 
         delta_time_platform = self.platform.get_next_step()
@@ -55,8 +54,8 @@ class Simulator:
                 self.scheduler.on_job_completion(jobs)
 
             delta_time_platform = self.platform.get_next_step()
-            delta_time_queue = self.job_queue.get_next_step()
-            print(delta_time_platform)
+            # TODO unify get_next_step return value
+            delta_time_queue = self.job_queue.get_next_step() - self.simulation_time
             delta_time = min([delta_time_platform, delta_time_queue])
 
     def schedule(self, tasks: list):

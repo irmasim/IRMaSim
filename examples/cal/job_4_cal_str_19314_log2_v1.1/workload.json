@@ -1,0 +1,12 @@
+{
+   "nb_res": 8,
+   "num_instructions": "TRUE",
+   "jobs": [
+      {"id": "job19277", "subtime": 3.0783252716064453, "res": 1, "profile": "nas_sp.A.s"},
+      {"id": "job19278", "subtime": 50.0783252716064453, "res": 1, "profile": "nas_sp.A.s"}
+   ],
+   "profiles": {
+      "nas_lu.A.s": { "req_ops": 168770080539, "ipc": 1.98767640628106, "req_time": 10, "mem": 1, "mem_vol": 431878.8 },
+      "nas_sp.A.s": { "req_ops": 165760856056, "ipc": 2.36630383341221, "req_time": 10, "mem": 1, "mem_vol": 418692.8 }
+   }
+}

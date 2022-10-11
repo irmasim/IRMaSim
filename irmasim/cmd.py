@@ -1,9 +1,7 @@
 import argparse as ap
-import copy
 import json
 import sys
 import os
-import dill
 import pickle
 import os.path as path
 import numpy as np
@@ -11,6 +9,7 @@ import random as rnd
 import time
 from irmasim.Simulator import Simulator
 from irmasim.Options import Options
+
 
 def launch() -> None:
     start_time = time.time()

@@ -1,5 +1,4 @@
 from irmasim.platform.BasicNode import BasicNode
-from irmasim.Job import Job
 
 
 class Node (BasicNode):

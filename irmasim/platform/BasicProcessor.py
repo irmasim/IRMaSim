@@ -1,4 +1,3 @@
-from irmasim.platform.EnergyConsumer import EnergyConsumer
 from irmasim.platform.TaskRunner import TaskRunner
 
 

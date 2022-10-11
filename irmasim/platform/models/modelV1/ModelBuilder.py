@@ -25,6 +25,7 @@ class ModelBuilder:
         pass
 
     def build_children(self, builder, definition: dict, resource, key, default_id):
+        child_number = 0
         for child_definition in definition[key]:
             number = 1
             if "number" in child_definition.keys():
@@ -34,8 +35,9 @@ class ModelBuilder:
                     child_id = default_id
                 else:
                     child_id = child_definition["id"]
-                child = builder.build_resource(child_id + str(i), child_definition)
+                child = builder.build_resource(child_id + str(child_number), child_definition)
                 resource.add_child(child)
+                child_number += 1
 
 
 class ClusterBuilder(ModelBuilder):

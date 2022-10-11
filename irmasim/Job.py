@@ -1,6 +1,7 @@
 import math
 from irmasim.Task import Task
 
+
 class Job:
 
     def __init__(self, id: int, name: str, subtime: float, resources: int, profile: dict, type: str):
@@ -24,7 +25,7 @@ class Job:
     def generate_tasks(self):
         self.tasks = []
         for task in range(self.resources):
-            self.tasks.append(Task(self, self.ops, self.opc, self.memory,self.memory_vol))
+            self.tasks.append(Task(self, self.ops, self.opc, self.memory, self.memory_vol))
 
     def __lt__(self, other):
         return self.subtime < other.subtime

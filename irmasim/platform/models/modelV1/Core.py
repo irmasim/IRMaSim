@@ -27,7 +27,7 @@ class Core(BasicCore):
         }
 
     def details(self):
-        return self.id + " ( dynamic_power=" + str(self.dynamic_power) + " )"
+        return self.id
 
     def schedule(self, task: Task, resource_id: list):
         if self.task is not None:
@@ -35,7 +35,7 @@ class Core(BasicCore):
 
         # tasks[0].last_update = now
         self.task = task
-        print(self.id, " allocates ", self.task.job.id)
+        print(self.parent.parent.id, self.parent.id, self.id, " allocates ", self.task.job.id)
         self.requested_memory_bandwidth = task.memory_volume / \
                                           (task.ops / (self.mops * 1e6))
         # self.state['last_update'] = now
@@ -47,15 +47,15 @@ class Core(BasicCore):
             return self.task.ops / (self.mops * 1e6 * self.speedup)
 
     def advance(self, delta_time: float):
-        if self.task != None:
+        if self.task is not None:
             self.task.ops -= self.mops * 1e6 * self.speedup * delta_time
             if self.task.ops <= 0.0:
                 self.requested_memory_bandwidth = 0
 
-    def reap(self, task: Task,  resource_id: list):
+    def reap(self, task: Task, resource_id: list):
         if self.task is None or self.task != task:
             raise Exception("Cannot reap task from resource")
-
+        print(self.id, " releases ", self.task.job.id)
         self.task = None
         self.requested_memory_bandwidth = 0
 

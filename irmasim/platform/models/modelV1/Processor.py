@@ -7,7 +7,7 @@ class Processor (BasicProcessor):
     def __init__(self, id: str, config: dict):
         super(Processor, self).__init__(id=id, config=config)
         self.requested_memory_bandwidth = 0.0
-        self.mops_per_core = 0
+        self.mops_per_core = config['clock_rate'] * config['dpflops_per_cycle'] * 1e3
 
     def schedule(self, task: Task, resource_id: list):
         super().schedule(task, resource_id)
@@ -22,11 +22,11 @@ class Processor (BasicProcessor):
         self.update_speedup()
 
     def get_joules(self, delta_time: float):
-        task_count = sum([(1) for core in self.children if core.task != None and core.task.ops > 0.0])
+        task_count = sum([1 for core in self.children if core.task is not None and core.task.ops > 0.0])
         if task_count == 0:
             return sum([(core.min_power*core.static_power) for core in self.children]) * delta_time
         else:
-            return (sum([core.dynamic_power for core in self.children if core.task != None]) +
+            return (sum([core.dynamic_power for core in self.children if core.task is not None]) +
                     sum([core.static_power for core in self.children])) * delta_time
 
     def update_speedup(self):
@@ -37,7 +37,7 @@ class Processor (BasicProcessor):
             elif x > 1:
                 return 0
             else:
-                return (1 - x * x * x * (x * (x * 6 - 15) + 10))
+                return 1 - x * x * x * (x * (x * 6 - 15) + 10)
 
         def d(y, n):
             aux = (y - (core.da - n) * core.db) / (core.dc - n * core.dd)
@@ -52,10 +52,8 @@ class Processor (BasicProcessor):
             else:
                 return core.b * (x - core.c) + 1
 
-
         self.requested_memory_bandwidth = sum([core.requested_memory_bandwidth for core in self.children])
-        task_count = sum([(1) for core in self.children if core.task != None and core.task.ops > 0.0])
+        task_count = sum([1 for core in self.children if core.task is not None and core.task.ops > 0.0])
         for core in self.children:
-            core.speedup = round(perf(self.requested_memory_bandwidth, core.requested_memory_bandwidth, task_count - 1), 9)
-
-
+            core.speedup = round(perf(self.requested_memory_bandwidth, core.requested_memory_bandwidth,
+                                      task_count - 1), 9)

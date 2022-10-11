@@ -1,0 +1,867 @@
+#!/usr/bin/perl -l 
+
+=head1 NAME
+
+irmasimanalyse - Reads output files from IRMaSim and outputs it in different formats
+
+=head1 USAGE
+
+irmasimanalyse [<options>] 
+
+Reads IRMaSim output files from current directory and outputs it in different formats.
+
+=over 1
+
+=cut
+
+use Getopt::Std;
+use Data::Dumper;
+use Date::Parse;
+
+INIT {
+   $VERSION="0.1";
+
+   %opts = (
+      o => 'g',
+      p => 't',
+      s => 0,
+      c => 0,
+      q => 1,
+      e => 1,
+      b => 1,
+      l => 'rpt',
+      t => ''
+   );
+
+   $node_separation=1;
+   $node_scale=1/5;
+   $task_separation = 1/19;
+
+   getopts('o:scq:l:e:b:kx:y:p:t:',\%opts);
+}
+
+sub mystr2time {
+   $d = $_[0];
+   if($d =~ / /) {
+      $d =~ s/dic/dec/i;
+      my $t=str2time($d);
+      if($d=~/\.(.*)/) {
+         $t+="0.$1";
+      }
+      return $t;
+   }
+   return $d;
+}
+
+%ref = (
+   #q -H 'select printf("!nas_%s! => { !cpu! => %s, !ipc! => %s, !freq! => %s, !time! => %s, !mem_vol! => %s },",benchmark,instructions,ipc,freq,time,l3vol) from job_3.dat where file like "%n1112%"' | tr "!" "'"
+'nas_bt.A.x' => { 'cpu' => 372577225124, 'ipc' => 3.10173697270471, 'freq' => 1696.0466, 'time' => 70.44, 'mem_vol' => 192.6394 },
+'nas_bt.B.x' => { 'cpu' => 1552972165226, 'ipc' => 3.11332503113325, 'freq' => 1696.0563, 'time' => 292.52, 'mem_vol' => 1158.7755 },
+'nas_bt.C.x' => { 'cpu' => 6335054595167, 'ipc' => 3.10269934843314, 'freq' => 1696.0554, 'time' => 1197.78, 'mem_vol' => 5294.9021 },
+'nas_cg.A.x' => { 'cpu' => 8336862895, 'ipc' => 1.86393289841566, 'freq' => 1696.0402, 'time' => 2.04, 'mem_vol' => 59.1697 },
+'nas_cg.B.x' => { 'cpu' => 222543428680, 'ipc' => 1.30616509926855, 'freq' => 1695.9967, 'time' => 95.16, 'mem_vol' => 2520.1985 },
+'nas_cg.C.x' => { 'cpu' => 603056556765, 'ipc' => 1.23456790123457, 'freq' => 1696.0515, 'time' => 271.44, 'mem_vol' => 7240.8604 },
+'nas_ep.A.x' => { 'cpu' => 50590082495, 'ipc' => 1.16455106556423, 'freq' => 1696.0225, 'time' => 25.68, 'mem_vol' => 13.1881 },
+'nas_ep.B.x' => { 'cpu' => 202355281308, 'ipc' => 1.1648223645894, 'freq' => 1696.0381, 'time' => 102.73, 'mem_vol' => 52.6403 },
+'nas_ep.C.x' => { 'cpu' => 809402876413, 'ipc' => 1.16441546343735, 'freq' => 1696.0514, 'time' => 411.01, 'mem_vol' => 210.7357 },
+'nas_ft.A.x' => { 'cpu' => 25484001509, 'ipc' => 3.05903946160905, 'freq' => 1696.0413, 'time' => 4.34, 'mem_vol' => 56.9848 },
+'nas_ft.B.x' => { 'cpu' => 294965657791, 'ipc' => 2.9171528588098, 'freq' => 1696.0147, 'time' => 57.2, 'mem_vol' => 1061.9321 },
+'nas_is.A.x' => { 'cpu' => 4020212465, 'ipc' => 0.970308558121483, 'freq' => 1696.0301, 'time' => 0.52, 'mem_vol' => 3.5587 },
+'nas_is.B.x' => { 'cpu' => 16079171154, 'ipc' => 0.965903602820439, 'freq' => 1695.9861, 'time' => 2.04, 'mem_vol' => 14.9503 },
+'nas_is.C.x' => { 'cpu' => 64315752702, 'ipc' => 0.953925403033483, 'freq' => 1696.0479, 'time' => 8.24, 'mem_vol' => 73.9115 },
+'nas_lu.A.s' => { 'cpu' => 168769485052, 'ipc' => 1.99760287654814, 'freq' => 1696.0513, 'time' => 49.9823, 'mem_vol' => 431.6006 },
+'nas_lu.A.x' => { 'cpu' => 215721978457, 'ipc' => 2.53164556962025, 'freq' => 1696.0328, 'time' => 49.91, 'mem_vol' => 418.3177 },
+'nas_lu.B.x' => { 'cpu' => 905148047228, 'ipc' => 2.43546030199708, 'freq' => 1696.0149, 'time' => 217.77, 'mem_vol' => 1959.7655 },
+'nas_lu.C.x' => { 'cpu' => 3702463957239, 'ipc' => 2.43783520234032, 'freq' => 1696.054, 'time' => 889.59, 'mem_vol' => 8701.3475 },
+'nas_mg.A.x' => { 'cpu' => 12851603316, 'ipc' => 2.86368843069874, 'freq' => 1696.0519, 'time' => 1.82, 'mem_vol' => 22.2595 },
+'nas_mg.B.x' => { 'cpu' => 44844363180, 'ipc' => 2.88933834151979, 'freq' => 1696.0512, 'time' => 8.35, 'mem_vol' => 75.8861 },
+'nas_sp.A.s' => { 'cpu' => 165759818900, 'ipc' => 2.39808153477218, 'freq' => 1695.4721, 'time' => 40.8958, 'mem_vol' => 417.8684 },
+'nas_sp.A.x' => { 'cpu' => 208654773046, 'ipc' => 2.98775022408127, 'freq' => 1696.0361, 'time' => 40.96, 'mem_vol' => 526.0039 },
+'nas_sp.B.x' => { 'cpu' => 871699381683, 'ipc' => 2.91036088474971, 'freq' => 1696.0381, 'time' => 175.73, 'mem_vol' => 2308.6787 },
+'nas_sp.C.x' => { 'cpu' => 3561040430695, 'ipc' => 2.95246530853262, 'freq' => 1696.0485, 'time' => 707.94, 'mem_vol' => 9673.9641 },
+'nas_ua.A.x' => { 'cpu' => 190773546689, 'ipc' => 2.74122807017544, 'freq' => 1696.0428, 'time' => 40.94, 'mem_vol' => 236.7726 },
+'nas_ua.B.x' => { 'cpu' => 779993051964, 'ipc' => 2.53678335870117, 'freq' => 1696.0461, 'time' => 180.85, 'mem_vol' => 1076.8935 },
+'nas_ua.C.x' => { 'cpu' => 3125736992354, 'ipc' => 2.45941957697983, 'freq' => 1696.0582, 'time' => 747.55, 'mem_vol' => 4317.2142 },
+'nas_bt.A.x' => { 'cpu' => 372575657038, 'ipc' => 3.07219662058372, 'freq' => 3392.0825, 'time' => 35.51, 'mem_vol' => 145.4898 },
+'nas_bt.B.x' => { 'cpu' => 1552967532604, 'ipc' => 3.0902348578492, 'freq' => 3392.0742, 'time' => 147.17, 'mem_vol' => 735.6604 },
+'nas_bt.C.x' => { 'cpu' => 6335039546188, 'ipc' => 3.0571690614491, 'freq' => 3392.0831, 'time' => 606.16, 'mem_vol' => 5174.4101 },
+'nas_cg.A.x' => { 'cpu' => 8335625440, 'ipc' => 1.84195984527537, 'freq' => 3392.0751, 'time' => 1.02, 'mem_vol' => 63.8741 },
+'nas_cg.B.x' => { 'cpu' => 222543497141, 'ipc' => 1.18273211117682, 'freq' => 3391.0496, 'time' => 52.58, 'mem_vol' => 2457.1415 },
+'nas_cg.C.x' => { 'cpu' => 603056677509, 'ipc' => 1.10350915912602, 'freq' => 3392.0712, 'time' => 152.1, 'mem_vol' => 7297.0744 },
+'nas_ep.A.x' => { 'cpu' => 50589856316, 'ipc' => 1.16468669927789, 'freq' => 3392.0773, 'time' => 12.82, 'mem_vol' => 13.2329 },
+'nas_ep.B.x' => { 'cpu' => 202355726163, 'ipc' => 1.16373792621902, 'freq' => 3392.0618, 'time' => 51.34, 'mem_vol' => 52.8317 },
+'nas_ep.C.x' => { 'cpu' => 809402299194, 'ipc' => 1.1648223645894, 'freq' => 3392.0405, 'time' => 205.16, 'mem_vol' => 212.1967 },
+'nas_ft.A.x' => { 'cpu' => 25483986528, 'ipc' => 2.93685756240822, 'freq' => 3392.085, 'time' => 2.26, 'mem_vol' => 58.5568 },
+'nas_ft.B.x' => { 'cpu' => 294965483489, 'ipc' => 2.83045570336824, 'freq' => 3392.0799, 'time' => 29.47, 'mem_vol' => 1052.3636 },
+'nas_is.A.x' => { 'cpu' => 4020672494, 'ipc' => 0.963948332369385, 'freq' => 3390.6673, 'time' => 0.26, 'mem_vol' => 3.552 },
+'nas_is.B.x' => { 'cpu' => 16079176268, 'ipc' => 0.960430272762198, 'freq' => 3392.1141, 'time' => 1.05, 'mem_vol' => 14.9128 },
+'nas_is.C.x' => { 'cpu' => 64315778048, 'ipc' => 0.949848024316109, 'freq' => 3392.1159, 'time' => 4.18, 'mem_vol' => 73.4452 },
+'nas_lu.A.s' => { 'cpu' => 168770080539, 'ipc' => 1.98767640628106, 'freq' => 3392.0759, 'time' => 25.0833, 'mem_vol' => 431.8788 },
+'nas_lu.A.x' => { 'cpu' => 215723285624, 'ipc' => 2.44558571777941, 'freq' => 3392.0897, 'time' => 25.8, 'mem_vol' => 418.4303 },
+'nas_lu.B.x' => { 'cpu' => 905149364126, 'ipc' => 2.26346763241286, 'freq' => 3392.0609, 'time' => 117.07, 'mem_vol' => 1957.5669 },
+'nas_lu.C.x' => { 'cpu' => 3702459150867, 'ipc' => 2.19635405227323, 'freq' => 3392.0755, 'time' => 493.39, 'mem_vol' => 8702.3613 },
+'nas_mg.A.x' => { 'cpu' => 12851799267, 'ipc' => 2.71591526344378, 'freq' => 3392.0915, 'time' => 0.96, 'mem_vol' => 22.2684 },
+'nas_mg.B.x' => { 'cpu' => 44844847909, 'ipc' => 2.73522975929978, 'freq' => 3392.0911, 'time' => 4.41, 'mem_vol' => 75.956 },
+'nas_sp.A.s' => { 'cpu' => 165760856056, 'ipc' => 2.36630383341221, 'freq' => 3392.0731, 'time' => 20.6954, 'mem_vol' => 418.6928 },
+'nas_sp.A.x' => { 'cpu' => 208655580240, 'ipc' => 2.79017857142857, 'freq' => 3391.0282, 'time' => 21.92, 'mem_vol' => 527.4395 },
+'nas_sp.B.x' => { 'cpu' => 871700418943, 'ipc' => 2.71370420624152, 'freq' => 3392.0939, 'time' => 94.16, 'mem_vol' => 2309.2648 },
+'nas_sp.C.x' => { 'cpu' => 3561038116988, 'ipc' => 2.73522975929978, 'freq' => 3392.1556, 'time' => 381.81, 'mem_vol' => 9601.4899 },
+'nas_ua.A.x' => { 'cpu' => 190774233827, 'ipc' => 2.62260687123, 'freq' => 3392.0941, 'time' => 21.38, 'mem_vol' => 235.5299 },
+'nas_ua.B.x' => { 'cpu' => 779995683370, 'ipc' => 2.37925291458482, 'freq' => 3392.0927, 'time' => 96.3, 'mem_vol' => 1077.6026 },
+'nas_ua.C.x' => { 'cpu' => 3125735728916, 'ipc' => 2.30255583697905, 'freq' => 3392.1175, 'time' => 398.78, 'mem_vol' => 4323.67 },
+);
+
+$ref{'nas_sleep.s'} = { ipc => 1, freq => 3400, time => 10, mem_vol => 0 };
+$ref{'nas_sleep.s'}->{cpu} = $ref{'nas_sleep.s'}->{time}*$ref{'nas_sleep.s'}->{freq}*1e6*$ref{'nas_sleep.s'}->{ipc};
+
+%node_profile = (
+   default => { b => -1.85e-5, c => 32000, da => 1.75, db => 2000, dc => 50000, dd => 6000 },
+   'Intel(R) Core(TM) i5-7500 CPU @ 3.40GHz' => { profile_version => 2, abb => -91.048471, aba => 0.000000, aab => -0.000000, aaa => -0.000000, bbb => 1.000000, bba => -0.000000, bab => -0.000000, baa => -0.000000, ccb => 0.978553, cca => 0.028620, cbb => 20.319665, cba => -19.931867, cab => -789.893931, caa => 413.418618, dbb => 0.007893, dba => 0.005859, dab => 1.181983, daa => -0.193115, p00 => 20.721257, p01 => 15.522610, p02 => -1.119205, p10 => -18.905308, p11 => 3.218100, p20 => -2.823981 },
+   'Intel(R) Core(TM) i7-10700 CPU @ 2.90GHz' => { profile_version => 2, abb => -18.646825, aba => -0.000000, aab => -0.000000, aaa => 0.000000, bbb => 1.000000, bba => 0.000000, bab => -0.000000, baa => 0.000000, ccb => 1.002317, cca => -0.012249, cbb => -4.470474, cba => -0.223814, cab => 6.419202, caa => 0.790945, dbb => 0.072719, dba => -0.003099, dab => 0.974694, daa => -0.015089, p00 => 20.721257, p01 => 15.522610, p02 => -1.119205, p10 => -18.905308, p11 => 3.218100, p20 => -2.823981 },
+   'Intel(R) Core(TM) i7-7700 CPU @ 3.60GHz' => { profile_version => 2, abb => -13.491759, aba => 0.000000, aab => -0.000000, aaa => 0.000000, bbb => 1.000000, bba => 0.000000, bab => -0.000000, baa => 0.000000, ccb => 0.994278, cca => -0.017224, cbb => -0.485136, cba => -0.762476, cab => -2.882682, caa => 1.889135, dbb => 0.095652, dba => -0.014948, dab => 1.215148, daa => -0.029736, p00 => 20.721257, p01 => 15.522610, p02 => -1.119205, p10 => -18.905308, p11 => 3.218100, p20 => -2.823981 },
+   'Intel(R) Core(TM) i7-9700 CPU @ 3.00GHz' => { profile_version => 2, abb => -14.548518, aba => 0.000000, aab => -0.000000, aaa => 0.000000, bbb => 1.000000, bba => 0.000000, bab => -0.000000, baa => 0.000000, ccb => 1.003150, cca => -0.011584, cbb => -2.366098, cba => -0.679885, cab => 1.395837, caa => 1.938976, dbb => 0.114266, dba => -0.003851, dab => 0.811691, daa => 0.000554, p00 => 20.721257, p01 => 15.522610, p02 => -1.119205, p10 => -18.905308, p11 => 3.218100, p20 => -2.823981 }
+);
+
+
+$node_profile{default}->{static_power} = sub {
+   return 6.14211 if($_[0] == 3400000);
+   return 3.51244 if($_[0] == 2500000);
+   return 2.31082 if($_[0] == 1700000);
+   print STDERR "warning: unmodeled frequency $_[0]";
+   return 0;
+};
+
+$node_profile{default}->{dynamic_power} = sub {
+   return 5.59316 if($_[0] == 3400000);
+   return 3.19636 if($_[0] == 2500000);
+   return 1.59482 if($_[0] == 1700000);
+   return 1;
+};
+
+#ss(x)=x < 0 ? 1 : ( x > 1 ? 0 : 1-x * x * x * (x * (x * 6 - 15) + 10))
+#d(y,n)=ss((y-(da-n)*db)/(dc-n*dd))*(n/(1+n))+1/(1+n)
+#perf(x,y,n)=x<c ? 1 : (x > (d(y,n)+b*c-1)/b ? d(y,n) : b*(x-c)+1)
+
+$file = IO::File->new("jobs.log", "r") or die "ERROR: Can not read jobs.log in current directory.";
+while(<$file>) {
+   chomp;
+   # Skip header
+   next if($.==1);
+   @row = split(/,/);
+   $proc{$row[0]}->{queue_time} = $row[1];
+   # Register node
+   #$row[7] =~ s/\[(.*)\]/"node_".int($1 \/ 4)/e;
+   #$row[7] =~ s/\[(.*)\]/node_$1/;
+   $row[7] =~ s/.*://;
+   $node{$row[7]} = {} unless(defined $node{$row[7]});
+   $proc{$row[0]}->{node} = $row[7];
+   $proc{$row[0]}->{begin_time} = $row[2];
+   $proc{$row[0]}->{name} = $row[6];
+   $proc{$row[0]}->{finish_time} = $row[3];
+   $proc{$row[0]}->{exe_time} = $proc{$row[0]}->{finish_time}-$proc{$row[0]}->{begin_time};
+
+   if(exists $ref{$proc{$row[0]}->{name}}) {
+      $the_ref = $ref{$proc{$row[0]}->{name}};
+      $proc{$row[0]}->{speedup} = $the_ref->{time}/$proc{$row[0]}->{exe_time};
+   }
+
+   push @{$app{$proc{$row[0]}->{name}}->{$proc{$row[0]}->{node}}}, $proc{$row[0]}->{exe_time};
+   $app{$proc{$row[0]}->{name}}->{color} = scalar(keys %app) unless(defined $app{$proc{$row[0]}->{name}}->{color});
+}
+$file->close();
+
+#$file = IO::File->new("cores.log", "r") or die "ERROR: Can not read cores.log in current directory.";
+#while(<$file>) {
+#   chomp;
+#   next if($.==1);
+#   #f_speed.write(f'{lcore.id},{speedup},{now},{lcore.state["served_job"].name},{x},{y},{n},{lcore.#state["current_power"]}\n')
+#   #0,0.759648492,435.529381036758,job19310,54909.48317158235,17293.823730499185,2,7.1286875
+#   @row = split(/,/);
+#   push @{$energy{"node_$row[0]"}}, [$row[2], $row[7]];
+#}
+#$file->close();
+
+$file = IO::File->new("power.log", "r") or die "ERROR: Can not read power.log in current directory.";
+($l,$e,$energy) = (0,0,0);
+while(<$file>) {
+   chomp;
+   next if($.==1);
+   @row = split(/,/);
+   $energy += ($row[0]-$l)*$row[1];
+   push @{$energy{"total"}}, [$row[0], $energy];
+   $l = $row[0];
+   $e = $row[1];
+}
+$file->close();
+
+$i = 0;
+foreach(sort keys %node) {
+   $node{$_}->{load} = 0;
+   $node{$_}->{max_load} = 0;
+   $node{$_}->{base} = $i++ * $node_separation;
+   $node{$_}->{offset} = 0;
+   $node{$_}->{bw} = 0;
+   # Skip nodes above $opts{'y'}
+   last if(exists $opts{'y'} && $i >= $opts{'y'});
+}
+# Delete info for skipped nodes
+foreach(grep { ! exists $node{$_}->{load}; } keys %node) {
+   delete $node{$_};
+   delete $energy{$_};
+}
+# Delete info for tasks beyond $opts{'x'}
+foreach(keys %proc) {
+   delete $proc{$_} if(exists $opts{'x'} && $proc{$_}->{finish_time} > $opts{x});
+   delete $proc{$_} unless(exists $node{$proc{$_}->{node}});
+   # Clean applications hash
+}
+# Process the job events (launch, completion) in order
+foreach(sort { $a->[0] <=> $b->[0]; }
+        map { ( [ $proc{$_}->{begin_time}, 'begin_time', $proc{$_}->{node}, $_ ],
+                [ $proc{$_}->{finish_time}, 'finish_time', $proc{$_}->{node}, $_ ] )  }
+        keys %proc) {
+   # Determine the load of the node ($_->[2]), make sure there is an initial value of 0 at time = 0
+   push @{$load{$_->[2]}},[0,0] unless(scalar @{$load{$_->[2]}});
+   $node{$_->[2]}->{load} += $_->[1] eq 'begin_time' ? +1 : -1;
+   #$proc{$_}->{begin_energy} = get_energy($energy{$_->[2]}, $_->[0]) if($_->[1] eq 'begin_time');
+   #$proc{$_}->{finish_energy} = get_energy($energy{$_->[2]}, $_->[0]) if($_->[1] eq 'finish_time');
+
+   # Assign defaults to various missing values
+   unless(exists $node{$_->[2]}->{core}->[0]->{freq}) {
+      print STDERR "warning: Node $_->[2] does not have frequency information.";
+      $node{$_->[2]}->{core}->[0]->{freq} = 1e3;
+   }
+   unless(exists $ref{$proc{$_->[3]}->{name}}->{cpu}) {
+      print STDERR "warning: Task $_->[3] does not have instruction count.";
+      $ref{$proc{$_->[3]}->{name}}->{cpu} = 1;
+   }
+   unless(exists $ref{$proc{$_->[3]}->{name}}->{ipc}) {
+      print STDERR "warning: Task $_->[3] does not have reference IPC.";
+      $ref{$proc{$_->[3]}->{name}}->{ipc} = 1;
+   }
+   # Estimate the instantaneous memory access rate of the node.
+   # Note that depending on the type of event the access rate is added or substracted
+   $node{$_->[2]}->{bw} += ($_->[1] eq 'begin_time' ? +1 : -1)
+      * $ref{$proc{$_->[3]}->{name}}->{mem_vol}
+      / ( $ref{$proc{$_->[3]}->{name}}->{cpu}
+         / $ref{$proc{$_->[3]}->{name}}->{ipc}
+         / $node{$_->[2]}->{core}->[0]->{freq} * 1e-3);
+   # Position the task in the y axis for plotting.
+   if($_->[1] eq 'begin_time') {
+      $proc{$_->[3]}->{offset} = $node{$_->[2]}->{offset};
+      $node{$_->[2]}->{offset} += $task_separation;
+      $node{$_->[2]}->{running}->{$_->[3]} = 1;
+   } else {
+      delete $node{$_->[2]}->{running}->{$_->[3]};
+   }
+   # Record the instantaneous memory access rate of each node.
+   push @{$bandwidth{$_->[2]}}, [ $_->[0], $node{$_->[2]}->{bw}, $node{$_->[2]}->{load}, keys %{$node{$_->[2]}->{running}} ];
+   # Calculate the maximum load of the node
+   $node{$_->[2]}->{max_load} = $node{$_->[2]}->{load} if($node{$_->[2]}->{max_load} < $node{$_->[2]}->{load});
+   # Record the load (number of concurrent tasks) of each node.
+   push @{$load{$_->[2]}}, [ $_->[0], $node{$_->[2]}->{load} ];
+   # Remember the completion time of the last job
+   $last = $_->[0];
+
+=item -c
+
+Collapse tasks
+
+=cut
+   if($opts{c}) {
+      if($_->[1] eq 'begin_time') {
+         $i=0;
+         while(1) { last unless(defined $node{$_->[2]}->{tasks}->[$i]); $i++; }
+         $node{$_->[2]}->{tasks}->[$i] = $_->[3];
+         $proc{$_->[3]}->{offset} = $i*$task_separation + $task_separation/2;
+      } else {
+         $i=0;
+         while(1) {
+            if($node{$_->[2]}->{tasks}->[$i] == $_->[3]) {
+               undef $node{$_->[2]}->{tasks}->[$i]; last;
+            };
+            $i++;
+         }
+      }
+   }
+}
+# Process the nodes
+foreach $node_name (keys %node) {
+   # Determine a profile name for the node
+   $node{$node_name}->{profile} = 'default';
+   if(exists($node_profile{$node{$node_name}->{model}})) {
+      $node{$node_name}->{profile} = $node{$node_name}->{model};
+   } else {
+      print STDERR "warning: using default profile for node $node_name ($node{$node_name}->{model})";
+   }
+   
+   $node{$node_name}->{profile} = $node_name if(exists($node_profile{$node_name}));
+   $node{$node_name}->{energy} = $energy{$node_name}->[scalar(@{$energy{$node_name}})-1][1] - $energy{$node_name}->[0][1] if(exists $energy{$node_name});
+   $freq = $node{$node_name}->{core}->[0]->{freq} * 1e3;
+   $last_t = 0;
+   # Estimate the speedup of each job in the node, considerin the memory access rate
+   foreach(@{$bandwidth{$node_name}}) {
+      ($t,$bw,$n) = @$_[0..2];
+      foreach(@$_[3..$#$_]) {
+         $bwi = $ref{$proc{$_}->{name}}->{mem_vol} / ( $ref{$proc{$_}->{name}}->{cpu} / $ref{$proc{$_}->{name}}->{ipc} / $freq);
+         $bwi = 1e-6 if($bwi==0);
+         push @{$proc{$_}->{speedup_c_}}, [ $t, $t-$last_t, speedup(1000*$bw,1000*$bwi,$n,$node_profile{$node{$node_name}->{profile}}) ];
+      }
+      $last_t = $t;
+   }
+}
+
+#   foreach(keys %proc) {
+#      $s = 0;
+#      $t = 0;
+#      foreach(@{$proc{$_}->{speedup_c_}}) {
+#         $s += $_->[1] * $_->[2];
+#         $t += $_->[1];
+#      }
+#      #$proc{$_}->{speedup_c} = sprintf("\"%s %.2f\"",$_,$s/$t);
+#      $proc{$_}->{speedup_c} = sprintf("%.2f",$s/$t);
+#   }
+
+
+# Trim the energy measurement arrays
+$energy = 0;
+foreach $node (keys %energy){
+   @{$energy{$node}} = grep { $_->[0] <= $last; } @{$energy{$node}};
+   $energy += $energy{$node}->[$#{$energy{total}}]->[1];
+}
+
+=item -o
+
+Output format
+
+g Gnuplot (default)
+j Json
+d Dump
+
+=cut
+if($opts{o} eq 'g') {
+   if($opts{p} eq 't') {
+      gnuplot_time();
+   }
+   elsif($opts{p} eq 'a') {
+      gnuplot_apps();
+   }
+} elsif($opts{o} eq 'j') {
+   json();
+} elsif($opts{o} eq 'd') {
+   #print Dumper(\%node,\%app,\%proc,\%load,\%energy);
+   print Dumper(\%app);
+} elsif($opts{o} eq 's') {
+   statistics();
+} else {
+   print STDERR "Unknown format $opts{o}\n";
+   exit 1;
+}
+
+sub gnuplot_time { 
+   #print STDERR Dumper(\%node);
+   print "unset key";
+   print "set key outside below" if($opts{k});
+   print "set ytics ( ".join(",", map { "\"$_\" $node{$_}->{base}"; } sort keys %node)." ) offset first 0,0.5 ";
+   print "set y2range [0:*]";
+   print "set y2tics";
+#   print "set yrange [0:".scalar(keys %node)."]";
+   #print "set mytics $sep";
+   print "set grid";
+   print "d(y) = (\$0 == 0) ? (y1 = column(y), 1/0) : (y2 = y1, y1 = column(y), y1-y2)";
+   print "d(y,x) = (\$0 == 0) ? (x1 = column(x), y1 = column(y), 1/0) : (x2 = x1, y2 = y1, x1 = column(x), y1 = column(y), (y1-y2)/(x1-x2))";
+   print sprintf("set title '%s nodes=%s apps=%s jobs=%s makespan=%.2fs energy=%.2fJ energy_task=%.2fJ'", $opts{t}, scalar(keys %node), scalar(keys %app), scalar(keys %proc), $last, $energy, $energy_task);
+
+=item -l
+
+Output lines
+
+   t tasks
+   T tasks with speedups
+   r running
+   R running with labels
+   p power
+   d details
+
+=cut
+
+   my @plots;
+   # Number of tasks per node
+   push @plots, map { $n=$_; [ "\"-\" using 1:(\$2*$node_scale+\$3) t \"Running $n\" w steps", 
+                join("\n", map { join(" ",@$_, $node{$n}->{base}); } @{$load{$n}})."\ne" ] } sort keys %load if( $opts{l} =~ /r/);
+   # Number of tasks per node (Labels)
+   push @plots, map { $n=$_; [ "\"-\" u 1:(\$2*$node_scale+\$3):2 notitle with labels right font \",5\"", 
+                join("\n", map { join(" ",@$_, $node{$n}->{base}); } @{$load{$n}})."\ne" ] } sort keys %load if( $opts{l} =~ /R/i);
+   # Node energy
+   #   push @plots, map { $n=$_; [ "\"-\" u 1:2 t \"Energy $_\" axes x1y2 w fsteps", 
+   #                join("\n", map { join(" ",@$_, $node{$n}->{base} || 0); } @{$energy{$n}})."\ne" ] } sort keys %energy if( $opts{l} =~ /p/);
+   # Node power
+   push @plots, map { $n=$_; [ "\"-\" u 1:(d(2,1)/$opts{e}+\$3) axes x1y2 t \"Power $_\" w fsteps", 
+                join("\n", map { join(" ",@$_, $node{$n}->{base} || 0); } @{$energy{$n}})."\ne" ] } sort keys %energy if( $opts{l} =~ /p/);
+   # Node BW
+   push @plots, map { $n=$_; [ "\"-\" u 1:(\$2/$opts{b}+\$3) t \"BW $_\" w steps", 
+                join("\n", map { join(" ",@$_[0,1], $node{$n}->{base}); } @{$bandwidth{$n}})."\ne" ] } sort keys %bandwidth if( $opts{l} =~ /m/);
+   # Queue
+   push @plots, [ "\"-\" using 1:2:3:4 notitle w vectors nohead lw 1 lt rgb '#3d3d3d3'", 
+                join("\n", map { join(" ", $proc{$_}->{queue_time}, 0, $proc{$_}->{begin_time}-$node{$proc{$_}->{node}}->{queue_time}, $proc{$_}->{offset}+$node{$proc{$_}->{node}}->{base}, $_); } sort keys %proc)."\ne" ] if( $opts{l} =~ /q/);
+   # Tasks
+   if($opts{l} =~ /t/i) {
+      push @plots, [ "\"-\" using 1:2:3:4:5 notitle w vectors nohead lw 5 lc variable", 
+                   join("\n", map { join(" ", $proc{$_}->{begin_time}, $proc{$_}->{offset}+$node{$proc{$_}->{node}}->{base}, $proc{$_}->{finish_time}-$proc{$_}->{begin_time}, 0, $app{$proc{$_}->{name}}->{color}, $_); } sort keys %proc)."\ne" ];
+      push @plots, map { [ "NaN t \"$_\" lw 5 lc $app{$_}->{color}" , undef ]; } sort keys %app;
+   }
+   # Task speedup
+   push @plots, [ "\"-\" u 1:2:3 notitle with labels left font \",6\"", 
+                join("\n", map { join(" ", $proc{$_}->{finish_time}, $proc{$_}->{offset}+$node{$proc{$_}->{node}}->{base}, sprintf("%.2f",$proc{$_}->{speedup})); } sort keys %proc)."\ne" ] if($opts{l} =~ /T/);
+   #push @plots, [ "\"-\" u 1:2:3 notitle with labels left offset first 0,0.05 font \",6\"", 
+    #            join("\n", map { join(" ", $proc{$_}->{finish_time}, $proc{$_}->{offset}+$node{$proc{$_}->{node}}->{base}, sprintf("%s",$proc{$_}->{speedup_c})); } sort keys %proc)."\ne" ] if($opts{l} =~ /T/);
+   push @plots, [ "\"-\" u 1:2:3 notitle with labels left offset first 0,0.05 font \",6\"", 
+               join("\n", map { join(" ", $proc{$_}->{finish_time}, $proc{$_}->{offset}+$node{$proc{$_}->{node}}->{base}, sprintf("%s,%.1fs",$_,$proc{$_}->{exe_time})); } sort keys %proc)."\ne" ] if($opts{l} =~ /TT/);
+
+   # Node details
+   push @plots, [ "\"-\" u ($last):1:2 notitle with labels font \",8\"", 
+                join("\n", map { join(" ",$node{$_}->{base}+$node_separation*0.7,"\"$node{$_}->{cores} cores ".($node{$_}->{core}->[0]->{freq}/1e6)."GHz $node{$_}->{energy}J\""); } sort keys %node)."\ne" ] if( $opts{l} =~ /d/);
+
+   $i=0;
+   #print STDERR join("\n", map { join(" ",$_,$node{$_}->{core}->[0]->{freq}/1e6,$node{$_}->{energy},$i++); } sort keys %node);
+
+   # Combine all plots into a graph
+   print "plot ",join(",", map { $_->[0]; } @plots);
+   print join("\n", map { $_->[1]; } @plots);
+
+   # New plot
+   @plots=();
+
+   if(0) {
+      # Node consumption
+      $i=1;
+      push @plots, [ "\"-\" u 1:2:3:4 notitle with labels tc variable font \",8\"", 
+                   join("\n", map { join(" ",$node{$_}->{core}->[0]->{freq}/1e6,$node{$_}->{energy},$_,$i++); } sort keys %node)."\ne" ];
+
+      # Model consumption TODO Needs updating with version 2 profile
+      push @plots, [ "\"-\" u 1:2 title 'model' w p ps 2", 
+      # $node_profile{$node{$node_name}->{profile}}->{$_}($node{$node_name}->{clock})
+                   join("\n", map { join(" ",$node{$_}->{core}->[0]->{freq}/1e6,($node_profile{'default'}->{'pa'}($node{$_}->{core}->[0]->{freq})*$node{$_}->{max_load}+$node_profile{'default'}->{'pb'}($node{$_}->{core}->[0]->{freq}))*$last); } sort keys %node)."\ne" ];
+      print "reset";
+      print "set yrange [0:*]";
+      print "set xrange [1.5:3.5]";
+      print "set ylabel 'Energy (J)'";
+      print "set xlabel 'Freq (GHz)'";
+      print "set key bottom horizontal";
+      # Combine all plots into a graph
+      print "plot ",join(",", map { $_->[0]; } @plots);
+      print join("\n", map { $_->[1]; } @plots);
+   }
+
+}
+
+sub gnuplot_apps {
+   print "unset key";
+   print "set key outside below" if($opts{k});
+   print "set yrange [0:*]";
+   print "set y2range [0:*]";
+   print "set boxwidth 0.1 absolute";
+   print "set grid";
+   print "set ylabel 'Time (s)'";
+   print "set y2label 'Number'";
+   print "set ytics nomirror";
+   print "set y2tics";
+   print "set xlabel 'Application'";
+   print "set cblabel 'Node'";
+   print "set cbtics (".join(", ", map { "'$_' $node{$_}->{offset}"; } keys %node).")";
+   print "set xrange [-1:".scalar(keys %app)."]";
+   print sprintf("set title '%s nodes=%s apps=%s jobs=%s makespan=%.2fs energy=%.2fJ energy_task=%.2fJ'", $opts{t}, scalar(keys %node), scalar(keys %app), scalar(keys %proc), $last, $energy, $energy_task);
+
+   my @plots;
+
+   my $num = 0;
+   push @plots, [ "'-' u (\$2-0.25):3 axes x1y2 t 'Executions' with boxes", join("\n", map { $a=$_; join(" ", $a, $num++, stats( map { @{$app{$a}->{$_}}; } grep { $_ ne 'color' && defined $app{$a}->{$_} } keys %{$app{$a}} ) ) } sort keys %app )."\ne" ];
+   $num = 0;
+   push @plots, [ "'-' u 2:8:8:8:8:xticlabels(1) t 'Execution time median' with candlesticks whiskerbars", join("\n", map { $a=$_; join(" ", $a, $num++, stats( map { @{$app{$a}->{$_}}; } grep { $_ ne 'color' && defined $app{$a}->{$_} } keys %{$app{$a}} ) ) } sort keys %app )."\ne" ];
+   $num = 0;
+   push @plots, [ "'-' u 2:6:6:6:6:xticlabels(1) t 'Execution time average' with candlesticks whiskerbars", join("\n", map { $a=$_; join(" ", $a, $num++, stats( map { @{$app{$a}->{$_}}; } grep { $_ ne 'color' && defined $app{$a}->{$_} } keys %{$app{$a}} ) ) } sort keys %app )."\ne" ];
+   $num = 0;
+   push @plots, [ "'-' u 2:7:4:5:9 t 'Execution times' with candlesticks whiskerbars", join("\n", map { $a=$_; join(" ", $a, $num++, stats( map { @{$app{$a}->{$_}}; } grep { $_ ne 'color' && defined $app{$a}->{$_} } keys %{$app{$a}} ) ) } sort keys %app )."\ne" ];
+
+   $num = -1;
+   push @plots, [ "'-' u (\$2+0.2+rand(0)*0.2):3:4 t 'Execution times' with points lc palette", 
+      join("\n", map {
+            $a=$_;
+            $num++;
+            join("\n",
+               map { join(" ", $a,$num,@$_); }
+               map { $n=$_; map { [ $_, $node{$n}->{offset} ]; } @{$app{$a}->{$_}}; }
+               grep { $_ ne 'color' && defined $app{$a}->{$_} }
+               keys %{$app{$a}} ) }
+         sort keys %app )."\ne" ];
+
+   # Combine all plots into a graph
+   print "plot ",join(",", map { $_->[0]; } @plots);
+   print join("\n", map { $_->[1]; } @plots);
+}
+
+sub json_old { 
+   print sprintf("#!/bin/bash\n\n# file=%s nodes=%s apps=%s jobs=%s makespan=%.2fs energy=%.2fJ energy_task=%.2fJ'", $ARGV, scalar(keys %node), scalar(keys %app), scalar(keys %proc), $last, $energy, $energy_task);
+   print sprintf("#- %s %s %s %2f %.2f\n", $ARGV, scalar(keys %node), scalar(keys %proc), $last, $energy);
+   $cores = 0; $cores+=$_->{cores} foreach(values %node);
+   foreach $n (keys %node) {
+      $node{$n}->{clock} = $_->{freq} foreach(grep {defined $_;} @{$node{$n}->{core}});
+   }
+   $reference_freq = defined $reference_freq ? $_->{clock} : ($_->{clock} < $reference_freq ? $_->{clock} : $reference_freq) foreach(values %node);
+   print <<EOF;
+mkdir -p $ARGV
+cat > $ARGV/options.json <<EOF1
+{
+  "seed": 1995,
+  "nb_resources": 60,
+  "nb_jobs": 38,
+  "workload_file_path": "/workspace/workloads/my_workload.swf",
+  "platform_file_path": "/home/mario/PruebasDelSoftware/P-stateCambios/Memoria/Nuevo-Modelo/send_2_32563/platform.json",
+  "pybatsim": {
+    "log_level": "DEBUG",
+    "env": {
+      "objective": "energy_consumption",
+      "actions": {
+        "selection": [
+          {"first": ["high_gflops"]}
+        ],
+        "void": false
+      },
+      "queue_sensitivity": 0.005
+    },
+    "agent": {
+      "type": "LEARNING",
+      "run": "train",
+      "hidden": 16,
+      "lr": 0.005,
+      "gamma": 0.99
+    }
+  }
+}
+EOF1
+cat > $ARGV/trabajos.json <<EOF1
+{
+   "nb_res": $cores,
+   "num_instructions": "TRUE",
+   "jobs": [
+EOF
+   print "      ".join(",\n      ", map { "{\"id\": \"job$_\", \"subtime\": ".($proc{$_}->{queue_time}).", \"res\": 1, \"profile\": \"$proc{$_}->{name}\"}" } sort { $proc{$a}->{queue_time} <=> $proc{$b}->{queue_time} } keys %proc);
+   printf <<EOF;
+   ],
+   "profiles": {
+EOF
+
+   print "      ".join(",\n      ", map { "\"$_\": {\"type\": \"parallel_homogeneous\", \"com\": 0, \"req_ops\": $ref{$_}->{cpu}, \"ipc\": $ref{$_}->{ipc}, \"req_time\": 1, \"mem\": 1, \"mem_vol\": $ref{$_}->{mem_vol} }" } grep { $ref{$_}->{freq} || print STDERR "warning: no reference data for application $_"; $ref{$_}->{freq}; } keys %app);
+   # Refer req_time to reference speed, average speed of all the cores in the system.
+   printf <<EOF;
+   }
+}
+EOF1
+EOF
+   printf <<EOF;
+cat > $ARGV/platform.json <<EOF1
+{
+   "clusters": [
+      { "id": "cluster0",
+         "nodes": [
+EOF
+   print join(",\n", map { "            { \"type\": \"$_\", \"number\": 1 }"; } keys %node);
+   printf <<EOF;
+         ],
+      "local_links":{
+          "type":"InfiniBand QDR",
+         "latency":"0us"
+      }
+      }
+   ],
+   "global_links":{
+      "type":"InfiniBand QDR",
+      "latency":"0us"
+   }
+}
+EOF1
+EOF
+
+   foreach $node_name (keys %node) {
+      push @node_defs, <<EOF;
+"$node_name": {
+      "id": "$node_name",
+      "processors": [
+         {"type": "proc_$node_name", "number": 1 }
+      ],
+      "memory": {"type": "DDR3-1600", "capacity": 32}
+   }
+EOF
+      $node_defs[$#node_defs] =~ s/\n$//s;
+      push @proc_defs, <<EOF;
+"proc_$node_name": {
+      "uarch": "basic_arch", "id": "$node_name", "type": "CPU",
+      "cores": $node{$node_name}->{cores}, "clock_rate": @{[ $node{$node_name}->{clock}*1e-6 ]},
+      "llc_size": 8, "power": 100, "dpflops_per_cycle": 1,
+      @{[ join(', ', map { $s = ref($node_profile{$node{$node_name}->{profile}}->{$_}) eq 'CODE' ? $node_profile{$node{$node_name}->{profile}}->{$_}($node{$node_name}->{clock}) : $node_profile{$node{$node_name}->{profile}}->{$_};  "\"$_\": $s"; } keys %{$node_profile{$node{$node_name}->{profile}}}) ]} }
+EOF
+      #@{[ join(', ', map { "\"$_\": $node_profile{$node{$node_name}->{profile}}->{$_}"; } keys %{$node_profile{$node{$node_name}->{profile}}}) ]} }
+      $proc_defs[$#proc_defs] =~ s/\n$//s;
+   }
+   printf <<EOF;
+cat > $ARGV/node_types.json <<EOF1
+{
+  "_doc":{
+    "0":"id: unique identification of the node type in SimGrid platform",
+    "1":{
+      "1.0":"processors: set of processors inside the node",
+      "1.1":"type: type of the processor, check 'processor_types.json'",
+      "1.2":"number: total number of processors of the given type inside the node"
+    },
+    "2":{
+      "2.0":"memory-type: type of memory inside the node",
+      "2.1":"For now, only one type of memory is supported per node",
+      "2.2":"memory-capacity: total size of node's memory",
+      "2.3":"Expressed in Gigabytes (GB)"
+    }
+  },
+  "Example":{
+    "id":"example",
+    "processors":[
+      {
+        "type":"Example",
+        "number":1
+      }
+    ],
+    "memory":{
+      "type":"DDR3-1600",
+      "capacity":16
+    }
+  },
+EOF
+   print join(",\n   ", @node_defs),"\n}\nEOF1";
+   printf <<EOF;
+cat > $ARGV/processor_types.json <<EOF1
+{
+  "_doc": {
+    "0": "uarch: microarchitecture codename",
+    "1": "id: unique identification of the processor type in SimGrid platform",
+    "2": "type: processor/computing device category (CPU, GPU, MIC, others)",
+    "3": "For now, only CPU type is supported",
+    "4": "cores: total number of cores inside the processor",
+    "5": "clock_rate: base clock frequency of the processor",
+    "6": "Expressed in Gigahertz (GHz)",
+    "7": "Turbo clock frequency is not considered",
+    "8": "mem_bw: maximum rate of data transfer between processor and main memory",
+    "9": "Expressed in Gigabytes per second (GB/s)",
+    "10": "This bandwidth is shared by all cores inside the processor",
+    "12": "llc_size: size of the Last-Level Cache (LLC)",
+    "13": "Expressed in Megabytes (MB)",
+    "14": "power: Thermal Design Power (TDP), maximum amount of heat generated by the processor",
+    "15": "We use it as a rough indicator of energy consumption for each processor",
+    "16": "Expressed in Watts (W)",
+    "17": "dpflops_per_cycle: double-precision floating point (DPFLOPS) operations per cycle",
+    "18": "This parameter depends on the vector extensions of the processor",
+    "19": "More information on: https://en.wikipedia.org/wiki/FLOPS#FLOPs_per_cycle_for_various_processors"
+  },
+  "Test0_0": {
+    "uarch": "test0_0",
+    "id": "test0_0",
+    "type": "CPU",
+    "cores": 4,
+    "clock_rate": 1,
+    "mem_bw": 32768,
+    "llc_size": 8,
+    "Q2": 7.7807,
+    "Q1": 4.3955,
+    "dpflops_per_cycle": 4
+  },
+EOF
+   print join(",\n   ", @proc_defs),"\n}\nEOF1";
+}
+
+sub json { 
+  ($trace_name = $ARGV) =~ s/\.out//;
+   print sprintf("#!/bin/bash\n\n# file=%s nodes=%s apps=%s jobs=%s makespan=%.2fs energy=%.2fJ energy_task=%.2fJ'", $ARGV, scalar(keys %node), scalar(keys %app), scalar(keys %proc), $last, $energy, $energy_task);
+   print sprintf("#- %s %s %s %2f %.2f\n", $ARGV, scalar(keys %node), scalar(keys %proc), $last, $energy);
+   $cores = 0; $cores+=$_->{cores} foreach(values %node);
+   foreach $n (keys %node) {
+      $node{$n}->{clock} = $_->{freq} foreach(grep {defined $_;} @{$node{$n}->{core}});
+   }
+   $reference_freq = defined $reference_freq ? $_->{clock} : ($_->{clock} < $reference_freq ? $_->{clock} : $reference_freq) foreach(values %node);
+   print <<EOF;
+mkdir -p $trace_name
+cat > $trace_name/options.json <<EOF1
+{
+   "seed": 0,
+   "log_level": "DEBUG",
+   "platform_name": "the_platform",
+   "platform_file": "platform.json",
+   "workload_file": "workload.json",
+   "env": {
+      "objective": "energy_consumption",
+      "queue_sensitivity": 0.005
+   },
+   "agent": {
+       "type": "CLASSIC",
+       "policy_pair": "shortest-high_gflops"
+   }
+}
+EOF1
+EOF
+   printf <<EOF;
+cat > $trace_name/workload.json <<EOF1
+{
+   "nb_res": $cores,
+   "num_instructions": "TRUE",
+   "jobs": [
+EOF
+   print "      ".join(",\n      ", map { "{\"id\": \"job$_\", \"subtime\": ".($proc{$_}->{queue_time}).", \"res\": 1, \"profile\": \"$proc{$_}->{name}\"}" } sort { $proc{$a}->{queue_time} <=> $proc{$b}->{queue_time} } keys %proc);
+   printf <<EOF;
+   ],
+   "profiles": {
+EOF
+
+   print "      ".join(",\n      ", map { "\"$_\": {\"type\": \"parallel_homogeneous\", \"com\": 0, \"req_ops\": $ref{$_}->{cpu}, \"ipc\": $ref{$_}->{ipc}, \"req_time\": 1, \"mem\": 1, \"mem_vol\": $ref{$_}->{mem_vol} }" } grep { $ref{$_}->{freq} || print STDERR "warning: no reference data for application $_"; $ref{$_}->{freq}; } keys %app);
+   # TODO? Refer req_time to reference speed, average speed of all the cores in the system.
+   printf <<EOF;
+   }
+}
+EOF1
+EOF
+   foreach $node_name (keys %node) {
+      push @node_defs, <<EOF;
+      "$node_name": {
+         "id": "$node_name",
+         "processors": [
+            {"type": "proc_$node_name", "number": 1 }
+         ],
+         "memory": {"type": "DDR3-1600", "capacity": 32}
+      }
+EOF
+      $node_defs[$#node_defs] =~ s/\n$//s;
+      push @proc_defs, <<EOF;
+      "proc_$node_name": {
+         "uarch": "basic_arch", "id": "$node_name", "type": "CPU",
+         "cores": $node{$node_name}->{cores}, "clock_rate": @{[ $node{$node_name}->{clock}*1 ]},
+         "llc_size": 8, "power": 100, "dpflops_per_cycle": 1,
+         @{[ join(', ', map { $s = ref($node_profile{$node{$node_name}->{profile}}->{$_}) eq 'CODE' ? $node_profile{$node{$node_name}->{profile}}->{$_}($node{$node_name}->{clock}) : $node_profile{$node{$node_name}->{profile}}->{$_};  "\"$_\": $s"; } keys %{$node_profile{$node{$node_name}->{profile}}}) ]} }
+EOF
+      #@{[ join(', ', map { "\"$_\": $node_profile{$node{$node_name}->{profile}}->{$_}"; } keys %{$node_profile{$node{$node_name}->{profile}}}) ]} }
+      $proc_defs[$#proc_defs] =~ s/\n$//s;
+   }
+   printf <<EOF;
+cat > $trace_name/platform.json <<EOF1
+{
+   "platform": {
+      "the_platform": {
+         "id": "the_platform",
+         "clusters": [
+            { "id": "cluster0",
+               "nodes": [
+EOF
+   print join(",\n", map { "                  { \"type\": \"$_\", \"number\": 1 }"; } keys %node);
+   printf <<EOF;
+               ],
+            "local_links":{
+                "type":"InfiniBand QDR",
+               "latency":"0us"
+            }
+            }
+         ],
+         "global_links":{
+            "type":"InfiniBand QDR",
+            "latency":"0us"
+         }
+      }
+   },
+   "node": {
+EOF
+   print join(",\n", @node_defs),"\n   },\n   \"processor\": {";
+   print join(",\n", @proc_defs),"\n   }\n}\nEOF1";
+}
+
+sub statistics {
+   print 'nodes: ',scalar(keys %node);
+   print '  --> ('.join(', ',sort keys %node).')';
+   print 'apps: ',scalar(keys %app);
+   print '  --> ('.join(', ',sort keys %app).')';
+   $c = 0;
+   $c+=$_ foreach(map { scalar @$_ } map { values %$_} values %app);
+   print 'executions: '.$c;
+   foreach $a (keys %app) {
+      foreach $n (keys %{$app{$a}}) {
+         next if($n eq 'color');
+         next unless(defined $app{$a}->{$n});
+         ($count,$min,$max,$mean) = stats(@{$app{$a}->{$n}});
+         print "  --> $a $n: number $count min_time $min max_time $max average_time $mean";
+         print "     --> (".join(',', @{$app{$a}->{$n}}).")";
+      }
+   }
+   $cores = 0;
+   $cores += $_->{cores} foreach(values %node);
+   print 'cores: ',$cores;
+   print '  --> ('.join(', ', map { $n = $_; "$n: $node{$n}->{cores} (".
+          join(', ',map { $_->{freq}; } @{$node{$n}->{core}}).")"; } sort keys %node).')';
+   print "makespan: $last s";
+   print "energy: $energy J";
+   print '  --> ('.join(', ', map { "$_: $node{$_}->{energy}"; } sort keys %node).')';
+   print "energy_task: $energy_task J";
+}
+
+sub stats {
+   my $m = 0;
+   my $a = undef;
+   my $i = undef;
+   my $c = 1;
+   my ($q1,$q2,$q3);
+   my $t = scalar(@_);
+   foreach(sort { $a <=> $b } @_) {
+      $m+=$_;
+      $a = $_ if(!defined $a || $a < $_ );
+      $i = $_ if(!defined $i || $i > $_ );
+      $q1 = $_ if($c < 0.25*$t);
+      $q2 = $_ if($c < 0.5*$t);
+      $q3 = $_ if($c < 0.75*$t);
+      $c++;
+   }
+   return ($t, $i, $a, $m/scalar(@_), $q1, $q2, $q3);
+}
+
+sub deunitize_10 {
+   chomp $_[0];
+   $_[0] =~ /(.*\d)(\D)?/ or return $_[0];
+   $a=$1;
+   $a*=1000 if($2 eq 'K');
+   $a*=1000000 if($2 eq 'M');
+   $a*=1000000000 if($2 eq 'G');
+   return $a;
+}
+
+sub deunitize_2 {
+   chomp $_[0];
+   $_[0] =~ /(.*\d)(\D)?/ or return $_[0];
+   $a=$1;
+   $a*=1024 if($2 eq 'K');
+   $a*=1048576 if($2 eq 'M');
+   $a*=1073741824 if($2 eq 'G');
+   return $a;
+}
+
+sub mb {
+   ($y,$n,$node)=@_;
+   return $node->{b};
+}
+sub mc { 
+   ($y,$n,$node)=@_;
+   return $node->{c};
+} 
+sub ss { 
+   ($s)=@_;
+   return $s < 0 ? 1 : ( $s > 1 ? 0 : 1-$s * $s * $s * ($s * ($s * 6 - 15) + 10));
+}
+sub md { 
+   ($y,$n,$node)=@_;
+   return ss(($y-(1.75-$n)*$node->{db})/($node->{dc}-$n*$node->{dd}))*($n/(1.0+$n))+1/(1.0+$n);
+}
+
+sub speedup {
+   ($x,$y,$n,$node) = @_;
+   return 0 if(exists $node->{profile_version});
+   return $x<mc($y,$n,$node) ? 1 : ($x > (md($y,$n,$node)+mb($y,$n,$node)*mc($y,$n,$node)-1)/mb($y,$n,$node) ? md($y,$n,$node) : mb($y,$n,$node)* ($x-mc($y,$n,$node))+1);
+}

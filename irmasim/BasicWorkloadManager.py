@@ -30,7 +30,6 @@ class BasicWorkloadManager:
         if self.pending_jobs != [] and len(self.idle_resources) >= len(self.pending_jobs[0].tasks):
             next_job = self.pending_jobs.pop(0)
             for task in next_job.tasks:
-                print("hola")
                 task.allocate(self.idle_resources.pop(0))
                 self.busy_resources.append(task.resource)
             self.simulator.schedule(next_job.tasks)

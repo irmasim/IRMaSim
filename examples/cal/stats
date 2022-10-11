@@ -1,0 +1,18 @@
+sub stats {
+   my $m = 0;
+   my $a = undef;
+   my $i = undef;
+   my $c = 1;
+   my ($q1,$q2,$q3);
+   my $t = scalar(@_);
+   foreach(sort @_) {
+      $m+=$_;
+      $a = $_ if(!defined $a || $a < $_ );
+      $i = $_ if(!defined $i || $i > $_ );
+      $q1 = $_ if($c < 0.25*$t);
+      $q2 = $_ if($c < 0.5*$t);
+      $q3 = $_ if($c < 0.75*$t);
+      $c++;
+   }
+   return ($t, $i, $a, $m/scalar(@_), $q1, $q2, $q3);
+}
