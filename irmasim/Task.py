@@ -15,3 +15,6 @@ class Task:
 
     def allocate(self, resource: list):
         self.resource = resource
+
+    def __str__(self):
+        return ",".join(map(lambda x: str(x), [self.job.id, self.resource, self.ops]))

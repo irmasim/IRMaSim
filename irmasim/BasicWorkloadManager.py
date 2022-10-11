@@ -22,7 +22,7 @@ class BasicWorkloadManager:
         for job in jobs:
             for task in job.tasks:
                 self.busy_resources.remove(task.resource)
-                self.idle_resources.append(task.resource)
+                self.idle_resources.insert(0, task.resource)
         while self.schedule_next_job():
             pass
 

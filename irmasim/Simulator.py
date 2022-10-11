@@ -8,6 +8,7 @@ import importlib
 import os.path as path
 import json
 import numpy
+import logging
 
 
 class Simulator:
@@ -20,29 +21,33 @@ class Simulator:
         # TODO
         # self.statistics = Statistics(options)
         self.simulation_time = 0
+        self.energy = 0
+        self.logger = logging.getLogger("simulator")
+        self.logger.info("time,energy,future_jobs,pending_jobs,running_jobs,finished_jobs")
 
     def start_simulation(self) -> None:
+        self.log_state()
         first_jobs = self.job_queue.get_next_jobs(self.job_queue.get_next_step())
-        self.simulation_time += first_jobs[0].subtime
+        self.simulation_time += first_jobs[0].submit_time
         self.platform.advance(self.simulation_time)
         # TODO do something with joules
-        joules = self.platform.get_joules(self.simulation_time)
-
+        self.energy = self.platform.get_joules(self.simulation_time)
         # self.statistics.calculate_energy_and_edp(self.resource_manager.core_pool, self.simulation_time)
         self.scheduler.on_job_submission(first_jobs)
+        self.log_state()
 
         delta_time_platform = self.platform.get_next_step()
         # TODO unify get_next_step return value
         delta_time_queue = self.job_queue.get_next_step() - self.simulation_time
 
         delta_time = min([delta_time_platform, delta_time_queue])
-        print(self.simulation_time)
+
         while delta_time != math.inf:
+            print(delta_time,delta_time_queue,delta_time_platform)
             if delta_time != 0:
                 self.platform.advance(delta_time)
-                joules += self.platform.get_joules(delta_time)
+                self.energy += self.platform.get_joules(delta_time)
                 self.simulation_time += delta_time
-                print(self.simulation_time)
 
             if delta_time == delta_time_queue:
                 jobs = self.job_queue.get_next_jobs(self.simulation_time)
@@ -50,6 +55,11 @@ class Simulator:
 
             if delta_time == delta_time_platform:
                 jobs = self.job_queue.finish_jobs()
+                print(jobs)
+                job_logger = logging.getLogger("jobs")
+                for job in jobs:
+                    job.finish_time = self.simulation_time
+                    job_logger.info(str(job))
                 self.reap([task for job in jobs for task in job.tasks])
                 self.scheduler.on_job_completion(jobs)
 
@@ -57,9 +67,11 @@ class Simulator:
             # TODO unify get_next_step return value
             delta_time_queue = self.job_queue.get_next_step() - self.simulation_time
             delta_time = min([delta_time_platform, delta_time_queue])
+            self.log_state()
 
     def schedule(self, tasks: list):
         for task in tasks:
+            task.job.set_start_time(self.simulation_time)
             resource_id = task.resource[0]
             if resource_id == self.platform.id:
                 self.platform.schedule(task, task.resource[1:])
@@ -129,3 +141,7 @@ class Simulator:
                 [workload['profiles'][job['profile']]['mem_vol'] for job in workload['jobs']]), 99)
         }
         return job_limits, job_queue
+
+    def log_state(self):
+        future, pending, running, finished = self.job_queue.get_job_counts()
+        self.logger.info(",".join(map(lambda x: str(x), [self.simulation_time, self.energy, future, pending, running, finished])))

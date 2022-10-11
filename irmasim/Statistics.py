@@ -28,6 +28,6 @@ class Statistics:
         with open('{0}/jobs.log'.format(self.options['output_dir']), 'w') as out_f:
             jobs = "Name, subtime ,start_runing, finish, execution_time, instructions, profile, cores\n"
             for i in sorted(finished_jobs, key= lambda x: x.name):
-                jobs += i.name+","+str(i.subtime)+","+str(i.start_running)+","+str(i.finish)+","+str(i.finish-i.start_running)+","+\
-                        str(i.req_ops)+","+str(i.type)+","+str(i.core_finish)+"\n"
+                jobs += i.name +"," + str(i.submit_time) + "," + str(i.start_running) + "," + str(i.finish) + "," + str(i.finish - i.start_running) + "," + \
+                        str(i.req_ops) +"," + str(i.type) +"," + str(i.core_finish) +"\n"
             out_f.write(jobs)

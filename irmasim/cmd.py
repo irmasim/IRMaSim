@@ -7,9 +7,10 @@ import os.path as path
 import numpy as np
 import random as rnd
 import time
+import logging
 from irmasim.Simulator import Simulator
 from irmasim.Options import Options
-
+from irmasim.Job import job_header
 
 def launch() -> None:
     start_time = time.time()
@@ -74,6 +75,8 @@ def launch() -> None:
     rnd.seed(options['seed'])
     np.random.seed(options['seed'])
 
+    start_logging()
+
     simulator = Simulator()
     with open('{0}/simulator.pickle'.format(options['output_dir']), 'wb') as out_f:
         pickle.dump(simulator, out_f)
@@ -86,3 +89,18 @@ def launch() -> None:
     os.remove(options['output_dir'] + "/simulator.pickle")
     print("Execution time " + str(time.time() - start_time) + " seconds")
     sys.exit(0)
+
+
+def start_logging():
+    simulator_logger = logging.getLogger("simulator")
+    FileOutputHandler = logging.FileHandler('irmasim.log', mode="w")
+    simulator_logger.setLevel(logging.INFO)
+    simulator_logger.addHandler(FileOutputHandler)
+
+    job_logger = logging.getLogger("jobs")
+    FileOutputHandler = logging.FileHandler('jobs.log', mode="w")
+    job_logger.setLevel(logging.INFO)
+    job_logger.addHandler(FileOutputHandler)
+    job_logger.info(job_header())
+
+

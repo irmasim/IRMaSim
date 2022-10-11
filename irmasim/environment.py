@@ -104,7 +104,7 @@ Attributes:
         # Selection policies
         self.job_selections = OrderedDict({
             'random': None,
-            'first': lambda job: job.subtime,
+            'first': lambda job: job.submit_time,
             'shortest': lambda job: job.req_time,
             'smallest': lambda job: job.resources,
             'low_mem': lambda job: job.mem,
