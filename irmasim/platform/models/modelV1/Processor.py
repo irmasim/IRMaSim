@@ -4,7 +4,7 @@ from irmasim.Task import Task
 
 class Processor (BasicProcessor):
 
-    def __init__(self, id: str, config: dict):
+    def __init__(self, id: list, config: dict):
         super(Processor, self).__init__(id=id, config=config)
         self.requested_memory_bandwidth = 0.0
         self.mops_per_core = config['clock_rate'] * config['dpflops_per_cycle'] * 1e3
@@ -15,14 +15,14 @@ class Processor (BasicProcessor):
 
     def advance(self, delta_time: float):
         super().advance(delta_time)
-        self.update_speedup()
 
     def reap(self, task: Task, resource_id: list):
         super().reap(task, resource_id)
         self.update_speedup()
 
     def get_joules(self, delta_time: float):
-        task_count = sum([1 for core in self.children if core.task is not None and core.task.ops > 0.0])
+        task_count = sum([1 for core in self.children if core.task is not None])
+        print("AAAAAA", task_count)
         if task_count == 0:
             return sum([(core.min_power*core.static_power) for core in self.children]) * delta_time
         else:
@@ -55,5 +55,10 @@ class Processor (BasicProcessor):
         self.requested_memory_bandwidth = sum([core.requested_memory_bandwidth for core in self.children])
         task_count = sum([1 for core in self.children if core.task is not None and core.task.ops > 0.0])
         for core in self.children:
-            core.speedup = round(perf(self.requested_memory_bandwidth, core.requested_memory_bandwidth,
-                                      task_count - 1), 9)
+            if core.task is not None:
+                core.speedup = round(perf(self.requested_memory_bandwidth, core.requested_memory_bandwidth,
+                                  task_count - 1), 9)
+            else:
+                # Avoid speedup 0.9999
+                core.speedup = 1
+            print(core.speedup)

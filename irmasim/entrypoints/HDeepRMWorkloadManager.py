@@ -11,8 +11,8 @@ import os.path as path
 import numpy as np
 import torch
 from irmasim.Job import Job
-from irmasim.agent import Agent, ClassicAgent
-from irmasim.environment import Environment
+from irmasim.workload_manager.agent.Agent import Agent, ClassicAgent
+from irmasim.workload_manager.Environment import Environment
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from irmasim.Simulator import Simulator

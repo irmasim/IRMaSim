@@ -1,0 +1,22 @@
+{
+   "seed": 0,
+   "log_level": "DEBUG",
+   "platform_name": "the_platform",
+   "platform_file": "platform.json",
+   "workload_file": "workload.json",
+   
+   "workload_manager": {
+       "type": "Policy",
+       "env": {
+      		"objective": "makespan",
+      		"queue_sensitivity": 0.005
+   	},
+   	"agent" : {
+   		"name": "ActorCritic",
+   		"lr": 0.01,
+   		"phase": "train",
+   		"hidden": 16,
+   		"gamma": 0.99
+   	}
+   }
+}

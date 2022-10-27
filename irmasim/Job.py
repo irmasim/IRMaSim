@@ -22,8 +22,6 @@ class Job:
         self.generate_tasks()
 
     def is_job_finished(self):
-        for task in self.tasks:
-            print(task)
         return sum([1 for task in self.tasks if task.ops > 0.0]) == 0
 
     def generate_tasks(self):

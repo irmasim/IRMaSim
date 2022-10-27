@@ -1,0 +1,4 @@
+set datafile separator ","
+set key box autotitle columnhead
+d(y,x) = ($0 == 0) ? (x1 = column(x), y1 = column(y), 1/0) : (x2 = x1, y2 = y1, x1 = column(x), y1 = column(y), (y1-y2)/(x1-x2))
+plot "irmasim.log" using 1:(d(2,1)) with steps,  "" u 1:5 w steps

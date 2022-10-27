@@ -10,7 +10,7 @@ def test_agent_load():
     platorma_file = "platform.json"
     job_file = "jobs.json"
     outpul_dir = "delme"
-    agent_file = "agent_examples/actor_critic.py"
+    agent_file = "agent_examples/ActorCritic.py"
     option_file = "options.json"
     model = "model"
 

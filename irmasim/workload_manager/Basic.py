@@ -4,11 +4,11 @@ if TYPE_CHECKING:
     from irmasim.Simulator import Simulator
 
 
-class BasicWorkloadManager:
+class Basic:
 
     def __init__(self, simulator: 'Simulator'):
         self.simulator = simulator
-        self.idle_resources = self.simulator.get_resources()
+        self.idle_resources = self.simulator.get_resources_ids()
         self.busy_resources = []
         self.pending_jobs = []
         self.running_jobs = []
@@ -22,7 +22,9 @@ class BasicWorkloadManager:
         for job in jobs:
             for task in job.tasks:
                 self.busy_resources.remove(task.resource)
+                # TODO mantener orden recursos
                 self.idle_resources.insert(0, task.resource)
+            self.running_jobs.remove(job)
         while self.schedule_next_job():
             pass
 
@@ -37,3 +39,9 @@ class BasicWorkloadManager:
             return True
         else:
             return False
+
+    def on_end_step(self):
+        pass
+
+    def on_end_simulation(self):
+        pass

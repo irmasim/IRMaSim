@@ -25,6 +25,7 @@ def launch() -> None:
     parser.add_argument('-im', '--inmodel', type=str, help='Path for previous model loading')
     parser.add_argument('-om', '--outmodel', type=str, help='Path for saving new model, can be the same as the inmodel')
     parser.add_argument('-nr', '--nbruns', type=int, default=1, help='Number of simulations to run')
+    parser.add_argument('-ph', '--phase', type=str, default="train", help='Agent operation phase: train, eval')
     parser.add_argument('-v', '--verbose', action="store_true", help='Remove prints in stdout')
     args = parser.parse_args()
 
@@ -53,11 +54,13 @@ def launch() -> None:
     else:
         options['output_dir'] = "."
     if args.agent:
-        options['agent']['file'] = path.abspath(args.agent)
+        options["workload_manager"]['agent']['file'] = path.abspath(args.agent)
     if args.inmodel:
-        options['agent']['input_model'] = path.abspath(args.inmodel)
+        options["workload_manager"]['agent']['input_model'] = path.abspath(args.inmodel)
     if args.outmodel:
-        options['agent']['output_model'] = path.abspath(args.outmodel)
+        options["workload_manager"]['agent']['output_model'] = path.abspath(args.outmodel)
+    if args.phase:
+        options["workload_manager"]['agent']['phase'] = args.phase
 
     # Check for minimum operating parameters
     if 'platform_name' not in options:
@@ -77,13 +80,13 @@ def launch() -> None:
 
     start_logging()
 
-    simulator = Simulator()
-    with open('{0}/simulator.pickle'.format(options['output_dir']), 'wb') as out_f:
-        pickle.dump(simulator, out_f)
+    #with open('{0}/simulator.pickle'.format(options['output_dir']), 'wb') as out_f:
+    #    pickle.dump(simulator, out_f)
 
     for _ in range(args.nbruns):
-        with open('{0}/simulator.pickle'.format(options['output_dir']), 'rb') as in_f:
-            simulator = pickle.load(in_f)
+        #with open('{0}/simulator.pickle'.format(options['output_dir']), 'rb') as in_f:
+        #    simulator = pickle.load(in_f)
+        simulator = Simulator()
         simulator.start_simulation()
 
     os.remove(options['output_dir'] + "/simulator.pickle")

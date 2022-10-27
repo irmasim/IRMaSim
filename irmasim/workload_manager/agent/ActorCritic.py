@@ -7,8 +7,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from irmasim.workload_manager.agent.Agent import PolicyLearningAgent, ValueLearningAgent
+from irmasim.Options import Options
 
-class ActorCriticAgent(PolicyLearningAgent, ValueLearningAgent):
+class ActorCritic(PolicyLearningAgent, ValueLearningAgent):
     """Class for the agent implementing the Adavantage Actor-Critic algorithm.
 
 The inner model is based on two deep neural networks, an Actor for learning the policy and
@@ -44,10 +45,10 @@ Attributes:
         The inner model implementation with the Actor and Critic.
     """
 
-    def __init__(self, options : dict, action_size: int, observation_size: int) -> None:
-        gamma = options['agent']['gamma']
-        hidden = options['agent']['hidden']
-        super(ActorCriticAgent, self).__init__(options)
+    def __init__(self, action_size: int, observation_size: int) -> None:
+        gamma = Options().get()["workload_manager"]["agent"]["gamma"]
+        hidden = Options().get()["workload_manager"]["agent"]["hidden"]
+        super(ActorCritic, self).__init__(Options().get()["workload_manager"])
         self.input = nn.Linear(observation_size, hidden)
         self.actor_hidden_0 = nn.Linear(hidden, hidden)
         self.actor_hidden_1 = nn.Linear(hidden, hidden)

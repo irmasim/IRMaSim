@@ -3,6 +3,7 @@ from irmasim.platform.models.modelV1.Node import Node
 from irmasim.platform.models.modelV1.Processor import Processor
 from irmasim.platform.TaskRunner import TaskRunner
 from irmasim.platform.models.modelV1.Core import Core
+import copy
 
 
 class ModelBuilder:
@@ -16,7 +17,7 @@ class ModelBuilder:
             self.library = library
 
     def build_platform(self):
-        platform = TaskRunner(self.platform_description["id"], {})
+        platform = TaskRunner([self.platform_description["id"]], {})
         builder = ClusterBuilder(builder=self)
         self.build_children(builder, self.platform_description, platform, "clusters", "cluster")
         return platform
@@ -35,7 +36,9 @@ class ModelBuilder:
                     child_id = default_id
                 else:
                     child_id = child_definition["id"]
-                child = builder.build_resource(child_id + str(child_number), child_definition)
+                full_child_id = copy.copy(resource.id)
+                full_child_id.append(child_id + str(child_number))
+                child = builder.build_resource(full_child_id, child_definition)
                 resource.add_child(child)
                 child_number += 1
 
@@ -46,9 +49,10 @@ class ClusterBuilder(ModelBuilder):
         super(ClusterBuilder, self).__init__(platform_description=platform_description,
                                              library=library, builder=builder)
 
-    def build_resource(self, id: str, definition: dict):
+    def build_resource(self, id: list, definition: dict):
         resource = Cluster(id, {})
         builder = NodeBuilder(builder=self)
+        print(resource)
         self.build_children(builder, definition, resource, "nodes", "node")
         return resource
 
@@ -59,7 +63,7 @@ class NodeBuilder(ModelBuilder):
         super(NodeBuilder, self).__init__(platform_description=platform_description,
                                           library=library, builder=builder)
 
-    def build_resource(self, id: str, definition: dict):
+    def build_resource(self, id: list, definition: dict):
         definition = self.library["node"][definition["type"]]
         resource = Node(id, definition)
         builder = ProcessorBuilder(builder=self)
@@ -73,12 +77,14 @@ class ProcessorBuilder(ModelBuilder):
         super(ProcessorBuilder, self).__init__(platform_description=platform_description,
                                                library=library, builder=builder)
 
-    def build_resource(self, id: str, definition: dict):
+    def build_resource(self, id: list, definition: dict):
         definition = self.library["processor"][definition["type"]]
         resource = Processor(id, definition)
         builder = CoreBuilder(builder=self)
         for i in range(definition["cores"]):
-            child = builder.build_resource("core" + str(i), definition)
+            full_child_id = copy.copy(resource.id)
+            full_child_id.append("core" + str(i))
+            child = builder.build_resource(full_child_id, definition)
             resource.add_child(child)
 
         return resource
@@ -90,5 +96,5 @@ class CoreBuilder(ModelBuilder):
         super(CoreBuilder, self).__init__(platform_description=platform_description,
                                           library=library, builder=builder)
 
-    def build_resource(self, id: str, definition: dict):
+    def build_resource(self, id: list, definition: dict):
         return Core(id, definition)

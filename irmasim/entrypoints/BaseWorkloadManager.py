@@ -145,7 +145,7 @@ pending Jobs or no more resources available for the next selected.
         while self.job_scheduler.nb_pending_jobs and serviceable:
             job = self.job_scheduler.peek_job()
             # Pass the current timestamp for registering job entrance in the resource
-            resources = self.resource_manager.get_resources(job, self.bs.time())
+            resources = self.resource_manager.get_resources_ids(job, self.bs.time())
             if not resources:
                 serviceable = False
             else:

@@ -5,7 +5,7 @@ import math
 
 class Core(BasicCore):
 
-    def __init__(self, id: str, config: dict):
+    def __init__(self, id: list, config: dict):
         super(Core, self).__init__(id=id, config=config)
         self.dynamic_power = config['dynamic_power']
         self.static_power = config['static_power']
@@ -26,19 +26,14 @@ class Core(BasicCore):
             'last_update': 0.0
         }
 
-    def details(self):
-        return self.id
-
     def schedule(self, task: Task, resource_id: list):
         if self.task is not None:
-            Exception("This core does not model oversubscription")
+            raise Exception("This core does not model oversubscription")
 
-        # tasks[0].last_update = now
         self.task = task
         print(self.parent.parent.id, self.parent.id, self.id, " allocates ", self.task.job.id)
         self.requested_memory_bandwidth = task.memory_volume / \
                                           (task.ops / (self.mops * 1e6))
-        # self.state['last_update'] = now
 
     def get_next_step(self):
         if not self.task:
