@@ -22,8 +22,8 @@ class Resource:
     def __str__(self):
         return self.details() + " ( " + ", ".join(map(str, self.children)) + " )"
 
-    def pstr(self, indent: str):
-        return indent + self.details() + "\n" + "".join(map(lambda x: x.pstr(indent+" - "), self.children))
+    def pstr(self, indent: str, current: str = ""):
+        return current + self.details() + "\n" + "".join(map(lambda x: x.pstr(indent,current+indent), self.children))
 
     def details(self):
         return ".".join(self.id)

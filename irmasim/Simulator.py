@@ -15,7 +15,7 @@ class Simulator:
     def __init__(self):
         self.job_limits, self.job_queue = self.generate_workload()
         self.platform = self.build_platform()
-        print(self.platform.pstr(" - "))
+        print(self.platform.pstr("  "))
         self.workload_manager = self.build_workload_manager()
         # TODO
         # self.statistics = Statistics(options)
