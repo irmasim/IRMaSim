@@ -153,7 +153,7 @@ while(<$file>) {
    #$row[7] =~ s/\[(.*)\]/"node_".int($1 \/ 4)/e;
    #$row[7] =~ s/\[(.*)\]/node_$1/;
    #$row[7] =~ s/.*://;
-   $row[7] =~ s/\.processor.*//;
+   $row[7] =~ s/.*\.([^.]*)\.proc.*/$1/;
    $node{$row[7]} = {} unless(defined $node{$row[7]});
    $proc{$row[0]}->{node} = $row[7];
    $proc{$row[0]}->{begin_time} = $row[2];
