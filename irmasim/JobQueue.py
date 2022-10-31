@@ -41,3 +41,9 @@ class JobQueue:
     def get_job_counts(self):
         running  = sum([1 for job in self.submitted_jobs if job.start_time < math.inf])
         return len(self.future_jobs), len(self.submitted_jobs) - running, running, len(self.finished_jobs)
+
+    def __str__(self):
+        return "future = [ " + ", ".join([str(job.id) for job in self.future_jobs]) + " ]" \
+            + " submitted = [ " + ", ".join([str(job.id) for job in self.submitted_jobs]) + " ]" \
+            + " finished = [ " + ", ".join([str(job.id) for job in self.finished_jobs]) + " ]"
+
