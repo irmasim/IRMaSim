@@ -52,7 +52,6 @@ class ClusterBuilder(ModelBuilder):
     def build_resource(self, id: list, definition: dict):
         resource = Cluster(id, {})
         builder = NodeBuilder(builder=self)
-        print(resource)
         self.build_children(builder, definition, resource, "nodes", "node")
         return resource
 
