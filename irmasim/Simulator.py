@@ -82,20 +82,19 @@ class Simulator:
 
     def schedule(self, tasks: list):
         for task in tasks:
-            print("-->\n")
             task.job.set_start_time(self.simulation_time)
             resource_id = task.resource[0]
-            if resource_id == self.platform.id[0]:
+            if resource_id == self.platform.id:
+                logging.getLogger("irmasim").debug("{} {} launch task {} runs task {}".format( \
+                        self.simulation_time, ".".join(task.resource), task.job.name, task.job.type))
                 self.platform.schedule(task, task.resource[1:])
-                logging.getLogger("irmasim").debug("{} {} launch task {}".format( \
-                        self.simulation_time, \
-                        "", \
-                        task.job.name))
 
     def reap(self, tasks: list):
         for task in tasks:
             resource_id = task.resource[0]
             if resource_id == self.platform.id:
+                logging.getLogger("irmasim").debug("{} {} complete task {}".format( \
+                        self.simulation_time, ".".join(task.resource), task.job.name))
                 self.platform.reap(task, task.resource[1:])
 
     def get_next_step(self) -> float:

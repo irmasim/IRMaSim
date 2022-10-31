@@ -17,7 +17,7 @@ class ModelBuilder:
             self.library = library
 
     def build_platform(self):
-        platform = TaskRunner([self.platform_description["id"]], {})
+        platform = TaskRunner(self.platform_description["id"], {})
         builder = ClusterBuilder(builder=self)
         self.build_children(builder, self.platform_description, platform, "clusters", "cluster")
         return platform
@@ -33,12 +33,10 @@ class ModelBuilder:
                 number = child_definition["number"]
             for i in range(number):
                 if "id" not in child_definition.keys():
-                    child_id = default_id
+                    child_id = default_id+str(child_number)
                 else:
                     child_id = child_definition["id"]
-                full_child_id = copy.copy(resource.id)
-                full_child_id.append(child_id + str(child_number))
-                child = builder.build_resource(full_child_id, child_definition)
+                child = builder.build_resource(child_id, child_definition)
                 resource.add_child(child)
                 child_number += 1
 
@@ -81,9 +79,7 @@ class ProcessorBuilder(ModelBuilder):
         resource = Processor(id, definition)
         builder = CoreBuilder(builder=self)
         for i in range(definition["cores"]):
-            full_child_id = copy.copy(resource.id)
-            full_child_id.append("core" + str(i))
-            child = builder.build_resource(full_child_id, definition)
+            child = builder.build_resource("core" + str(i), definition)
             resource.add_child(child)
 
         return resource

@@ -1,6 +1,6 @@
 class Resource:
 
-    def __init__(self, id: list, config: dict):
+    def __init__(self, id: str, config: dict):
         self.id = id
         self.config = config
         self.children = []
@@ -19,11 +19,37 @@ class Resource:
         self.children.append(child)
         child.parent = self
 
+    def enumerate_ids(self,parent_id: list = []):
+        if self.children:
+            child_ids = []
+            for child in self.children:
+                child_ids += child.enumerate_ids(parent_id + [self.id])
+            return child_ids
+        else:
+            return [ parent_id + [self.id] ]
+
+    def enumerate_resources(self, resource_type):
+        if issubclass(type(self), resource_type):
+            return [self]
+        else:
+            if self.children:
+                children = []
+                for child in self.children:
+                    children.extend(child.enumerate_resources(resource_type))
+                return children
+
+    def count_resources(self):
+        if self.children:
+            child_counts = []
+            for child in self.children:
+                child_counts += child.count_resources()
+            counts = [sum(x) for x in zip(*child_counts)]
+            return [1] + counts
+        else:
+            return [1]
+
     def __str__(self):
-        return self.details() + " ( " + ", ".join(map(str, self.children)) + " )"
+        return self.id + " ( " + ", ".join(map(str, self.children)) + " )"
 
     def pstr(self, indent: str, current: str = ""):
-        return current + self.details() + "\n" + "".join(map(lambda x: x.pstr(indent,current+indent), self.children))
-
-    def details(self):
-        return ".".join(self.id)
+        return current + self.id + "\n" + "".join(map(lambda x: x.pstr(indent,current+indent), self.children))

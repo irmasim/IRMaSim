@@ -152,7 +152,8 @@ while(<$file>) {
    # Register node
    #$row[7] =~ s/\[(.*)\]/"node_".int($1 \/ 4)/e;
    #$row[7] =~ s/\[(.*)\]/node_$1/;
-   $row[7] =~ s/.*://;
+   #$row[7] =~ s/.*://;
+   $row[7] =~ s/\.processor.*//;
    $node{$row[7]} = {} unless(defined $node{$row[7]});
    $proc{$row[0]}->{node} = $row[7];
    $proc{$row[0]}->{begin_time} = $row[2];
@@ -181,18 +182,18 @@ $file->close();
 #}
 #$file->close();
 
-$file = IO::File->new("power.log", "r") or die "ERROR: Can not read power.log in current directory.";
-($l,$e,$energy) = (0,0,0);
-while(<$file>) {
-   chomp;
-   next if($.==1);
-   @row = split(/,/);
-   $energy += ($row[0]-$l)*$row[1];
-   push @{$energy{"total"}}, [$row[0], $energy];
-   $l = $row[0];
-   $e = $row[1];
-}
-$file->close();
+#$file = IO::File->new("power.log", "r") or die "ERROR: Can not read power.log in current directory.";
+#($l,$e,$energy) = (0,0,0);
+#while(<$file>) {
+#   chomp;
+#   next if($.==1);
+#   @row = split(/,/);
+#   $energy += ($row[0]-$l)*$row[1];
+#   push @{$energy{"total"}}, [$row[0], $energy];
+#   $l = $row[0];
+#   $e = $row[1];
+#}
+#$file->close();
 
 $i = 0;
 foreach(sort keys %node) {
