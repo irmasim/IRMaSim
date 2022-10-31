@@ -25,6 +25,7 @@ class Simulator:
         self.logger.info("time,energy,future_jobs,pending_jobs,running_jobs,finished_jobs")
 
     def start_simulation(self) -> None:
+        logging.getLogger("irmasim").debug("Simulation start")
         self.log_state()
         first_jobs = self.job_queue.get_next_jobs(self.job_queue.get_next_step())
         self.simulation_time += first_jobs[0].submit_time
@@ -32,7 +33,10 @@ class Simulator:
         # TODO do something with joules
         self.energy = self.platform.get_joules(self.simulation_time)
         # self.statistics.calculate_energy_and_edp(self.resource_manager.core_pool, self.simulation_time)
+        logging.getLogger("irmasim").debug("{} Received job submission: {}".format( \
+                self.simulation_time, ",".join([str(job.id)+"("+job.name+")" for job in first_jobs])))
         self.workload_manager.on_job_submission(first_jobs)
+        
         self.log_state()
 
         delta_time_platform = self.platform.get_next_step()
@@ -52,6 +56,8 @@ class Simulator:
 
             if delta_time == delta_time_queue:
                 jobs = self.job_queue.get_next_jobs(self.simulation_time)
+                logging.getLogger("irmasim").debug("{} Received job submission: {}".format( \
+                        self.simulation_time, ",".join([str(job.id)+"("+job.name+")" for job in jobs])))
                 self.workload_manager.on_job_submission(jobs)
 
             if delta_time == delta_time_platform:
@@ -76,10 +82,15 @@ class Simulator:
 
     def schedule(self, tasks: list):
         for task in tasks:
+            print("-->\n")
             task.job.set_start_time(self.simulation_time)
             resource_id = task.resource[0]
-            if resource_id == self.platform.id:
+            if resource_id == self.platform.id[0]:
                 self.platform.schedule(task, task.resource[1:])
+                logging.getLogger("irmasim").debug("{} {} launch task {}".format( \
+                        self.simulation_time, \
+                        "", \
+                        task.job.name))
 
     def reap(self, tasks: list):
         for task in tasks:
@@ -138,6 +149,7 @@ class Simulator:
                 Job(job_id, job['id'], job['subtime'], job['res'], workload['profiles'][job['profile']],
                     job['profile']))
             job_id = job_id + 1
+        print(job_queue)
 
         job_limits = {
             'max_time': numpy.percentile(numpy.array(

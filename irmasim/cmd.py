@@ -108,8 +108,13 @@ def launch() -> None:
 
 
 def start_logging():
-    simulator_logger = logging.getLogger("simulator")
+    irmasim_logger = logging.getLogger("irmasim")
     FileOutputHandler = logging.FileHandler("irmasim.log", mode="w")
+    irmasim_logger.setLevel(logging.DEBUG)
+    irmasim_logger.addHandler(FileOutputHandler)
+
+    simulator_logger = logging.getLogger("simulator")
+    FileOutputHandler = logging.FileHandler("simulation.log", mode="w")
     simulator_logger.setLevel(logging.INFO)
     simulator_logger.addHandler(FileOutputHandler)
 
