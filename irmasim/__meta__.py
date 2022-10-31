@@ -1,5 +1,5 @@
 """
-Metainformation about HDeepRM package.
+Metainformation about IRMaSim.
 
 Attributes:
     NAME (str): name of the package.
@@ -15,9 +15,9 @@ Attributes:
 NAME = 'irmasim'
 PATH = NAME
 VERSION = '0.1'
-AUTHOR = 'ATC'
-AUTHOR_EMAIL = 'mib995@alumnos.unican.es'
-DESCRIPTION = 'Evaluate Deep Reinforcement Learning policies for heterogeneous Workload Management'
-KEYWORDS = ('deep reinforcement learning workload management job scheduling resource simulator '
-            'framework heterogeneous cluster')
-URL = 'https://github.com/Takkarpool/HDeepRM'
+AUTHOR = 'Mario Ibañez, Adrián Herrera, Esteban Stafford, Jose Luis Bosque'
+AUTHOR_EMAIL = 'mario.ibanez@unican.es, esteban.stafford@unican.es'
+DESCRIPTION = 'Intelligent Resource Manager Simulator (IRMaSim) is a tool to develop deep reinforcement learing resource managers.'
+KEYWORDS = ('heterogeneous cluster simulator'
+            'deep reinforcement learing workload manager')
+URL = 'https://github.com/irmasim/IRMaSim'
