@@ -8,16 +8,20 @@ class Statistics:
         self.latest_energy = []
         self.latest_edp = []
         self.options = options
+        with open('{0}/power.log'.format(self.options['output_dir']), 'w') as out_f:
+            out_f.write(f"now,total_power\n")
 
-    def calculate_energy_and_edp(self, core_pool : list, diff_time : float, all_jobs_scheduler = False):
+    def calculate_energy_and_edp(self, core_pool : list, diff_time : float, now: float, all_jobs_scheduler = False):
         total_power = round(sum([core.state['current_power'] for core in core_pool]),9)
+        with open('{0}/power.log'.format(self.options['output_dir']), 'a') as out_f:
+            out_f.write(f"{now},{total_power}\n")
         self.energy.append(total_power * diff_time)
         self.edp.append(round(total_power * (diff_time ** 2),9))
         if all_jobs_scheduler:
             self.latest_energy.append(self.energy[-1])
             self.latest_edp.append(self.edp[-1])
 
-    def write_results(self, time : float, finished_jobs : list):
+    def write_results(self, time : float, finished_jobs : list, core_pool: list):
         with open('{0}/statistics.json'.format(self.options['output_dir']), 'w') as out_f:
             data = {
                 "Energy_Consumed (J)" : sum(self.energy),
@@ -28,6 +32,7 @@ class Statistics:
         with open('{0}/jobs.log'.format(self.options['output_dir']), 'w') as out_f:
             jobs = "Name, subtime ,start_runing, finish, execution_time, instructions, profile, cores\n"
             for i in sorted(finished_jobs, key= lambda x: x.name):
-                jobs += i.name+","+str(i.subtime)+","+str(i.start_running)+","+str(i.finish)+","+str(i.finish-i.start_running)+","+\
-                        str(i.req_ops)+","+str(i.type)+","+str(i.core_finish)+"\n"
+                jobs += i.name+","+str(i.subtime)+","+str(i.start_running)+","+str(i.finish)+","+\
+                        str(i.finish-i.start_running)+","+str(i.req_ops)+","+str(i.type)+","+\
+                        " ".join([ str(c)+":"+str(core_pool[c].processor['id']) for c in i.core_finish ])+"\n"
             out_f.write(jobs)
