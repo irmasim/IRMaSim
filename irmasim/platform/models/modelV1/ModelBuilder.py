@@ -1,9 +1,8 @@
 from irmasim.platform.models.modelV1.Cluster import Cluster
 from irmasim.platform.models.modelV1.Node import Node
 from irmasim.platform.models.modelV1.Processor import Processor
-from irmasim.platform.TaskRunner import TaskRunner
 from irmasim.platform.models.modelV1.Core import Core
-import copy
+from irmasim.platform.TaskRunner import TaskRunner
 
 
 class ModelBuilder:
