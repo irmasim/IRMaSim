@@ -22,7 +22,6 @@ class Processor (BasicProcessor):
 
     def get_joules(self, delta_time: float):
         task_count = sum([1 for core in self.children if core.task is not None])
-        print("AAAAAA", task_count)
         if task_count == 0:
             return sum([(core.min_power*core.static_power) for core in self.children]) * delta_time
         else:
@@ -61,4 +60,3 @@ class Processor (BasicProcessor):
             else:
                 # Avoid speedup 0.9999
                 core.speedup = 1
-            print(core.speedup)

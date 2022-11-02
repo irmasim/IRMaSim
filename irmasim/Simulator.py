@@ -15,7 +15,7 @@ class Simulator:
     def __init__(self):
         self.job_limits, self.job_queue = self.generate_workload()
         self.platform = self.build_platform()
-        print(self.platform.pstr("  "))
+        #print(self.platform.pstr("  "))
         self.workload_manager = self.build_workload_manager()
         # TODO
         # self.statistics = Statistics(options)
@@ -47,10 +47,7 @@ class Simulator:
 
         while delta_time != math.inf:
             if delta_time != 0:
-
-                print("delta", delta_time)
                 self.platform.advance(delta_time)
-                print("ENE", self.platform.get_joules(delta_time))
                 self.energy += self.platform.get_joules(delta_time)
                 self.simulation_time += delta_time
 
@@ -148,7 +145,7 @@ class Simulator:
                 Job(job_id, job['id'], job['subtime'], job['res'], workload['profiles'][job['profile']],
                     job['profile']))
             job_id = job_id + 1
-        print(job_queue)
+        #print(job_queue)
 
         job_limits = {
             'max_time': numpy.percentile(numpy.array(
