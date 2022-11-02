@@ -8,7 +8,7 @@ class Core(BasicCore):
     def __init__(self, id: list, config: dict):
         super(Core, self).__init__(id=id, config=config)
         self.dynamic_power = config['dynamic_power']
-        self.static_power = config['static_power']
+        self.static_power = config['static_power']/config['cores']
         self.min_power = config['min_power']
         self.b = config['b']
         self.c = config['c']
@@ -31,7 +31,6 @@ class Core(BasicCore):
             raise Exception("This core does not model oversubscription")
 
         self.task = task
-        print(self.parent.parent.id, self.parent.id, self.id, " allocates ", self.task.job.id)
         self.requested_memory_bandwidth = task.memory_volume / \
                                           (task.ops / (self.mops * 1e6))
 
@@ -51,7 +50,6 @@ class Core(BasicCore):
     def reap(self, task: Task, resource_id: list):
         if self.task is None or self.task != task:
             raise Exception("Cannot reap task from resource")
-        print(self.id, " releases ", self.task.job.id)
         self.task = None
         self.requested_memory_bandwidth = 0
 
