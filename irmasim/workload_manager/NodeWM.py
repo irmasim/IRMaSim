@@ -1,6 +1,8 @@
+import importlib
 from irmasim.workload_manager.WorkloadManager import WorkloadManager
 from irmasim.Job import Job
 from irmasim.Task import Task
+from irmasim.Options import Options
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -11,7 +13,12 @@ class NodeWM(WorkloadManager):
         super(NodeWM, self).__init__(simulator)
         if simulator.platform.config["model"] != "modelV2":
             raise Exception("NodeWM workload manager needs a modelV2 platform")
-        self.resources = [ [ resource_id, 1 ] for resource_id in self.simulator.get_resources_ids() ]
+        options = Options().get()
+        mod = importlib.import_module("irmasim.platform.models." + options["platform_model_name"] + ".Node")
+        klass = getattr(mod, 'Node')
+        resources = self.simulator.get_resources(klass)
+
+        self.resources = [ [ resource.full_id(), resource.config['cores'] ] for resource in resources ]
         self.idle_resources = len(self.resources)
         self.pending_jobs = []
         self.running_jobs = []
@@ -30,7 +37,7 @@ class NodeWM(WorkloadManager):
             pass
 
     def schedule_next_job(self):
-        if self.pending_jobs != [] and self.idle_resources >= len(self.pending_jobs[0].tasks):
+        if self.pending_jobs != [] and max([ resource[1] for resource in self.resources ]) > 0:
             next_job = self.pending_jobs.pop(0)
             for task in next_job.tasks:
                 self.allocate(task)
@@ -50,14 +57,12 @@ class NodeWM(WorkloadManager):
         resource = 0
         while self.resources[resource][1] == 0:
             resource += 1
-        self.resources[resource][1] = 0
-        self.idle_resources -= 1
+        self.resources[resource][1] -= 1
         task.allocate(self.resources[resource][0])
 
     def deallocate(self, task: Task):
         for resource in range(len(self.resources)):
-           if self.resources[resource][1] == 0 and self.resources[resource][0] == task.resource:
-               self.resources[resource][1] = 1
-               self.idle_resources += 1
+           if self.resources[resource][0] == task.resource:
+               self.resources[resource][1] += 1
                break
 

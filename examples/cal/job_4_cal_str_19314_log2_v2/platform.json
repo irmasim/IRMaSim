@@ -6,8 +6,8 @@
          "clusters": [
             { "id": "labatc",
                "nodes": [
-                  { "id": "n1113", "type": "slow", "number": 1 },
-                  { "id": "n1112", "type": "fast", "number": 1 }
+                  { "id": "n1112", "type": "fast", "number": 1 },
+                  { "id": "n1113", "type": "slow", "number": 1 }
                ]
             }
          ]

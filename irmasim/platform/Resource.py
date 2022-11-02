@@ -48,6 +48,14 @@ class Resource:
         else:
             return [1]
 
+    def full_id(self):
+        if self.parent != None:
+            id=self.parent.full_id()
+            id.append(self.id)
+            return id
+        else:
+            return [self.id]
+
     def __str__(self):
         return self.id + " ( " + ", ".join(map(str, self.children)) + " )"
 
