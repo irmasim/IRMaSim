@@ -16,7 +16,7 @@ class ModelBuilder:
             self.library = library
 
     def build_platform(self):
-        platform = TaskRunner(self.platform_description["id"], {})
+        platform = TaskRunner(self.platform_description["id"], { "model": "modelV1" } )
         builder = ClusterBuilder(builder=self)
         self.build_children(builder, self.platform_description, platform, "clusters", "cluster")
         return platform
