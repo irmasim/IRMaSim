@@ -56,7 +56,7 @@ def launch() -> None:
         options['output_dir'] = "."
 
     if not 'workload_manager' in options:
-       options['workload_manager'] = {}
+    options['workload_manager'] = {}
 
     if args.workload_manager:
         options['workload_manager']['type'] = path.abspath(args.workload_manager)
