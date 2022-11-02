@@ -1,14 +1,16 @@
+from irmasim.workload_manager.WorkloadManager import WorkloadManager
 from irmasim.Job import Job
 from irmasim.Task import Task
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from irmasim.Simulator import Simulator
 
-
-class Basic:
-
+class Minimal(WorkloadManager):
     def __init__(self, simulator: 'Simulator'):
-        self.simulator = simulator
+        super(Minimal, self).__init__(simulator)
+        if simulator.platform.config["model"] != "modelV1":
+            raise Exception("Minimal workload manager needs a modelV1 platform")
         self.resources = [ [ resource_id, 1 ] for resource_id in self.simulator.get_resources_ids() ]
         self.idle_resources = len(self.resources)
         self.pending_jobs = []

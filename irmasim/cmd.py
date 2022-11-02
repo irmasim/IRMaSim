@@ -55,11 +55,14 @@ def launch() -> None:
     else:
         options['output_dir'] = "."
 
-    options['workload_manager'] = {}
+    if not 'workload_manager' in options:
+       options['workload_manager'] = {}
+
     if args.workload_manager:
         options['workload_manager']['type'] = path.abspath(args.workload_manager)
     else:
-        options['workload_manager']['type'] = "Basic"
+        if not 'type' in options['workload_manager']:
+            options['workload_manager']['type'] = "Minimal"
     if args.agent:
         options['workload_manager']['agent'] = {}
         options['workload_manager']['agent']['file'] = path.abspath(args.agent)

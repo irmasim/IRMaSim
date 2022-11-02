@@ -3,7 +3,7 @@ import json
 import numpy as np
 import torch
 import os.path as path
-from irmasim.workload_manager.Basic import Basic
+from irmasim.workload_manager.WorkloadManager import WorkloadManager
 from irmasim.Options import Options
 from irmasim.workload_manager.Environment import Environment
 from typing import TYPE_CHECKING
@@ -12,9 +12,11 @@ if TYPE_CHECKING:
     from irmasim.Simulator import Simulator
 
 
-class Policy(Basic):
+class Policy(WorkloadManager):
     def __init__(self, simulator: 'Simulator'):
         super(Policy, self).__init__(simulator)
+        if simulator.platform.config["model"] != "modelV1":
+            raise Exception("Policy workload manager needs a modelV1 platform")
         options = Options().get()
         mod = importlib.import_module("irmasim.platform.models." + options["platform_model_name"] + ".Core")
         klass = getattr(mod, 'Core')

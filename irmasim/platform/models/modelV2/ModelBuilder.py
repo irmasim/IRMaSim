@@ -1,9 +1,6 @@
-from irmasim.platform.models.modelV1.Cluster import Cluster
-from irmasim.platform.models.modelV1.Node import Node
-from irmasim.platform.models.modelV1.Processor import Processor
-from irmasim.platform.models.modelV1.Core import Core
+from irmasim.platform.models.modelV2.Cluster import Cluster
+from irmasim.platform.models.modelV2.Node import Node
 from irmasim.platform.TaskRunner import TaskRunner
-
 
 class ModelBuilder:
 
@@ -16,7 +13,7 @@ class ModelBuilder:
             self.library = library
 
     def build_platform(self):
-        platform = TaskRunner(self.platform_description["id"], { "model": "modelV1" } )
+        platform = TaskRunner(self.platform_description["id"], { "model": "modelV2" } )
         builder = ClusterBuilder(builder=self)
         self.build_children(builder, self.platform_description, platform, "clusters", "cluster")
         return platform
@@ -62,33 +59,4 @@ class NodeBuilder(ModelBuilder):
     def build_resource(self, id: str, definition: dict):
         definition = self.library["node"][definition["type"]]
         resource = Node(id, definition)
-        builder = ProcessorBuilder(builder=self)
-        self.build_children(builder, definition, resource, "processors", "processor")
         return resource
-
-
-class ProcessorBuilder(ModelBuilder):
-
-    def __init__(self, platform_description: dict = None, library: dict = None, builder: "ModelBuilder" = None):
-        super(ProcessorBuilder, self).__init__(platform_description=platform_description,
-                                               library=library, builder=builder)
-
-    def build_resource(self, id: str, definition: dict):
-        definition = self.library["processor"][definition["type"]]
-        resource = Processor(id, definition)
-        builder = CoreBuilder(builder=self)
-        for i in range(definition["cores"]):
-            child = builder.build_resource("core" + str(i), definition)
-            resource.add_child(child)
-
-        return resource
-
-
-class CoreBuilder(ModelBuilder):
-
-    def __init__(self, platform_description: dict = None, library: dict = None, builder: "ModelBuilder" = None):
-        super(CoreBuilder, self).__init__(platform_description=platform_description,
-                                          library=library, builder=builder)
-
-    def build_resource(self, id: str, definition: dict):
-        return Core(id, definition)
