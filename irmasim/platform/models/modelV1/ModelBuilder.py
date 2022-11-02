@@ -47,7 +47,7 @@ class ClusterBuilder(ModelBuilder):
         super(ClusterBuilder, self).__init__(platform_description=platform_description,
                                              library=library, builder=builder)
 
-    def build_resource(self, id: list, definition: dict):
+    def build_resource(self, id: str, definition: dict):
         resource = Cluster(id, {})
         builder = NodeBuilder(builder=self)
         self.build_children(builder, definition, resource, "nodes", "node")
@@ -60,7 +60,7 @@ class NodeBuilder(ModelBuilder):
         super(NodeBuilder, self).__init__(platform_description=platform_description,
                                           library=library, builder=builder)
 
-    def build_resource(self, id: list, definition: dict):
+    def build_resource(self, id: str, definition: dict):
         definition = self.library["node"][definition["type"]]
         resource = Node(id, definition)
         builder = ProcessorBuilder(builder=self)
@@ -74,7 +74,7 @@ class ProcessorBuilder(ModelBuilder):
         super(ProcessorBuilder, self).__init__(platform_description=platform_description,
                                                library=library, builder=builder)
 
-    def build_resource(self, id: list, definition: dict):
+    def build_resource(self, id: str, definition: dict):
         definition = self.library["processor"][definition["type"]]
         resource = Processor(id, definition)
         builder = CoreBuilder(builder=self)
@@ -91,5 +91,5 @@ class CoreBuilder(ModelBuilder):
         super(CoreBuilder, self).__init__(platform_description=platform_description,
                                           library=library, builder=builder)
 
-    def build_resource(self, id: list, definition: dict):
+    def build_resource(self, id: str, definition: dict):
         return Core(id, definition)
