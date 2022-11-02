@@ -52,32 +52,3 @@ class Core(BasicCore):
             raise Exception("Cannot reap task from resource")
         self.task = None
         self.requested_memory_bandwidth = 0
-
-    def delme(self):
-        """
-            else:
-                self.update_completion(now)
-            # 100% Power
-            self.state['current_power'] = self.dynamic_power + self.static_power
-            self.state['speedup'] = speedup
-            self.state['current_gflops'] = self.processor['gflops_per_core'] * speedup * 1e9
-        # Inactive core
-        elif state in ("NEIGHBOURS-RUNNING", "IDLE"):
-            if self.state['served_job']:
-                self.processor['current_mem_bw'] -= self.state['current_mem_bw']
-                self.processor['node']['current_mem'] += self.state['served_job'].mem
-                self.state['current_mem_bw'] = 0
-                self.state['served_job'] = None
-            # 0% GFLOPS
-            self.state['speedup'] = 0.0
-            self.state['current_gflops'] = 0.0
-            if state == "NEIGHBOURS-RUNNING":
-                # Static Power
-                self.state['current_power'] = self.static_power
-            else:
-                # Min Power
-                self.state['current_power'] = self.min_power * self.static_power
-        else:
-            raise ValueError('Error: unknown State')
-        self.state['speedup'] = speedup
-        """
