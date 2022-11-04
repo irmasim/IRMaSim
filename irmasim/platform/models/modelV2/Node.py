@@ -7,7 +7,34 @@ class Process:
     def __init__(self, node: 'Node', task: Task):
         self.node = node
         self.task = task
+        self.requested_memory_bandwidth = task.memory_volume / \
+                                          (task.ops / (self.node.gops * 1e9))
         self.speedup = 1
+
+    def update_speedup(self):
+        other=len(self.node.processes)-1
+        all_bw=self.node.requested_memory_bandwidth*1e-3
+        int_bw=self.requested_memory_bandwidth*1e-3
+
+        ab = self.node.abb + other * self.node.aba
+        aa = self.node.aab + other * self.node.aaa
+
+        bb = self.node.bbb + other * self.node.bba
+        ba = self.node.bab + other * self.node.baa
+
+        ca = self.node.cab + other * self.node.caa
+        cb = self.node.cbb + other * self.node.cba
+        cc = self.node.ccb + other * self.node.cca
+
+        db = self.node.dbb + other * self.node.dba
+        da = self.node.dab + other * self.node.daa
+
+        a = ab + int_bw * aa
+        b = bb + int_bw * ba
+        c = cc + int_bw * cb + int_bw**2 * ca
+        d = db + int_bw * da
+
+        self.speedup = b+(c-b)*math.exp(-math.exp(a*(all_bw-d)))*0.9
 
     def get_next_step(self):
             return self.task.ops / (self.node.gops * 1e9 * self.speedup)
@@ -22,8 +49,40 @@ class Node (BasicNode):
         self.processes = []
         self.gops = config['clock_rate']
 
+        self.aaa = config['aaa']
+        self.aab = config['aab']
+        self.aba = config['aba']
+        self.abb = config['abb']
+        self.baa = config['baa']
+        self.bab = config['bab']
+        self.bba = config['bba']
+        self.bbb = config['bbb']
+        self.caa = config['caa']
+        self.cab = config['cab']
+        self.cba = config['cba']
+        self.cbb = config['cbb']
+        self.cca = config['cca']
+        self.ccb = config['ccb']
+        self.daa = config['daa']
+        self.dab = config['dab']
+        self.dba = config['dba']
+        self.dbb = config['dbb']
+
+        self.pidle = config['pidle']
+        self.p00 = config['p00']
+        self.p01 = config['p01']
+        self.p02 = config['p02']
+        self.p10 = config['p10']
+        self.p11 = config['p11']
+        self.p20 = config['p20']
+
+        self.requested_memory_bandwidth = 0
+
     def schedule(self, task: Task, resource_id: list):
-        self.processes.append(Process(self,task))
+        process = Process(self,task)
+        self.processes.append(process)
+        self.requested_memory_bandwidth += process.requested_memory_bandwidth
+        self.update_speedup()
 
     def get_next_step(self):
         if self.processes == []:
@@ -39,4 +98,22 @@ class Node (BasicNode):
         for process in self.processes:
             if process.task == task:
                 self.processes.remove(process)
+                self.requested_memory_bandwidth -= process.requested_memory_bandwidth
                 break
+        self.update_speedup()
+
+    def update_speedup(self):
+        for process in self.processes:
+            process.update_speedup()
+        
+"""    
+    def power(self, state="RUN", all_bw=0.0, job_count=0, cores=1):
+        if job_count == 0:
+            return self.pidle/cores
+        all_bw=all_bw*1e-3
+        p = self.p00 + \
+            self.p10 * all_bw + self.p20 * all_bw**2 + \
+            self.p01 * job_count + self.p02 * job_count**2 + \
+            self.p11 * all_bw * job_count 
+        return p/cores
+"""
