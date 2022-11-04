@@ -106,14 +106,13 @@ class Node (BasicNode):
         for process in self.processes:
             process.update_speedup()
         
-"""    
-    def power(self, state="RUN", all_bw=0.0, job_count=0, cores=1):
+    def get_joules(self, delta_time: float):
+        job_count = len(self.processes)
         if job_count == 0:
-            return self.pidle/cores
-        all_bw=all_bw*1e-3
+            return self.pidle*delta_time
+        all_bw=self.requested_memory_bandwidth*1e-3
         p = self.p00 + \
             self.p10 * all_bw + self.p20 * all_bw**2 + \
             self.p01 * job_count + self.p02 * job_count**2 + \
             self.p11 * all_bw * job_count 
-        return p/cores
-"""
+        return p*delta_time
