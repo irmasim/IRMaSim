@@ -85,6 +85,8 @@ class Simulator:
                 logging.getLogger("irmasim").debug("{} {} launch task {} runs task {}".format( \
                         self.simulation_time, ".".join(task.resource), task.job.name, task.job.type))
                 self.platform.schedule(task, task.resource[1:])
+            else:
+                raise Exception(f"Resource {task.resource} does not belong to platform {self.platform.id}")
 
     def reap(self, tasks: list):
         for task in tasks:
@@ -145,7 +147,6 @@ class Simulator:
                 Job(job_id, job['id'], job['subtime'], job['res'], workload['profiles'][job['profile']],
                     job['profile']))
             job_id = job_id + 1
-        #print(job_queue)
 
         job_limits = {
             'max_time': numpy.percentile(numpy.array(

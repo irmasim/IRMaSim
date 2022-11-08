@@ -22,7 +22,7 @@ class Policy(WorkloadManager):
         klass = getattr(mod, 'Core')
         self.resources = self.simulator.get_resources(klass)
         self.pending_jobs = []
-        #self.running_jobs = []
+        self.running_jobs = []
         self.load_agent = True
         self.last_reward = False
         # if objective change reset agent
@@ -72,6 +72,7 @@ class Policy(WorkloadManager):
         optimizer: torch.optim = torch.optim.Adam(agent.parameters(), lr=float(agent_options['lr']))
 
         if 'input_model' in agent_options and path.isfile(agent_options['input_model']) and self.load_agent:
+            print(f"Reading model to {agent_options['input_model']}")
             checkpoint = torch.load(agent_options['input_model'])
             agent.load_state_dict(checkpoint['model_state_dict'])
             checkpoint['optimizer_state_dict']['param_groups'][0]['lr'] = float(agent_options['lr'])
@@ -103,27 +104,28 @@ class Policy(WorkloadManager):
         available_resources = [resource for resource in self.resources if resource.task is None]
         if key[1] != None:
             available_resources.sort(key=key[1])
-        while self.pending_jobs and len(self.pending_jobs[0].tasks) >= len(available_resources):
+        while self.pending_jobs and len(self.pending_jobs[0].tasks) <= len(available_resources):
             next_job = self.pending_jobs.pop(0)
             for task in next_job.tasks:
-                task.allocate(available_resources.pop(0).id)
+                task.allocate(available_resources.pop(0).full_id())
             self.simulator.schedule(next_job.tasks)
             self.running_jobs.append(next_job)
 
     def on_end_simulation(self):
         options = Options().get()
-        if options["workload_manager"]['agent']['phase'] == 'train':
+        if options['workload_manager']['agent']['phase'] == 'train':
             loss = self.agent.loss()
             with open('{0}/losses.log'.format(options['output_dir']), 'a+') as out_f:
                 out_f.write(f'{loss}\n')
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
-            if 'output_model' in options["workload_manager"]['agent']:
+            if 'output_model' in options['workload_manager']['agent']:
+                print(f"Writing model to {options['workload_manager']['agent']['output_model']}")
                 torch.save({
                     'model_state_dict': self.agent.state_dict(),
                     'optimizer_state_dict': self.optimizer.state_dict()
-                }, options["workload_manager"]['output_model'])
+                }, options['workload_manager']['agent']['output_model'])
         with open('{0}/rewards.log'.format(options['output_dir']), 'a+') as out_f:
             out_f.write(f'{np.sum(self.agent.rewards)}\n')
         with open('{0}/makespans.log'.format(options['output_dir']), 'a+') as out_f:

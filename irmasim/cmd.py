@@ -63,15 +63,17 @@ def launch() -> None:
     else:
         if not 'type' in options['workload_manager']:
             options['workload_manager']['type'] = "Minimal"
-    if args.agent:
+    
+    if not 'agent' in options['workload_manager']:
         options['workload_manager']['agent'] = {}
-        options['workload_manager']['agent']['file'] = path.abspath(args.agent)
-        if args.inmodel:
-            options['workload_manager']['agent']['input_model'] = path.abspath(args.inmodel)
-        if args.outmodel:
-            options['workload_manager']['agent']['output_model'] = path.abspath(args.outmodel)
-        if args.phase:
-            options['workload_manager']['agent']['phase'] = args.phase
+    if args.agent:
+        options['workload_manager']['agent']['name'] = path.abspath(args.agent)
+    if args.inmodel:
+        options['workload_manager']['agent']['input_model'] = path.abspath(args.inmodel)
+    if args.outmodel:
+        options['workload_manager']['agent']['output_model'] = path.abspath(args.outmodel)
+    if args.phase:
+        options['workload_manager']['agent']['phase'] = args.phase
 
     # Check for minimum operating parameters
     if 'platform_name' not in options:
