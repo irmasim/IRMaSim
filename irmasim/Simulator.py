@@ -161,7 +161,9 @@ class Simulator:
 
     def build_workload_manager(self):
         options = Options().get()
-        mod = importlib.import_module("irmasim.workload_manager." + options["workload_manager"]["type"])
+        module_name = "irmasim.workload_manager." + options["workload_manager"]["type"]
+        print(f'Using  {module_name}')
+        mod = importlib.import_module(module_name)
         klass = getattr(mod, options["workload_manager"]["type"])
         return klass(self)
 

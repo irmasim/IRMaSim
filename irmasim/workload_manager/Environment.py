@@ -105,7 +105,7 @@ Attributes:
     def __init__(self, workload_manager: 'Policy', simulator: Simulator) -> None:
         self.workload_manager = workload_manager
         self.simulator = simulator
-        self.env_options = Options().get()["workload_manager"]["env"]
+        self.env_options = Options().get()["workload_manager"]["environment"]
         self.last_job_queue_length = None
 
         self.job_selections = OrderedDict({
@@ -119,11 +119,11 @@ Attributes:
 
         self.core_selections = OrderedDict({
             'random': None,
-            'high_gflops': lambda core: - core.parent['gflops_per_core'],
+            'high_gflops': lambda core: - core.parent.mops_per_core,
             'high_cores': lambda core: - len([c for c in core.parent.children \
                                               if c.task is not None]),
-            'high_mem': lambda core: - core.parent.parent['current_mem'],
-            'high_mem_bw': lambda core: core.parent['current_mem_bw'],
+            'high_mem': lambda core: - core.parent.parent.current_memory,
+            'high_mem_bw': lambda core: core.parent.requested_memory_bandwidth,
             'low_power': lambda core: core.static_power + core.dynamic_power
         })
 
@@ -135,17 +135,12 @@ Attributes:
                         self.actions.append(
                             (self.job_selections[job_sel], self.core_selections[core_sel])
                         )
-            self.with_void = self.env_options['actions']['void']
         else:
             for job_sel in self.job_selections.values():
                 for core_sel in self.core_selections.values():
                     self.actions.append((job_sel, core_sel))
-            self.with_void = True
 
-        if self.with_void:
-            nb_actions = len(self.actions) + 1
-        else:
-            nb_actions = len(self.actions)
+        nb_actions = len(self.actions)
         self.action_space = gym.spaces.Discrete(nb_actions)
 
         if 'observation' in self.env_options:
@@ -165,6 +160,9 @@ Attributes:
             'energy_consumption': self.energy_consumption_reward,
             'edp': self.edp_reward
         }
+        if not self.env_options['objective'] in objective_to_reward:
+            objectives=", ".join(objective_to_reward.keys())
+            raise Exception(f"Unknown objective {self.env_options['objective']}. Must be one of: {objectives}.")
         self.reward = objective_to_reward[self.env_options['objective']]
         self.queue_sensitivity = self.env_options['queue_sensitivity']
         self.last_job_queue_length = 0

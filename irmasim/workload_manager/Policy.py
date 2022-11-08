@@ -21,15 +21,17 @@ class Policy(WorkloadManager):
         mod = importlib.import_module("irmasim.platform.models." + options["platform_model_name"] + ".Core")
         klass = getattr(mod, 'Core')
         self.resources = self.simulator.get_resources(klass)
+        self.pending_jobs = []
+        #self.running_jobs = []
         self.load_agent = True
         self.last_reward = False
         # if objective change reset agent
-        self.reward = options["workload_manager"]["env"]["objective"]
+        self.reward = options["workload_manager"]["environment"]["objective"]
         self.last_time = 0
         # TODO analyse the need for this function
         # self.reset_log_file(options)
 
-        self.env = Environment(self, simulator)
+        self.environment = Environment(self, simulator)
         self.agent, self.optimizer = self.create_agent()
         self.flow_flags = {
             'action_taken': False,
@@ -51,7 +53,7 @@ class Policy(WorkloadManager):
             logging.error("Error reading from {0}".format(reset_log_file))
         try:
             with open(reset_log_file, 'w') as reset:
-                reset.write(options["env"]['objective'])
+                reset.write(options["environment"]['objective'])
         except OSError as err:
             logging.error("{0}".format(err))
             raise
@@ -62,9 +64,11 @@ class Policy(WorkloadManager):
 
     def create_agent(self):
         agent_options = Options().get()["workload_manager"]["agent"]
-        mod = importlib.import_module("irmasim.workload_manager.agent." + agent_options["name"])
+        module = "irmasim.workload_manager.agent." + agent_options["name"]
+        print(f"Using agent {module}.")
+        mod = importlib.import_module(module)
         klass = getattr(mod, agent_options["name"])
-        agent = klass(self.env.action_size, self.env.observation_size)
+        agent = klass(self.environment.action_size, self.environment.observation_size)
         optimizer: torch.optim = torch.optim.Adam(agent.parameters(), lr=float(agent_options['lr']))
 
         if 'input_model' in agent_options and path.isfile(agent_options['input_model']) and self.load_agent:
@@ -87,20 +91,18 @@ class Policy(WorkloadManager):
             self.running_jobs.remove(job)
 
     def on_end_step(self):
-        self.agent.rewarded(self.env)
+        self.agent.rewarded(self.environment)
         self.last_time = self.simulator.simulation_time
-        observation = self.agent.observe(self.env)
+        observation = self.agent.observe(self.environment)
         action = self.agent.decide(observation)
         self.apply_policy(action)
 
     def apply_policy(self, action: int):
-        print(self.env.actions)
-        print(action)
-        key = self.env.actions[action]
+        key = self.environment.actions[action]
         self.pending_jobs.sort(key=key[0])
         available_resources = [resource for resource in self.resources if resource.task is None]
-        print(key[1])
-        available_resources.sort(key=key[1])
+        if key[1] != None:
+            available_resources.sort(key=key[1])
         while self.pending_jobs and len(self.pending_jobs[0].tasks) >= len(available_resources):
             next_job = self.pending_jobs.pop(0)
             for task in next_job.tasks:
@@ -130,7 +132,7 @@ class Policy(WorkloadManager):
             if path.isfile('{0}/probs.json'.format(options['output_dir'])):
                 with open('{0}/probs.json'.format(options['output_dir']), 'r') as in_f:
                     probs = json.load(in_f)['probs']
-                for action, prob in zip(range(self.env.action_size), self.agent.probs):
+                for action, prob in zip(range(self.environment.action_size), self.agent.probs):
                     probs[action].append(prob)
             else:
                 probs = []
