@@ -2,6 +2,7 @@ import importlib
 import json
 import numpy as np
 import torch
+import logging
 import os.path as path
 from irmasim.workload_manager.WorkloadManager import WorkloadManager
 from irmasim.Options import Options
@@ -100,6 +101,8 @@ class Policy(WorkloadManager):
 
     def apply_policy(self, action: int):
         key = self.environment.actions[action]
+        logging.getLogger("irmasim").debug("{} performing action {}-{} ({})".format( \
+                self.simulator.simulation_time, key[2], key[3], action))
         self.pending_jobs.sort(key=key[0])
         available_resources = [resource for resource in self.resources if resource.task is None]
         if key[1] != None:

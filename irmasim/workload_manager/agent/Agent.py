@@ -270,8 +270,6 @@ Returns:
         logging.info('Probs %s', probabilities)
         dist = Categorical(probabilities)
         action = dist.sample()
-        with open('{0}/actions.log'.format(Options().get()['output_dir']), 'a+') as out_f:
-            out_f.write(f'{action.item()}\n')
         self.save_log_prob(dist.log_prob(action))
         return action.item()
 

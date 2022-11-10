@@ -133,12 +133,12 @@ Attributes:
                 for job_sel, core_sels in sel.items():
                     for core_sel in core_sels:
                         self.actions.append(
-                            (self.job_selections[job_sel], self.core_selections[core_sel])
+                            (self.job_selections[job_sel], self.core_selections[core_sel], job_sel, core_sel)
                         )
         else:
-            for job_sel in self.job_selections.values():
-                for core_sel in self.core_selections.values():
-                    self.actions.append((job_sel, core_sel))
+            for job_sel in self.job_selections.keys():
+                for core_sel in self.core_selections.keys():
+                    self.actions.append((self.job_selections[job_sel], self.core_selections[core_sel], job_sel, core_sel))
 
         nb_actions = len(self.actions)
         self.action_space = gym.spaces.Discrete(nb_actions)
