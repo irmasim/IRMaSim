@@ -122,11 +122,13 @@ def start_logging():
     FileOutputHandler = logging.FileHandler("simulation.log", mode="w")
     simulator_logger.setLevel(logging.INFO)
     simulator_logger.addHandler(FileOutputHandler)
+    simulator_logger.propagate = False
 
     job_logger = logging.getLogger("jobs")
     FileOutputHandler = logging.FileHandler("jobs.log", mode="w")
     job_logger.setLevel(logging.INFO)
     job_logger.addHandler(FileOutputHandler)
     job_logger.info(job_header())
+    job_logger.propagate = False
 
 
