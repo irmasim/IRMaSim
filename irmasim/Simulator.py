@@ -143,10 +143,12 @@ class Simulator:
         job_queue = JobQueue()
         job_id = 0
         for job in workload['jobs']:
+            if not id in job:
+               job['id'] = "job"+str(job_id)
             job_queue.add_job(
                 Job(job_id, job['id'], job['subtime'], job['res'], workload['profiles'][job['profile']],
                     job['profile']))
-            job_id = job_id + 1
+            job_id += 1
 
         job_limits = {
             'max_time': numpy.percentile(numpy.array(
