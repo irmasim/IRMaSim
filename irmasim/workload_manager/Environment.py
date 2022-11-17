@@ -248,11 +248,23 @@ Attributes:
         return np.array(observation, dtype=np.float32)
 
     def makespan_reward(self) -> float:
-        return self.simulator.simulation_time - self.workload_manager.last_time
+        return self.workload_manager.last_time - self.simulator.simulation_time
 
     def energy_consumption_reward(self) -> float:
         delta_time = self.simulator.simulation_time - self.workload_manager.last_time
-        return -1 * self.simulator.platform.get_joules(delta_time)
+        return -self.simulator.platform.get_joules(delta_time)
 
     def edp_reward(self) -> float:
-        return self.energy_consumption_reward() * self.makespan_reward()
+        return -self.energy_consumption_reward() * self.makespan_reward()
+
+    def slowdown_reward(self) -> float:
+        return -self.simulator.slowdown_statistics()["total"]
+
+    def bounded_slowdown_reward(self) -> float:
+        return -self.simulator.bounded_slowdown_statistics()["total"]
+
+    def waiting_time_reward(self) -> float:
+        return -self.simulator.waiting_time_statistics()["total"]
+        
+
+

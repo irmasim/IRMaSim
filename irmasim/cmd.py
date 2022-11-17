@@ -109,8 +109,23 @@ def launch() -> None:
 
     #os.remove(options['output_dir'] + "/simulator.pickle")
     print("Execution time " + str(time.time() - start_time) + " seconds")
+    print_statistics("Simulation time:", simulator.simulation_time_statistics())
+    print_statistics("Energy consumption:", simulator.energy_consumption_statistics())
+    print_statistics("Jobs:", simulator.job_statistics())
+    print_statistics("Slowdown: ",simulator.slowdown_statistics())
+    print_statistics("Bounded Slowdown: ",simulator.bounded_slowdown_statistics())
+    print_statistics("Waiting Time: ",simulator.waiting_time_statistics())
+
     sys.exit(0)
 
+def print_statistics(message: str, stats: dict):
+
+    total_message = message
+    for s in stats.items():
+        total_message += " "+ str(s[0])+": " + str(s[1])+","
+    
+    print(total_message[:-1])
+    #print(f"{message} total: {stats['total']}, avg: {stats['avg']}, max: {stats['max']}, min: {stats['min']}")
 
 def start_logging():
     irmasim_logger = logging.getLogger("irmasim")
