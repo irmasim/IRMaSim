@@ -28,6 +28,17 @@ The installation procedure is straightforward. Clone the repository, or download
 
 After taking these steps, you should be able to execute IRMaSim from the command line.
 
+Dev-Instalation
+---------------
+
+   $ git clone https://github.com/irmasim/IRMaSim.git
+   $ apt install python3-pip
+   $ cd IRMaSim
+   $ pip install -e .
+   $ export PATH=$HOME/.local/bin:$PATH
+
+After taking these steps, you should be able to execute IRMaSim from the command line and develop the code at the same time.
+
 Usage
 -----
 
@@ -55,11 +66,18 @@ To actually perform a simulation IRMaSim requires a platform, a workload and som
    Loading definitions from [...]/IRMaSim/irmasim/data/processor_types.json
    Loading definitions from platform.json
    Using platform example
-   Built platform with 1 cluster, 1 nodes, 1 processors and 2 cores
-   Finish Simulation
-   Execution time 0.005 seconds
+   example
+    cluster0
+     node0
+      processor0
+        core0
+        core1
 
-The options.json file defines several simulation parameters, of which the most relevant are the platform_file that indicates where is the cluster defined, the platform_name that tells which platform to simulate (The platform_file can define more than one platform), and the workload_file that specifies where are the  jobs to feed to the cluster. The agent section of the options file defines the kind of workload manager that will be used in the simulation. In this instance  it is a deterministic manager that asigns the shortest jobs to the fastest available cores.
+   Using  irmasim.workload_manager.Minimal
+   Execution time 0.007927179336547852 seconds
+   
+
+The options.json file defines several simulation parameters, of which the most relevant are the platform_file that indicates where is the cluster defined, the platform_name that tells which platform to simulate (The platform_file can define more than one platform), and the workload_file that specifies where are the jobs to feed to the cluster. The agent section of the options file defines the kind of workload manager that will be used in the simulation. In this instance  it is a deterministic manager that asigns the shortest jobs to the fastest available cores.
 
 The main results of the simulation can be seen in statistics.json, that gives the amount of time and energy that the cluster required to process the jobs::
 
