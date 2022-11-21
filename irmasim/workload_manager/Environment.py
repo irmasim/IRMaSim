@@ -8,6 +8,7 @@ import gym
 import gym.spaces
 import numpy as np
 from typing import TYPE_CHECKING
+import importlib
 
 if TYPE_CHECKING:
     from irmasim.workload_manager.Policy import Policy
@@ -143,16 +144,25 @@ Attributes:
         nb_actions = len(self.actions)
         self.action_space = gym.spaces.Discrete(nb_actions)
 
-        if 'observation' in self.env_options:
-            observation_type = self.env_options['observation']
-        else:
-            observation_type = 'normal'
-        self.observation = partial(self._base_observation, otype=observation_type)
+        #TODO: Send to "workload manager" ?
+        options = Options().get()
+        mod = importlib.import_module("irmasim.platform.models." + options["platform_model_name"] + ".Node")
+        klass = getattr(mod, 'Node')
+        self.resources = self.simulator.get_resources(klass)
+
+        observation_type = self.env_options['observation']
+        match observation_type:
+            case 'jaime':
+                self.observation = self.observation_jaime
+            case _:
+                self.observation = partial(self._base_observation, otype=observation_type)
+            
+
         observation_size = self.observation().size
         self.observation_space = gym.spaces.Box(
-            low=np.zeros(observation_size, dtype=np.float32),
-            high=np.ones(observation_size, dtype=np.float32),
-            dtype=np.float32
+        low=np.zeros(observation_size, dtype=np.float32),
+        high=np.ones(observation_size, dtype=np.float32),
+        dtype=np.float32
         )
 
         objective_to_reward = {
@@ -267,4 +277,27 @@ Attributes:
         return -self.simulator.waiting_time_statistics()["total"]
         
 
+    def observation_jaime(self):
+        options = Options().get()
+        mod = importlib.import_module("irmasim.platform.models." + options["platform_model_name"] + ".Core")
+        klass = getattr(mod, 'Core')
 
+        observation = []
+        for job in self.workload_manager.pending_jobs:
+            wait_time = self.simulator.simulation_time - job.submit_time
+            req_time = job.req_time
+            req_core = job.resources
+            job_obs = [wait_time, req_time, req_core]
+
+            for node in self.resources:
+                core_list = node.enumerate_resources(klass)
+                available_core_list = []
+                clock_rate_sum = 0
+                for core in core_list:
+                    clock_rate_sum += core.clock_rate
+                    if core.task is None:
+                        available_core_list.append(core)
+                avg_clock_rate = clock_rate_sum/len(core_list)
+                observation.append(job_obs + [len(core_list),len(available_core_list), avg_clock_rate, int(req_core <= len(available_core_list))])
+                
+        return np.array(observation, dtype=np.float32)

@@ -16,7 +16,8 @@ class Core(BasicCore):
         self.db = config['db']
         self.dc = config['dc']
         self.dd = config['dd']
-        self.mops = config['clock_rate'] * config['dpflops_per_cycle'] * 1e3
+        self.clock_rate = config['clock_rate']
+        self.mops = self.clock_rate * config['dpflops_per_cycle'] * 1e3
         self.speedup = 1.0
         self.task = None
         self.requested_memory_bandwidth = 0.0
