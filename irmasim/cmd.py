@@ -10,7 +10,7 @@ import time
 import logging
 from irmasim.Simulator import Simulator
 from irmasim.Options import Options
-from irmasim.Job import job_header
+from irmasim.Job import Job
 
 def launch() -> None:
     start_time = time.time()
@@ -153,7 +153,7 @@ def start_logging():
     FileOutputHandler = logging.FileHandler("jobs.log", mode="w")
     job_logger.setLevel(logging.INFO)
     job_logger.addHandler(FileOutputHandler)
-    job_logger.info(job_header())
+    job_logger.info(Job.header())
     job_logger.propagate = False
 
 

@@ -1,0 +1,32 @@
+{
+   "nb_res": 8,
+   "num_instructions": "TRUE",
+   "jobs": [
+      {"id": "job19277", "subtime": 0.0783252716064453, "res": 4, "profile": "nas_sp.A.s"},
+      {"id": "job19281", "subtime": 2.35264658927917, "res": 1, "profile": "nas_sp.A.s"},
+      {"id": "job19283", "subtime": 58.6789226531982, "res": 2, "profile": "nas_sp.A.s"},
+      {"id": "job19284", "subtime": 90.0328998565674, "res": 1, "profile": "nas_sp.A.s"},
+      {"id": "job19285", "subtime": 121.194462537766, "res": 4, "profile": "nas_lu.A.s"},
+      {"id": "job19290", "subtime": 123.62702870369, "res": 2, "profile": "nas_sp.A.s"},
+      {"id": "job19291", "subtime": 174.522149324417, "res": 2, "profile": "nas_sp.A.s"},
+      {"id": "job19294", "subtime": 174.689103841782, "res": 2, "profile": "nas_lu.A.s"},
+      {"id": "job19296", "subtime": 195.555880784988, "res": 2, "profile": "nas_sp.A.s"},
+      {"id": "job19297", "subtime": 195.63895368576, "res": 1, "profile": "nas_lu.A.s"},
+      {"id": "job19298", "subtime": 247.621285438538, "res": 1, "profile": "nas_sp.A.s"},
+      {"id": "job19299", "subtime": 248.07918214798, "res": 1, "profile": "nas_lu.A.s"},
+      {"id": "job19300", "subtime": 248.20052075386, "res": 1, "profile": "nas_lu.A.s"},
+      {"id": "job19301", "subtime": 300.103256702423, "res": 1, "profile": "nas_sp.A.s"},
+      {"id": "job19302", "subtime": 300.178707122803, "res": 3, "profile": "nas_lu.A.s"},
+      {"id": "job19306", "subtime": 302.476860284805, "res": 2, "profile": "nas_sp.A.s"},
+      {"id": "job19307", "subtime": 363.692818403244, "res": 1, "profile": "nas_lu.A.s"},
+      {"id": "job19309", "subtime": 394.904861450195, "res": 2, "profile": "nas_lu.A.s"},
+      {"id": "job19310", "subtime": 435.396100759506, "res": 1, "profile": "nas_lu.A.s"},
+      {"id": "job19311", "subtime": 435.471481800079, "res": 1, "profile": "nas_lu.A.s"},
+      {"id": "job19313", "subtime": 435.579311847687, "res": 2, "profile": "nas_sp.A.s"},
+      {"id": "job19314", "subtime": 437.703541517258, "res": 1, "profile": "nas_lu.A.s"}
+   ],
+   "profiles": {
+      "nas_lu.A.s": { "req_ops": 168770080539, "ipc": 1.98767640628106, "req_time": 10, "mem": 1, "mem_vol": 431878.8 },
+      "nas_sp.A.s": { "req_ops": 165760856056, "ipc": 2.36630383341221, "req_time": 10, "mem": 1, "mem_vol": 418692.8 }
+   }
+}

@@ -40,7 +40,7 @@ class Process:
             return self.task.ops / (self.node.gops * 1e9 * self.speedup)
 
     def advance(self, delta_time: float):
-        self.task.ops -= math.ceil(self.node.gops * 1e9 * self.speedup * delta_time)
+        self.task.advance(delta_time, self.node.gops * 1e9 * self.speedup * delta_time)
 
 class Node (BasicNode):
 

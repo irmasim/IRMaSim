@@ -159,7 +159,7 @@ while(<$file>) {
    $proc{$row[0]}->{begin_time} = $row[2];
    $proc{$row[0]}->{name} = $row[6];
    $proc{$row[0]}->{finish_time} = $row[3];
-   $proc{$row[0]}->{exe_time} = $proc{$row[0]}->{finish_time}-$proc{$row[0]}->{begin_time};
+   $proc{$row[0]}->{exe_time} = $row[4];
 
    if(exists $ref{$proc{$row[0]}->{name}}) {
       $the_ref = $ref{$proc{$row[0]}->{name}};
@@ -403,8 +403,10 @@ Output lines
                 join("\n", map { join(" ", $proc{$_}->{queue_time}, 0, $proc{$_}->{begin_time}-$node{$proc{$_}->{node}}->{queue_time}, $proc{$_}->{offset}+$node{$proc{$_}->{node}}->{base}, $_); } sort keys %proc)."\ne" ] if( $opts{l} =~ /q/);
    # Tasks
    if($opts{l} =~ /t/i) {
-      push @plots, [ "\"-\" using 1:2:3:4:5 notitle w vectors nohead lw 5 lc variable", 
+      push @plots, [ "\"-\" using 1:2:3:4:5 notitle w vectors nohead lw 1 lc variable", 
                    join("\n", map { join(" ", $proc{$_}->{begin_time}, $proc{$_}->{offset}+$node{$proc{$_}->{node}}->{base}, $proc{$_}->{finish_time}-$proc{$_}->{begin_time}, 0, $app{$proc{$_}->{name}}->{color}, $_); } sort keys %proc)."\ne" ];
+      push @plots, [ "\"-\" using 1:2:3:4:5 notitle w vectors nohead lw 5 lc variable", 
+                   join("\n", map { join(" ", $proc{$_}->{begin_time}, $proc{$_}->{offset}+$node{$proc{$_}->{node}}->{base}, $proc{$_}->{exe_time}, 0, $app{$proc{$_}->{name}}->{color}, $_); } sort keys %proc)."\ne" ];
       push @plots, map { [ "NaN t \"$_\" lw 5 lc $app{$_}->{color}" , undef ]; } sort keys %app;
    }
    # Task speedup

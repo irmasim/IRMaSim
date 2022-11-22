@@ -15,7 +15,7 @@ class TaskRunner(Resource, EnergyConsumer):
             raise Exception('Cannot schedule a task to an empty id')
 
     def get_next_step(self):
-        return min([child.get_next_step() for child in self.children])
+        return min([child.get_next_step() for child in self.children if child.get_next_step() > 0])
 
     def advance(self, delta_time: float):
         for child in self.children:

@@ -43,8 +43,7 @@ class Core(BasicCore):
 
     def advance(self, delta_time: float):
         if self.task is not None:
-            self.task.ops -= self.mops * 1e6 * self.speedup * delta_time
-            self.task.ops = math.floor(self.task.ops)
+            self.task.advance(delta_time, self.mops * 1e6 * self.speedup * delta_time)
             if self.task.ops <= 0.0:
                 self.requested_memory_bandwidth = 0
 

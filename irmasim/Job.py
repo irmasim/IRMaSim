@@ -50,9 +50,13 @@ class Job:
         return self.id == other.id
 
     def __str__(self):
-        resources = ";".join([".".join(task.resource) for task in self.tasks])
-        return ",".join(map(lambda x: str(x), [self.id, self.submit_time, self.start_time, self.finish_time,
-                                                self.finish_time - self.start_time, self.ops, self.type, resources]))
-
-def job_header():
-    return "id,submit_time,start_time,finish_time,execution_time,operations,profile,resources"
+        task_id = 0 
+        task_strings = []
+        for task in self.tasks:
+            task_strings.append(",".join(map(lambda x: str(x), [".".join([str(self.id),str(task_id)]), self.submit_time, self.start_time, self.finish_time,
+                                                task.execution_time, self.ops, self.type, ".".join(task.resource)])))
+            task_id += 1
+        return "\n".join(task_strings)
+    @classmethod
+    def header(klass):
+        return "id,submit_time,start_time,finish_time,execution_time,operations,profile,resources"
