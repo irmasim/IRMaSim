@@ -1,6 +1,7 @@
 from irmasim.Job import Job
 import math
 import logging
+import numpy
 
 class JobQueue:
 
@@ -41,6 +42,23 @@ class JobQueue:
     def get_job_counts(self):
         running  = sum([1 for job in self.submitted_jobs if job.start_time < math.inf])
         return len(self.future_jobs), len(self.submitted_jobs) - running, running, len(self.finished_jobs)
+
+
+    def get_limits(self):
+        job_limits = {
+            'max_time': numpy.percentile(numpy.array(
+                [job.req_time for job in self.future_jobs]), 99),
+            'max_core': numpy.percentile(numpy.array(
+                [job.resources for job in self.future_jobs]), 99),
+            'max_mem': numpy.percentile(numpy.array(
+                [job.memory for job in self.future_jobs]), 99),
+            'max_mem_vol': numpy.percentile(numpy.array(
+                [job.memory_vol for job in self.future_jobs]), 99)
+        }
+        print(job_limits)
+
+        return job_limits
+
 
     def __str__(self):
         return "future = [ " + ", ".join([str(job.id) for job in self.future_jobs]) + " ]" \

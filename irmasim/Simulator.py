@@ -145,21 +145,17 @@ class Simulator:
         for job in workload['jobs']:
             if not id in job:
                job['id'] = "job"+str(job_id)
-            job_queue.add_job(
-                Job(job_id, job['id'], job['subtime'], job['res'], workload['profiles'][job['profile']],
-                    job['profile']))
+            if 'profile' in job:
+                job_queue.add_job(
+                    Job(job_id, job['id'], job['subtime'], job['res'], workload['profiles'][job['profile']],
+                        job['profile']))
+            else:
+                job_queue.add_job(
+                    Job(job_id, job['id'], job['subtime'], job['res'], job['req_ops'], job['ipc'], 
+                        job['req_time'], job['mem'], job['mem_vol']))
             job_id += 1
 
-        job_limits = {
-            'max_time': numpy.percentile(numpy.array(
-                [workload['profiles'][job['profile']]['req_time'] for job in workload['jobs']]), 99),
-            'max_core': numpy.percentile(numpy.array(
-                [job['res'] for job in workload['jobs']]), 99),
-            'max_mem': numpy.percentile(numpy.array(
-                [workload['profiles'][job['profile']]['mem'] for job in workload['jobs']]), 99),
-            'max_mem_vol': numpy.percentile(numpy.array(
-                [workload['profiles'][job['profile']]['mem_vol'] for job in workload['jobs']]), 99)
-        }
+        job_limits = job_queue.get_limits()
         return job_limits, job_queue
 
     def build_workload_manager(self):
@@ -228,7 +224,10 @@ class Simulator:
                 max = stat
             if (stat < min):
                 min = stat
-        avg = total/len(statistic_list)
+        try:
+            avg = total/len(statistic_list)
+        except:
+            avg = total/1
 
         return {"total": total, "avg": avg, "max": max, "min": min}
 
