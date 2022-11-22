@@ -4,6 +4,8 @@
     "platform_name": "the_platform",
     "platform_file": "platform.json",
     "workload_file": "jobs.json",
+    "trajectory_origin": "random",
+    "trajectory_length": "10",
     "env": {
         "objective": "energy_consumption",
         "queue_sensitivity": 0.005

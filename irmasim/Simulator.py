@@ -8,11 +8,13 @@ import os.path as path
 import json
 import numpy
 import logging
+import random as rand
 
 
 class Simulator:
 
     def __init__(self):
+        rand.seed(1)
         self.job_limits, self.job_queue = self.generate_workload()
         self.platform = self.build_platform()
         print(self.platform.pstr("  "))
@@ -140,9 +142,22 @@ class Simulator:
         with open(options['workload_file'], 'r') as in_f:
             workload = json.load(in_f)
 
+        if options['trajectory_origin'] == 'random':
+            trajectory_origin = rand.randint(0, len(workload['jobs']))
+        else:
+            trajectory_origin = int(options['trajectory_origin'])
+
+        if options['trajectory_length'] == '0':
+            trajectory_length = len(workload['jobs']- trajectory_origin)
+        elif options['trajectory_length'] == 'random':
+            trajectory_length = rand.randint(1, len(workload['jobs'])-trajectory_origin)
+        else:
+            trajectory_length= int(options['trajectory_length'])
+
         job_queue = JobQueue()
-        job_id = 0
-        for job in workload['jobs']:
+        job_id = trajectory_origin
+        for i in range(trajectory_length):
+            job = workload['jobs'][trajectory_origin+i]
             if not id in job:
                job['id'] = "job"+str(job_id)
             if 'profile' in job:

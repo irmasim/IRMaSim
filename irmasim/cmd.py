@@ -19,6 +19,8 @@ def launch() -> None:
     parser.add_argument('-n', '--platform_name', type=str, help='Name of the platform to simulate')
     parser.add_argument('-p', '--platform_file', type=str, help='File with a description of elements of the platform')
     parser.add_argument('-w', '--workload_file', type=str, help='File with the workload definition')
+    parser.add_argument('-to', '--trajectory_origin', type=str, help='First job to submit')
+    parser.add_argument('-tl', '--trajectory_length', type=str, help='Number of jobs to submit')
     parser.add_argument('-o', '--output_dir', type=str, help='Directory for output files')
 
     parser.add_argument('-wm', '--workload_manager', type=str, help='The type of workload manager to use')
@@ -48,6 +50,14 @@ def launch() -> None:
         options['platform_file'] = args.platform_file
     if args.workload_file:
         options['workload_file'] = args.workload_file
+    if not 'trajectory_origin' in options:
+        options['trajectory_origin'] = 0
+    if args.trajectory_origin:
+        options['trajectory_origin'] = args.trajectory_origin
+    if not 'trajectory_length' in options:
+        options['trajectory_length'] = 0
+    if args.trajectory_length:
+        options['trajectory_length'] = args.trajectory_length
     if args.output_dir:
         options['output_dir'] = args.output_dir
         if not path.exists(options['output_dir']):
