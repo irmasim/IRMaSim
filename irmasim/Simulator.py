@@ -147,12 +147,14 @@ class Simulator:
         else:
             trajectory_origin = int(options['trajectory_origin'])
 
-        if options['trajectory_length'] == '0':
-            trajectory_length = len(workload['jobs']- trajectory_origin)
+        if options['trajectory_length'] == 0:
+            trajectory_length = len(workload['jobs']) - trajectory_origin
         elif options['trajectory_length'] == 'random':
-            trajectory_length = rand.randint(1, len(workload['jobs'])-trajectory_origin)
+            trajectory_length = rand.randint(1, len(workload['jobs']) - trajectory_origin)
         else:
             trajectory_length= int(options['trajectory_length'])
+
+        print(f'Loaded {len(workload["jobs"])} jobs from {options["workload_file"]}. Using {trajectory_length} jobs starting with #{trajectory_origin}')
 
         job_queue = JobQueue()
         job_id = trajectory_origin
@@ -162,12 +164,12 @@ class Simulator:
                job['id'] = "job"+str(job_id)
             if 'profile' in job:
                 job_queue.add_job(
-                    Job(job_id, job['id'], job['subtime'], job['res'], workload['profiles'][job['profile']],
-                        job['profile']))
+                    Job.from_profile(job_id, job['id'], job['subtime'], job['res'],
+                        workload['profiles'][job['profile']], job['profile']))
             else:
                 job_queue.add_job(
-                    Job(job_id, job['id'], job['subtime'], job['res'], job['req_ops'], job['ipc'], 
-                        job['req_time'], job['mem'], job['mem_vol']))
+                    Job(job_id, job['id'], job['subtime'], job['res'],
+                        job['req_ops'], job['ipc'], job['req_time'], job['mem'], job['mem_vol']))
             job_id += 1
 
         job_limits = job_queue.get_limits()

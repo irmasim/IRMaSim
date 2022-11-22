@@ -55,7 +55,6 @@ class JobQueue:
             'max_mem_vol': numpy.percentile(numpy.array(
                 [job.memory_vol for job in self.future_jobs]), 99)
         }
-        print(job_limits)
 
         return job_limits
 

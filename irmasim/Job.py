@@ -4,23 +4,6 @@ from irmasim.Task import Task
 
 class Job:
 
-    def __init__(self, id: int, name: str, submit_time: float, resources: int, profile: dict, type: str):
-        self.tasks = None
-        self.id = id
-        self.name = name
-        self.type = type
-        self.profile = profile
-        self.submit_time = submit_time
-        self.start_time = math.inf
-        self.finish_time = 0.0
-        self.resources = resources
-        self.ops = math.ceil(profile['req_ops'] / profile['ipc'])
-        self.opc = profile['ipc']
-        self.req_time = profile['req_time']
-        self.memory = profile['mem']
-        self.memory_vol = profile['mem_vol']
-        self.generate_tasks()
-    
     def __init__(self, id: int, name: str, submit_time: float, resources: int, req_ops : int, ipc : float, req_time : float, mem : int, mem_vol : float):
         self.tasks = None
         self.id = id
@@ -38,6 +21,14 @@ class Job:
         self.memory_vol = mem_vol
         self.generate_tasks()
 
+    @classmethod
+    def from_profile(klass, id: int, name: str, submit_time: float, resources: int, profile: dict, type: str):
+        self=klass(id,name,submit_time,resources, profile['req_ops'], profile['ipc'],
+                   profile['req_time'], profile['mem'], profile['mem_vol'])
+        self.type = type
+        self.profile = profile
+        return self
+    
     def is_job_finished(self):
         return sum([1 for task in self.tasks if task.ops > 0.0]) == 0
 
