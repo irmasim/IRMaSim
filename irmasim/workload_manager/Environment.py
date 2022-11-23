@@ -150,13 +150,13 @@ Attributes:
         klass = getattr(mod, 'Node')
         self.resources = self.simulator.get_resources(klass)
 
-        observation_type = self.env_options['observation']
-        match observation_type:
-            case 'jaime':
+        if 'observation' in self.env_options:
+            if self.env_options['observation'] == 'jaime':
                 self.observation = self.observation_jaime
-            case _:
-                self.observation = partial(self._base_observation, otype=observation_type)
-            
+            else:
+                self.observation = partial(self._base_observation, otype=self.env_options['observation'])
+        else:
+            self.observation = partial(self._base_observation, otype='minimal')
 
         observation_size = self.observation().size
         self.observation_space = gym.spaces.Box(
