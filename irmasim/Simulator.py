@@ -147,7 +147,7 @@ class Simulator:
         else:
             trajectory_origin = int(options['trajectory_origin'])
 
-        if options['trajectory_length'] == 0:
+        if options['trajectory_length'] == '0':
             trajectory_length = len(workload['jobs']) - trajectory_origin
         elif options['trajectory_length'] == 'random':
             trajectory_length = rand.randint(1, len(workload['jobs']) - trajectory_origin)
@@ -194,6 +194,8 @@ class Simulator:
             execution_time = job.finish_time - job.start_time
             waiting_time = job.start_time - job.submit_time
             total_job_time = execution_time + waiting_time
+            if execution_time == 0:
+                print(f"warning: {job.id} has 0 execution time")
             sld_list.append(float(total_job_time/execution_time))
 
         return self.compute_statistics(sld_list)

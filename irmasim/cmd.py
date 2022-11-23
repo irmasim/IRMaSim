@@ -51,11 +51,11 @@ def launch() -> None:
     if args.workload_file:
         options['workload_file'] = args.workload_file
     if not 'trajectory_origin' in options:
-        options['trajectory_origin'] = 0
+        options['trajectory_origin'] = '0'
     if args.trajectory_origin:
         options['trajectory_origin'] = args.trajectory_origin
     if not 'trajectory_length' in options:
-        options['trajectory_length'] = 0
+        options['trajectory_length'] = '0'
     if args.trajectory_length:
         options['trajectory_length'] = args.trajectory_length
     if args.output_dir:
