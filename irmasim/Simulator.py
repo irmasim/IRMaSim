@@ -17,7 +17,7 @@ class Simulator:
         rand.seed(1)
         self.job_limits, self.job_queue = self.generate_workload()
         self.platform = self.build_platform()
-        print(self.platform.pstr("  "))
+        #print(self.platform.pstr("  "))
         self.workload_manager = self.build_workload_manager()
         # TODO
         # self.statistics = Statistics(options)
@@ -179,7 +179,7 @@ class Simulator:
     def build_workload_manager(self):
         options = Options().get()
         module_name = "irmasim.workload_manager." + options["workload_manager"]["type"]
-        print(f'Using  {module_name}')
+        print(f'Using workload manager {module_name}')
         mod = importlib.import_module(module_name)
         klass = getattr(mod, options["workload_manager"]["type"])
         return klass(self)
