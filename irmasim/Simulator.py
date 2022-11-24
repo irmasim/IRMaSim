@@ -38,6 +38,7 @@ class Simulator:
         logging.getLogger("irmasim").debug("{} Received job submission: {}".format( \
                 self.simulation_time, ",".join([str(job.id)+"("+job.name+")" for job in first_jobs])))
         self.workload_manager.on_job_submission(first_jobs)
+        self.workload_manager.on_end_step()
         
         self.log_state()
 
