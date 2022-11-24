@@ -106,6 +106,12 @@ class Simulator:
 
     def get_resources(self, resource_type: type):
         return self.platform.enumerate_resources(resource_type)
+    
+    def get_resource(self, resource_id: list):
+        if resource_id.pop(0) == self.platform.id:
+            return self.platform.get_resource(resource_id)
+        else:
+            raise Exception(f"Resource {'.'.join(resource_id)} does not belong to platform {self.platform.id}")
 
     def build_platform(self):
         options = Options().get()
@@ -147,7 +153,7 @@ class Simulator:
         else:
             trajectory_origin = int(options['trajectory_origin'])
 
-        if options['trajectory_length'] == '0':
+        if options['trajectory_length'] == '0' or int(options['trajectory_length']) + trajectory_origin > len(workload['jobs']):
             trajectory_length = len(workload['jobs']) - trajectory_origin
         elif options['trajectory_length'] == 'random':
             trajectory_length = rand.randint(1, len(workload['jobs']) - trajectory_origin)

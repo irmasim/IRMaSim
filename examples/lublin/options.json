@@ -9,5 +9,10 @@
     "env": {
         "objective": "energy_consumption",
         "queue_sensitivity": 0.005
+    },
+    "workload_manager": {
+        "type": "Heuristic",
+        "job_selection": "first",
+        "core_selection": "first"
     }
 }
