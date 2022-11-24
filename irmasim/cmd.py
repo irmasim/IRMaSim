@@ -138,9 +138,14 @@ def print_statistics(message: str, stats: dict):
     #print(f"{message} total: {stats['total']}, avg: {stats['avg']}, max: {stats['max']}, min: {stats['min']}")
 
 def start_logging():
+    options = Options().get()
+    levels = { 'DEBUG': logging.DEBUG, 'INFO': logging.INFO }
     irmasim_logger = logging.getLogger("irmasim")
     FileOutputHandler = logging.FileHandler("irmasim.log", mode="w")
-    irmasim_logger.setLevel(logging.DEBUG)
+    if 'log_level' in options:
+        irmasim_logger.setLevel(levels[options['log_level']])
+    else:
+        irmasim_logger.setLevel(logging.INFO)
     irmasim_logger.addHandler(FileOutputHandler)
 
     simulator_logger = logging.getLogger("simulator")
