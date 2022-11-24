@@ -21,11 +21,6 @@ class Core(BasicCore):
         self.speedup = 1.0
         self.task = None
         self.requested_memory_bandwidth = 0.0
-        # TODO change to attributes
-        self.state = {
-            'current_power': self.min_power * self.static_power,
-            'last_update': 0.0
-        }
 
     def schedule(self, task: Task, resource_id: list):
         if self.task is not None:
@@ -52,3 +47,9 @@ class Core(BasicCore):
             raise Exception("Cannot reap task from resource")
         self.task = None
         self.requested_memory_bandwidth = 0
+
+    def get_remaining_fraction(self):
+        if self.task is None:
+            return 0
+        else:
+            return self.task.ops/self.task.job.ops

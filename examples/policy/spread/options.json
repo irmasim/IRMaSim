@@ -1,0 +1,26 @@
+{
+  "seed": 1995,
+  "workload_file": "workload.json",
+  "platform_file": "platform.json",
+  "platform_name": "the_platform",
+  "log_level": "INFO",
+  "workload_manager": {
+    "type": "Policy",
+    "environment": {
+      "objective": "makespan",
+      "queue_sensitivity": 0.005,
+      "actions": {
+        "selection": [
+          { "first": ["high_gflops", "high_cores"] }
+        ]
+      }
+    },
+    "agent": {
+      "name": "ActorCritic",
+      "gamma": 0.99,
+      "lr": 0.05,
+      "hidden": 5,
+      "phase": "train"
+    }
+  }
+}
