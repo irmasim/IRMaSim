@@ -107,24 +107,19 @@ def launch() -> None:
     np.random.seed(options['seed'])
 
     start_logging()
-
-    #with open('{0}/simulator.pickle'.format(options['output_dir']), 'wb') as out_f:
-    #    pickle.dump(simulator, out_f)
-
-    for _ in range(args.nbruns):
-        #with open('{0}/simulator.pickle'.format(options['output_dir']), 'rb') as in_f:
-        #    simulator = pickle.load(in_f)
+    for run in range(args.nbruns):
         simulator = Simulator()
+        print(f'Starting simulation run: {run}')
         simulator.start_simulation()
+        print_statistics("Simulation time:", simulator.simulation_time_statistics())
+        print_statistics("Energy consumption:", simulator.energy_consumption_statistics())
+        print_statistics("Jobs:", simulator.job_statistics())
+        print_statistics("Slowdown: ",simulator.slowdown_statistics())
+        print_statistics("Bounded Slowdown: ",simulator.bounded_slowdown_statistics())
+        print_statistics("Waiting Time: ",simulator.waiting_time_statistics())
 
     #os.remove(options['output_dir'] + "/simulator.pickle")
     print("Execution time " + str(time.time() - start_time) + " seconds")
-    print_statistics("Simulation time:", simulator.simulation_time_statistics())
-    print_statistics("Energy consumption:", simulator.energy_consumption_statistics())
-    print_statistics("Jobs:", simulator.job_statistics())
-    print_statistics("Slowdown: ",simulator.slowdown_statistics())
-    print_statistics("Bounded Slowdown: ",simulator.bounded_slowdown_statistics())
-    print_statistics("Waiting Time: ",simulator.waiting_time_statistics())
 
     sys.exit(0)
 
