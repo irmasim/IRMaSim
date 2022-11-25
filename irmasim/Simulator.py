@@ -24,7 +24,6 @@ class Simulator:
         self.simulation_time = 0
         self.energy = 0
         self.logger = logging.getLogger("simulator")
-        self.logger.info("time,energy,future_jobs,pending_jobs,running_jobs,finished_jobs")
 
     def start_simulation(self) -> None:
         logging.getLogger("irmasim").debug("Simulation start")
@@ -251,3 +250,6 @@ class Simulator:
 
         return {"total": total, "avg": avg, "max": max, "min": min}
 
+    @classmethod
+    def header(klass):
+        return "time,energy,future_jobs,pending_jobs,running_jobs,finished_jobs"
