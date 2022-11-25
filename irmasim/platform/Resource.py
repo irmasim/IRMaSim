@@ -37,6 +37,13 @@ class Resource:
                 for child in self.children:
                     children.extend(child.enumerate_resources(resource_type))
                 return children
+    
+    def get_resource(self, resource_id: list):
+            child = self.find_child(resource_id.pop(0))
+            if resource_id == []:
+                return child
+            else:
+                return child.get_resource(resource_id)
 
     def count_resources(self):
         if self.children:

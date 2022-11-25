@@ -54,7 +54,7 @@ class Job:
         task_strings = []
         for task in self.tasks:
             task_strings.append(",".join(map(lambda x: str(x), [".".join([str(self.id),str(task_id)]), self.submit_time, self.start_time, self.finish_time,
-                                                task.execution_time, self.ops, self.type, ".".join(task.resource)])))
+                                                task.execution_time, self.ops, self.type, task.resource == None and "None" or ".".join(task.resource)])))
             task_id += 1
         return "\n".join(task_strings)
 

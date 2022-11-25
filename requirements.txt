@@ -6,3 +6,4 @@ irmasim~=0.1
 path~=16.5.0
 setuptools~=60.2.0
 importlib>=1.0.4
+sortedcontainers>=2.4.0
