@@ -121,8 +121,7 @@ Attributes:
         self.core_selections = OrderedDict({
             'random': None,
             'high_gflops': lambda core: - core.parent.mops_per_core,
-            'high_cores': lambda core: - len([c for c in core.parent.children \
-                                              if c.task is not None]),
+            'high_cores': lambda core: - core.parent.parent.count_idle_cores(),
             'high_mem': lambda core: - core.parent.parent.current_memory,
             'high_mem_bw': lambda core: core.parent.requested_memory_bandwidth,
             'low_power': lambda core: core.static_power + core.dynamic_power
@@ -193,31 +192,21 @@ Attributes:
 
         observation = []
         if otype != 'minimal':
-            # TODO Implement Memory metric in node
-            """
             for cluster in self.simulator.platform.children:
                 for node in cluster.children:
-                    observation.append(node.current_mem / node.max_mem)
-                    max_mem_bw_proccesor = 0
-                    for processor in node.children:
-                        if max_mem_bw_proccesor < processor.current_mem_bw:
-                            max_mem_bw_proccesor = processor.current_mem_bw
+                    node_observation = []
+                    # TODO consider normalising to node total memory
+                    node_observation.append(node.current_memory)
+                    node_observation.extend(normalise([max(processor.requested_memory_bandwidth,0.0) for processor in node.children]))
 
-                    for processor in node.children:
-                        if max_mem_bw_proccesor == 0:
-                            observation.append(0.0)
-                        else:
-                            observation.append(max(0.0, processor.current_mem_bw) / max_mem_bw_proccesor)
-
-                        if otype != 'small':
+                    if otype != 'small':
+                        for processor in node.children:
+                            node_observation.append(processor.power_consumption/processor.max_power_consumption)
                             for core in processor.children:
-                                task_remaining_fraction = core.remaining_fraction()
-                                observation.extend(
-                                    [core.state.current_gflops / processor.gflops_per_core,
-                                     core.state.current_power / (core.static_power+core.dynamic_power),
-                                     task_remaining_fraction]
-                                )
-            """
+                                node_observation.append(core.speedup)
+                                #node_observation.append(core.state.current_power / (core.static_power+core.dynamic_power)) # fraction of power consumption
+                                node_observation.append(core.get_remaining_fraction())
+                    observation.extend(node_observation)
         req_time = np.array(
             [job.req_time for job in self.workload_manager.pending_jobs])
         req_core = np.array(
@@ -301,3 +290,10 @@ Attributes:
                 observation.append(job_obs + [len(core_list),len(available_core_list), avg_clock_rate, int(req_core <= len(available_core_list))])
                 
         return np.array(observation, dtype=np.float32)
+
+def normalise(l: list) -> list:
+   maximum = max(l)
+   if maximum == 0:
+       return [ 0 for i in l ]
+   else:
+       return [ i/maximum for i in l ]

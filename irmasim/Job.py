@@ -57,6 +57,7 @@ class Job:
                                                 task.execution_time, self.ops, self.type, task.resource == None and "None" or ".".join(task.resource)])))
             task_id += 1
         return "\n".join(task_strings)
+
     @classmethod
     def header(klass):
         return "id,submit_time,start_time,finish_time,execution_time,operations,profile,resources"

@@ -17,14 +17,13 @@ class Simulator:
         rand.seed(1)
         self.job_limits, self.job_queue = self.generate_workload()
         self.platform = self.build_platform()
-        print(self.platform.pstr("  "))
+        #print(self.platform.pstr("  "))
         self.workload_manager = self.build_workload_manager()
         # TODO
         # self.statistics = Statistics(options)
         self.simulation_time = 0
         self.energy = 0
         self.logger = logging.getLogger("simulator")
-        self.logger.info("time,energy,future_jobs,pending_jobs,running_jobs,finished_jobs")
 
     def start_simulation(self) -> None:
         logging.getLogger("irmasim").debug("Simulation start")
@@ -185,7 +184,7 @@ class Simulator:
     def build_workload_manager(self):
         options = Options().get()
         module_name = "irmasim.workload_manager." + options["workload_manager"]["type"]
-        print(f'Using  {module_name}')
+        print(f'Using workload manager {module_name}')
         mod = importlib.import_module(module_name)
         klass = getattr(mod, options["workload_manager"]["type"])
         return klass(self)
@@ -257,3 +256,6 @@ class Simulator:
 
         return {"total": total, "avg": avg, "max": max, "min": min}
 
+    @classmethod
+    def header(klass):
+        return "time,energy,future_jobs,pending_jobs,running_jobs,finished_jobs"

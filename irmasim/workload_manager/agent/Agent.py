@@ -289,12 +289,10 @@ Returns:
         """
 
         policy_loss = []
-        with open('{0}/log_probs.log'.format(Options().get()['output_dir']), 'a+') as out_f:
-            out_f.write(f'{self.log_probs}\n')
+        with open('{0}/probs.log'.format(Options().get()['output_dir']), 'a+') as out_f:
+            out_f.write(" ".join([str(p) for p in self.probs])+"\n")
         for log_prob, rew_or_adv in zip(self.log_probs, rews_or_advs):
             policy_loss.append(- log_prob * rew_or_adv)
-        with open('{0}/policy_loss.log'.format(Options().get()['output_dir']), 'a+') as out_f:
-            out_f.write(f'{policy_loss}\n')
         return policy_loss
 
     def save_log_prob(self, log_prob: torch.Tensor) -> None:
@@ -386,8 +384,6 @@ Returns:
         value_loss = []
         for value, rew in zip(self.values, rews):
             value_loss.append(F.smooth_l1_loss(value.reshape(torch.tensor([rew]).shape), torch.tensor([rew])))
-        with open('{0}/value_loss.log'.format(Options().get()['output_dir']), 'a+') as out_f:
-            out_f.write(f'{value_loss}, {self.values}, {rews}\n')
         logging.debug(f'VALUE LOSS{value_loss}, {self.values}, {rews}')
         return value_loss
 
