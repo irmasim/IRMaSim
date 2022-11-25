@@ -60,10 +60,9 @@ def launch() -> None:
         options['trajectory_length'] = args.trajectory_length
     if args.output_dir:
         options['output_dir'] = args.output_dir
-        if not path.exists(options['output_dir']):
-            os.mkdir(options['output_dir'])
     else:
-        options['output_dir'] = "."
+        if not 'output_dir' in options:
+            options['output_dir'] = "."
 
     if not 'workload_manager' in options:
         options['workload_manager'] = {}
@@ -107,9 +106,13 @@ def launch() -> None:
     np.random.seed(options['seed'])
 
     start_logging()
+    simulator_handler = logging.getLogger("simulator").handlers[0]
+    job_handler = logging.getLogger("jobs").handlers[0]
     for run in range(args.nbruns):
         simulator = Simulator()
         print(f'Starting simulation run: {run}')
+        simulator_handler.setFormatter(logging.Formatter(f'{run},%(message)s'))
+        job_handler.setFormatter(logging.Formatter(f'{run},%(message)s'))
         simulator.start_simulation()
         print_statistics("Simulation time:", simulator.simulation_time_statistics())
         print_statistics("Energy consumption:", simulator.energy_consumption_statistics())
@@ -136,7 +139,7 @@ def start_logging():
     options = Options().get()
     levels = { 'DEBUG': logging.DEBUG, 'INFO': logging.INFO }
     irmasim_logger = logging.getLogger("irmasim")
-    FileOutputHandler = logging.FileHandler("irmasim.log", mode="w")
+    FileOutputHandler = logging.FileHandler(options['output_dir']+"/"+"irmasim.log", mode="w")
     if 'log_level' in options:
         irmasim_logger.setLevel(levels[options['log_level']])
     else:
@@ -144,16 +147,17 @@ def start_logging():
     irmasim_logger.addHandler(FileOutputHandler)
 
     simulator_logger = logging.getLogger("simulator")
-    FileOutputHandler = logging.FileHandler("simulation.log", mode="w")
+    FileOutputHandler = logging.FileHandler(options['output_dir']+"/"+"simulation.log", mode="w")
+    FileOutputHandler.setFormatter(logging.Formatter(f'run,%(message)s'))
     simulator_logger.setLevel(logging.INFO)
     simulator_logger.addHandler(FileOutputHandler)
+    simulator_logger.info(Simulator.header())
     simulator_logger.propagate = False
 
     job_logger = logging.getLogger("jobs")
-    FileOutputHandler = logging.FileHandler("jobs.log", mode="w")
+    FileOutputHandler = logging.FileHandler(options['output_dir']+"/"+"jobs.log", mode="w")
+    FileOutputHandler.setFormatter(logging.Formatter(f'run,%(message)s'))
     job_logger.setLevel(logging.INFO)
     job_logger.addHandler(FileOutputHandler)
     job_logger.info(Job.header())
     job_logger.propagate = False
-
-
