@@ -3,23 +3,23 @@
   "workload_file": "workload.json",
   "platform_file": "platform.json",
   "platform_name": "the_platform",
-  "log_level": "INFO",
+  "output_dir": "high_gflops",
   "workload_manager": {
     "type": "Policy",
     "environment": {
-      "objective": "makespan",
+      "objective": "energy_consumption",
       "queue_sensitivity": 0.005,
       "actions": {
         "selection": [
-          { "first": ["high_gflops", "high_cores"] }
+          { "first": ["high_gflops"] }
         ]
       }
     },
     "agent": {
       "name": "ActorCritic",
       "gamma": 0.99,
-      "lr": 0.05,
-      "hidden": 5,
+      "lr": 0.005,
+      "hidden": 16,
       "phase": "train"
     }
   }

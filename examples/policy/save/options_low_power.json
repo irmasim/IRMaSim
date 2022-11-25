@@ -3,7 +3,7 @@
   "workload_file": "workload.json",
   "platform_file": "platform.json",
   "platform_name": "the_platform",
-  "log_level": "DEBUG",
+  "output_dir": "low_power",
   "workload_manager": {
     "type": "Policy",
     "environment": {
@@ -11,7 +11,7 @@
       "queue_sensitivity": 0.005,
       "actions": {
         "selection": [
-          { "first": ["high_gflops"] }
+          { "first": ["low_power"] }
         ]
       }
     },

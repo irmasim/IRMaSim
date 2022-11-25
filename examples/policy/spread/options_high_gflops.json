@@ -3,7 +3,7 @@
   "workload_file": "workload.json",
   "platform_file": "platform.json",
   "platform_name": "the_platform",
-  "log_level": "DEBUG",
+  "output_dir": "high_gflops",
   "workload_manager": {
     "type": "Policy",
     "environment": {
