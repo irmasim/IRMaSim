@@ -131,17 +131,3 @@ class Policy(WorkloadManager):
                 }, options['workload_manager']['agent']['output_model'])
         with open('{0}/rewards.log'.format(options['output_dir']), 'a+') as out_f:
             out_f.write(f'{np.sum(self.agent.rewards)}\n')
-        with open('{0}/makespans.log'.format(options['output_dir']), 'a+') as out_f:
-            out_f.write(f'{self.simulator.simulation_time}\n')
-        if hasattr(self.agent, 'probs'):
-            if path.isfile('{0}/probs.json'.format(options['output_dir'])):
-                with open('{0}/probs.json'.format(options['output_dir']), 'r') as in_f:
-                    probs = json.load(in_f)['probs']
-                for action, prob in zip(range(self.environment.action_size), self.agent.probs):
-                    probs[action].append(prob)
-            else:
-                probs = []
-                for prob in self.agent.probs:
-                    probs.append([prob])
-            with open('{0}/probs.json'.format(options['output_dir']), 'w+') as out_f:
-                json.dump({'probs': probs}, out_f, indent=4)
