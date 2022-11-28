@@ -292,8 +292,8 @@ Attributes:
                 avg_clock_rate = clock_rate_sum/len(core_list)
                 observation.append(job_obs + [len(core_list),len(available_core_list), avg_clock_rate, int(req_core <= len(available_core_list))])
 
-        num_fill_jobs = options['workload_manager']['environment']['num_jobs']
-        return np.pad(observation, [(0, num_fill_jobs), (0, 0)], dtype=np.float32)
+        num_fill_jobs = self.action_size - len(observation)
+        return np.pad(observation, [(0, num_fill_jobs), (0, 0)])
 
 def normalise(l: list) -> list:
    maximum = max(l)
