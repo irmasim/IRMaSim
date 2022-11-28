@@ -167,7 +167,10 @@ Attributes:
         objective_to_reward = {
             'makespan': self.makespan_reward,
             'energy_consumption': self.energy_consumption_reward,
-            'edp': self.edp_reward
+            'edp': self.edp_reward,
+            'slowdown': self.slowdown_reward,
+            'bounded_slowdown': self.bounded_slowdown_reward,
+            'waiting_time': self.waiting_time_reward
         }
         if not self.env_options['objective'] in objective_to_reward:
             objectives=", ".join(objective_to_reward.keys())
