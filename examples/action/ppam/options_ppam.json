@@ -2,11 +2,12 @@
   "seed": 0,
   "workload_file": "workload.json",
   "platform_file": "platform.json",
-  "platform_name": "",
-  "output_dir": "action_ppam",
+  "platform_name": "the_platform",
+  "output_dir": "results",
   "workload_manager": {
     "type": "Action",
     "environment": {
+      "queue_sensitivity": 0,
       "objective": "slowdown",
       "num_jobs": 128,
       "num_nodes": 20,
