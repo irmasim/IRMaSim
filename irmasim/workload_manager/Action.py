@@ -5,6 +5,7 @@ import os.path as path
 from irmasim.Options import Options
 from irmasim.workload_manager.ActionEnvironment import ActionEnvironment
 from irmasim.workload_manager.Policy import Policy
+from irmasim.workload_manager.agent.ActionActorCritic import ActionActorCritic
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -31,7 +32,7 @@ class Action(Policy):
             agent.load_state_dict(checkpoint['model_state_dict'])
             checkpoint['optimizer_state_dict']['pi']['param_groups'][0]['lr'] = float(agent_options['lr_pi'])
             checkpoint['optimizer_state_dict']['v']['param_groups'][0]['lr'] = float(agent_options['lr_v'])
-            optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+            optimizers.load_state_dict(checkpoint['optimizer_state_dict'])
         agent.train() if agent_options['phase'] == 'train' else agent.eval()
         return agent, optimizers
 
