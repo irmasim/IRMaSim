@@ -61,38 +61,22 @@ To actually perform a simulation IRMaSim requires a platform, a workload and som
    $ irmasim options.json
    Loading options from options.json
    Setting the random seed to 0
-   Loading definitions from [...]/IRMaSim/irmasim/data/network_types.json
-   Loading definitions from [...]/IRMaSim/irmasim/data/node_types.json
-   Loading definitions from [...]/IRMaSim/irmasim/data/processor_types.json
+   Loaded 2 jobs from jobs.json. Using 2 jobs starting with #0
+   Loading definitions from /home/esteban/projects/2021/IRMaSim_/irmasim/data/network_types.json
+   Loading definitions from /home/esteban/projects/2021/IRMaSim_/irmasim/data/node_types.json
+   Loading definitions from /home/esteban/projects/2021/IRMaSim_/irmasim/data/processor_types.json
    Loading definitions from platform.json
    Using platform example
-   example
-    cluster0
-     node0
-      processor0
-        core0
-        core1
+   Using workload manager irmasim.workload_manager.Minimal
+   Starting simulation run: 0
+   Simulation time: total: 3.8
+   Energy consumption: total: 350.0
+   Jobs: future: 0, queue: 0, running: 0, finished: 2
+   Slowdown:  total: 2.0, avg: 1.0, max: 1.0, min: 1.0
+   Bounded Slowdown:  total: 2.0, avg: 1.0, max: 1.0, min: 1.0
+   Waiting Time:  total: 0.0, avg: 0.0, max: 0.0, min: 0.0
+   Execution time 0.005236148834228516 seconds
 
-   Using  irmasim.workload_manager.Minimal
-   Execution time 0.007927179336547852 seconds
-   
+The options.json file defines several simulation parameters, of which the most relevant are the platform_file that indicates where is the cluster defined, the platform_name that tells which platform to simulate (The platform_file can define more than one platform), and the workload_file that specifies where are the jobs to feed to the cluster. The output of the simulator tells that it is indeed using the files defined in the options.json file, as well as some defaults. For instance, it uses the Minimal workload manager, which is a simple FCFS scheduler.
 
-The options.json file defines several simulation parameters, of which the most relevant are the platform_file that indicates where is the cluster defined, the platform_name that tells which platform to simulate (The platform_file can define more than one platform), and the workload_file that specifies where are the jobs to feed to the cluster. The agent section of the options file defines the kind of workload manager that will be used in the simulation. In this instance  it is a deterministic manager that asigns the shortest jobs to the fastest available cores.
-
-The main results of the simulation can be seen in statistics.json, that gives the amount of time and energy that the cluster required to process the jobs::
-
-   $ cat statistics.json
-   {
-       "Energy_Consumed (J)": 355.0,
-       "EDP (J*seconds)": 245.0,
-       "Makespan (seconds)": 3.8
-   }
-
-.. Development
-.. -----------
-
-..   apt install python3-pytest
-..   cd IRMaSim
-..   pytest-3
-
-
+There are more experiments and more complex setups in the examples folder. These are usually acompanied by some documentation that explains them.

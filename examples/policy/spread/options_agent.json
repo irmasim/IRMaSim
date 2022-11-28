@@ -11,7 +11,7 @@
       "queue_sensitivity": 0.005,
       "actions": {
         "selection": [
-          { "first": ["high_gflops", "high_cores"] }
+          { "first": ["high_cores", "high_gflops"] }
         ]
       }
     },

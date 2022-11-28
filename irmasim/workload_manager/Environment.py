@@ -254,7 +254,7 @@ Attributes:
         return -self.simulator.platform.get_joules(delta_time)
 
     def edp_reward(self) -> float:
-        return -self.energy_consumption_reward() * self.makespan_reward()
+        return self.energy_consumption_reward() * self.makespan_reward()
 
     def slowdown_reward(self) -> float:
         return -self.simulator.slowdown_statistics()["total"]
