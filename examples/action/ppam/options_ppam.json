@@ -1,0 +1,22 @@
+{
+  "seed": 0,
+  "workload_file": "workload.json",
+  "platform_file": "platform.json",
+  "platform_name": "",
+  "output_dir": "action_ppam",
+  "workload_manager": {
+    "type": "Action",
+    "environment": {
+      "objective": "slowdown"
+    },
+    "agent": {
+      "name": "ActionActorCritic",
+      "gamma": 0.99,
+      "lr_pi": 0.0003,
+      "lr_v": 0.001,
+      "phase": "train"
+    }
+  },
+  "trajectory_length": 256,
+  "trajectory_origin": "random"
+}
