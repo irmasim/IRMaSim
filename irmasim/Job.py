@@ -4,7 +4,7 @@ from irmasim.Task import Task
 
 class Job:
 
-    def __init__(self, id: int, name: str, submit_time: float, resources: int, req_ops : int, ipc : float, req_time : float, mem : int, mem_vol : float):
+    def __init__(self, id: int, name: str, submit_time: float, nodes: int, ntasks: int, ntasks_per_node: int, req_ops : int, ipc : float, req_time : float, mem : int, mem_vol : float):
         self.tasks = None
         self.id = id
         self.name = name
@@ -13,7 +13,9 @@ class Job:
         self.submit_time = submit_time
         self.start_time = math.inf
         self.finish_time = 0.0
-        self.resources = resources
+        self.nodes = nodes
+        self.ntasks = ntasks
+        self.ntasks_per_node = ntasks_per_node 
         self.ops = math.ceil(req_ops / ipc)
         self.opc = ipc
         self.req_time = req_time
@@ -34,7 +36,7 @@ class Job:
 
     def generate_tasks(self):
         self.tasks = []
-        for task in range(self.resources):
+        for task in range(self.ntasks):
             self.tasks.append(Task(self, self.ops, self.opc, self.memory, self.memory_vol))
 
     def set_start_time(self, time: float):

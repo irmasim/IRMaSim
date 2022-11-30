@@ -168,14 +168,21 @@ class Simulator:
             job = workload['jobs'][trajectory_origin+i]
             if not id in job:
                job['id'] = "job"+str(job_id)
+            if 'res' in job:
+                if 'nodes' in job or 'ntasks' in job or 'ntasks_per_node' in job:
+                    raise Exception(f"A job can specify a 'res' option or ('nodes','ntasks','ntasks_per_node'). But Job {job['id']} specify both")
+                job['nodes'] = 1
+                job['ntasks'] = job['res']
+                job['ntasks_per_node'] = job['res']
+                del job['res'] 
             if 'profile' in job:
                 job_queue.add_job(
-                    Job.from_profile(job_id, job['id'], job['subtime'], job['res'],
-                        workload['profiles'][job['profile']], job['profile']))
+                Job.from_profile(job_id, job['id'], job['subtime'], job['nodes'], job['ntasks'], job['ntask_per_node'],
+                    workload['profiles'][job['profile']], job['profile']))
             else:
                 job_queue.add_job(
-                    Job(job_id, job['id'], job['subtime'], job['res'],
-                        job['req_ops'], job['ipc'], job['req_time'], job['mem'], job['mem_vol']))
+                Job(job_id, job['id'], job['subtime'], job['nodes'], job['ntasks'], job['ntasks_per_node'],
+                    job['req_ops'], job['ipc'], job['req_time'], job['mem'], job['mem_vol']))
             job_id += 1
 
         job_limits = job_queue.get_limits()
