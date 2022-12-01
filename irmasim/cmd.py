@@ -66,6 +66,10 @@ def launch() -> None:
 
     if not 'workload_manager' in options:
         options['workload_manager'] = {}
+    if not type(options['workload_manager']) is dict:
+        print('The workload_manager item in the options_file must be a dictionary.')
+        sys.exit(1)
+
 
     if args.workload_manager:
         options['workload_manager']['type'] = path.abspath(args.workload_manager)
