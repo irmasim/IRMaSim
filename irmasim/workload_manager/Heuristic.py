@@ -31,7 +31,7 @@ class Heuristic(WorkloadManager):
             'random': lambda job: job.id,
             'first': lambda job: job.submit_time,
             'shortest': lambda job: job.req_time,
-            'smallest': lambda job: job.resources,
+            'smallest': lambda job: job.ntasks,
             'low_mem': lambda job: job.memory,
             'low_mem_ops': lambda job: job.memory_vol
         }
@@ -55,7 +55,7 @@ class Heuristic(WorkloadManager):
         self.idle_resources = []
         self.idle_resources.extend(self.simulator.get_resources(klass))
         self.busy_resources = []
-        print(f"Job scheduler:", self.job_scheduler, ", Core scheduler:", self.core_scheduler)
+        print(f"Job selection: {self.job_scheduler}, Core selection: {self.core_scheduler}")
         
 
     def on_job_submission(self, jobs: list):
