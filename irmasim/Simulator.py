@@ -166,8 +166,8 @@ class Simulator:
         job_id = trajectory_origin
         for i in range(trajectory_length):
             job = workload['jobs'][trajectory_origin+i]
-            if not id in job:
-               job['id'] = "job"+str(job_id)
+            if 'id' not in job:
+                job['id'] = "job"+str(job_id)
             if 'res' in job:
                 if 'nodes' in job or 'ntasks' in job or 'ntasks_per_node' in job:
                     raise Exception(f"A job can specify a 'res' option or ('nodes','ntasks','ntasks_per_node'). But Job {job['id']} specify both")
