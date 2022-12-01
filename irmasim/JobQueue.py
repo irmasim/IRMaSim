@@ -49,7 +49,8 @@ class JobQueue:
             'max_time': numpy.percentile(numpy.array(
                 [job.req_time for job in self.future_jobs]), 99),
             'max_core': numpy.percentile(numpy.array(
-                [job.resources for job in self.future_jobs]), 99),
+                #TODO: Repensar en relacion a ntasks y ntasks-per-node. A lo mejor deberia llamarse max_tasks
+                [job.ntasks for job in self.future_jobs]), 99),
             'max_mem': numpy.percentile(numpy.array(
                 [job.memory for job in self.future_jobs]), 99),
             'max_mem_vol': numpy.percentile(numpy.array(
