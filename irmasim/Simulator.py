@@ -177,7 +177,7 @@ class Simulator:
                 del job['res'] 
             if 'profile' in job:
                 job_queue.add_job(
-                Job.from_profile(job_id, job['id'], job['subtime'], job['nodes'], job['ntasks'], job['ntask_per_node'],
+                Job.from_profile(job_id, job['id'], job['subtime'], job['nodes'], job['ntasks'], job['ntasks_per_node'],
                     workload['profiles'][job['profile']], job['profile']))
             else:
                 job_queue.add_job(

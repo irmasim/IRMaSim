@@ -24,8 +24,8 @@ class Job:
         self.generate_tasks()
 
     @classmethod
-    def from_profile(klass, id: int, name: str, submit_time: float, resources: int, profile: dict, type: str):
-        self=klass(id,name,submit_time,resources, profile['req_ops'], profile['ipc'],
+    def from_profile(klass, id: int, name: str, submit_time: float, nodes: int, ntasks: int, ntasks_per_node: int, profile: dict, type: str):
+        self=klass(id,name,submit_time, nodes, ntasks, ntasks_per_node, profile['req_ops'], profile['ipc'],
                    profile['req_time'], profile['mem'], profile['mem_vol'])
         self.type = type
         self.profile = profile
