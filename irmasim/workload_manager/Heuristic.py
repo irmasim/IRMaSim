@@ -41,7 +41,7 @@ class Heuristic(WorkloadManager):
             'first': lambda core: core.parent.parent.id,
             'high_gflops': lambda core: - core.parent.mops_per_core,
             'high_cores': lambda core: - len([c for c in core.parent.children \
-                                              if c.task is not None]),
+                                              if c.task is None]),
             'high_mem': lambda core: - core.parent.parent.current_memory,
             'high_mem_bw': lambda core: core.parent.requested_memory_bandwidth,
             'low_power': lambda core: core.static_power + core.dynamic_power
@@ -49,11 +49,11 @@ class Heuristic(WorkloadManager):
 
         self.pending_jobs = SortedList(key=job_selections[self.job_scheduler])
         self.running_jobs = SortedList(key=job_selections[self.job_scheduler])
+        self.core_sort_key = core_selections[self.core_scheduler]
 
         mod = importlib.import_module("irmasim.platform.models." + options["platform_model_name"] + ".Core")
         klass = getattr(mod, 'Core')
-        self.idle_resources = []
-        self.idle_resources.extend(self.simulator.get_resources(klass))
+        self.idle_resources = self.simulator.get_resources(klass)
         self.busy_resources = []
         print(f"Job selection: {self.job_scheduler}, Core selection: {self.core_scheduler}")
         
@@ -96,6 +96,7 @@ class Heuristic(WorkloadManager):
     def allocate(self, task: Task):
         if len(self.idle_resources) != 0:
             if self.core_scheduler != 'random':
+                self.idle_resources.sort(key=self.core_sort_key)
                 core = self.idle_resources.pop(0)
             else: 
                 core = rand.choice(self.idle_resources)
