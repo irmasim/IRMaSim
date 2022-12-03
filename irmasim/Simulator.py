@@ -15,7 +15,6 @@ class Simulator:
 
     def __init__(self):
         rand.seed(1)
-        self.job_limits, self.job_queue = self.generate_workload()
         self.platform = self.build_platform()
         #print(self.platform.pstr("  "))
         self.workload_manager = self.build_workload_manager()
@@ -26,6 +25,14 @@ class Simulator:
         self.logger = logging.getLogger("simulator")
 
     def start_simulation(self) -> None:
+        options = Options().get()
+        nbtrajectories = int(options['nbtrajectories'])
+        for i in range(nbtrajectories):
+            self.job_limits, self.job_queue = self.generate_workload(self.simulation_time)
+            self.simulate_trajectory()
+        self.workload_manager.on_end_simulation()
+
+    def simulate_trajectory(self) -> None:
         logging.getLogger("irmasim").debug("Simulation start")
         self.log_state()
         first_jobs = self.job_queue.get_next_jobs(self.job_queue.get_next_step())
@@ -64,7 +71,7 @@ class Simulator:
                 job_logger = logging.getLogger("jobs")
                 for job in jobs:
                     job.finish_time = self.simulation_time
-                    job_logger.info(str(job))
+                    [ job_logger.info(task_str) for task_str in job.task_strs() ]
                 self.reap([task for job in jobs for task in job.tasks])
                 self.workload_manager.on_job_completion(jobs)
 
@@ -77,7 +84,6 @@ class Simulator:
             delta_time_queue = self.job_queue.get_next_step() - self.simulation_time
             delta_time = min([delta_time_platform, delta_time_queue])
             self.log_state()
-        self.workload_manager.on_end_simulation()
 
     def schedule(self, tasks: list):
         for task in tasks:
@@ -143,39 +149,47 @@ class Simulator:
                     types[group].update(types_from_file[group])
         return types
 
-    def generate_workload(self):
+    def generate_workload(self, simulation_time:float = 0.0):
         options = Options().get()
         with open(options['workload_file'], 'r') as in_f:
             workload = json.load(in_f)
 
         if options['trajectory_origin'] == 'random':
-            trajectory_origin = rand.randint(0, len(workload['jobs']))
+            trajectory_origin = rand.randint(0, len(workload['jobs'])-1)
         else:
             trajectory_origin = int(options['trajectory_origin'])
 
-        if options['trajectory_length'] == '0' or int(options['trajectory_length']) + trajectory_origin > len(workload['jobs']):
-            trajectory_length = len(workload['jobs']) - trajectory_origin
-        elif options['trajectory_length'] == 'random':
+        if options['trajectory_length'] == 'random':
             trajectory_length = rand.randint(1, len(workload['jobs']) - trajectory_origin)
+        elif options['trajectory_length'] == '0' or int(options['trajectory_length']) + trajectory_origin > len(workload['jobs']):
+            trajectory_length = len(workload['jobs']) - trajectory_origin
         else:
             trajectory_length= int(options['trajectory_length'])
 
         print(f'Loaded {len(workload["jobs"])} jobs from {options["workload_file"]}. Using {trajectory_length} jobs starting with #{trajectory_origin}')
-
+        
         job_queue = JobQueue()
         job_id = trajectory_origin
+        first_job_subtime = workload['jobs'][trajectory_origin]['subtime']
         for i in range(trajectory_length):
             job = workload['jobs'][trajectory_origin+i]
-            if not id in job:
-               job['id'] = "job"+str(job_id)
+            if 'id' not in job:
+                job['id'] = "job"+str(job_id)
+            if 'res' in job:
+                if 'nodes' in job or 'ntasks' in job or 'ntasks_per_node' in job:
+                    raise Exception(f"A job can specify a 'res' option or ('nodes','ntasks','ntasks_per_node'). But Job {job['id']} specify both")
+                job['nodes'] = 1
+                job['ntasks'] = job['res']
+                job['ntasks_per_node'] = job['res']
+                del job['res'] 
             if 'profile' in job:
                 job_queue.add_job(
-                    Job.from_profile(job_id, job['id'], job['subtime'], job['res'],
-                        workload['profiles'][job['profile']], job['profile']))
+                Job.from_profile(job_id, job['id'], job['subtime']-first_job_subtime + simulation_time, job['nodes'], job['ntasks'], job['ntasks_per_node'],
+                    workload['profiles'][job['profile']], job['profile']))
             else:
                 job_queue.add_job(
-                    Job(job_id, job['id'], job['subtime'], job['res'],
-                        job['req_ops'], job['ipc'], job['req_time'], job['mem'], job['mem_vol']))
+                Job(job_id, job['id'], job['subtime']-first_job_subtime + simulation_time, job['nodes'], job['ntasks'], job['ntasks_per_node'],
+                    job['req_ops'], job['ipc'], job['req_time'], job['mem'], job['mem_vol']))
             job_id += 1
 
         job_limits = job_queue.get_limits()
