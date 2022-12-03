@@ -51,15 +51,21 @@ class Job:
             return False
         return self.id == other.id
 
-    def __str__(self):
+    def task_strs(self):
         task_id = 0 
         task_strings = []
         for task in self.tasks:
-            task_strings.append(",".join(map(lambda x: str(x), [".".join([self.name,str(task_id)]), self.submit_time, self.start_time, self.finish_time,
-                                                task.execution_time, self.ops, self.type, task.resource == None and "None" or ".".join(task.resource)])))
+            task_strings.append(",".join(map(lambda x: str(x), [".".join([self.name,str(task_id)]),
+                self.req_time,self.ntasks,self.memory,self.submit_time,self.start_time, self.finish_time,
+                task.execution_time, self.ops, self.memory_vol, self.type,
+                task.resource == None and "None" or ".".join(task.resource)])))
             task_id += 1
+        return task_strings
+
+    def __str__(self):
+        task_strings = self.task_strs()
         return "\n".join(task_strings)
 
     @classmethod
     def header(klass):
-        return "id,submit_time,start_time,finish_time,execution_time,operations,profile,resources"
+        return "id,req_time,ntasks,mem,submit_time,start_time,finish_time,execution_time,operations,mem_vol,profile,resources"

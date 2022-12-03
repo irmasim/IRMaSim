@@ -71,7 +71,7 @@ class Simulator:
                 job_logger = logging.getLogger("jobs")
                 for job in jobs:
                     job.finish_time = self.simulation_time
-                    job_logger.info(str(job))
+                    [ job_logger.info(task_str) for task_str in job.task_strs() ]
                 self.reap([task for job in jobs for task in job.tasks])
                 self.workload_manager.on_job_completion(jobs)
 
