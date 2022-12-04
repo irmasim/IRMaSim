@@ -290,7 +290,10 @@ Attributes:
                     if core.task is None:
                         available_core_list.append(core)
                 avg_clock_rate = clock_rate_sum/len(core_list)
-                observation.append(job_obs + [len(core_list),len(available_core_list), avg_clock_rate, int(req_core <= len(available_core_list))])
+                if req_core <= len(available_core_list):
+                    observation.append(job_obs + [len(core_list),len(available_core_list), avg_clock_rate, int(req_core <= len(available_core_list))])
+                else:
+                    observation.append([0] * 7)
 
         num_fill_jobs = self.action_size - len(observation)
         return np.pad(observation, [(0, num_fill_jobs), (0, 0)])
