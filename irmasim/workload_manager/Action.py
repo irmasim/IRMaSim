@@ -56,12 +56,18 @@ class Action(Policy):
         return agent, optimizers
 
     def apply_policy(self, action: int):
+        options = Options().get()
+        mod = importlib.import_module("irmasim.platform.models." + options["platform_model_name"] + ".Core")
+        klass = getattr(mod, 'Core')
+
         job_idx, node_idx = self.environment.get_action_pair(action)
         logging.getLogger("irmasim").debug(
             f"{self.simulator.simulation_time} performing action Job({job_idx})-Node({node_idx}) ({action})")
         job, node = self.pending_jobs[job_idx], self.resources[node_idx]
+
+        free_cores = [core for core in node.enumerate_resources(klass) if core.task is None]
         for task in job.tasks:
-            task.allocate(node.full_id())
+            task.allocate(free_cores.pop(0).full_id())
         self.simulator.schedule(job.tasks)
         self.running_jobs.append(job)
 
