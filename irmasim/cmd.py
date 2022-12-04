@@ -19,6 +19,7 @@ def launch() -> None:
     parser.add_argument('-n', '--platform_name', type=str, help='Name of the platform to simulate')
     parser.add_argument('-p', '--platform_file', type=str, help='File with a description of elements of the platform')
     parser.add_argument('-w', '--workload_file', type=str, help='File with the workload definition')
+    parser.add_argument('-nt', '--nbtrajectories', type=str, help='Number of trajectories per run')
     parser.add_argument('-to', '--trajectory_origin', type=str, help='First job to submit')
     parser.add_argument('-tl', '--trajectory_length', type=str, help='Number of jobs to submit')
     parser.add_argument('-o', '--output_dir', type=str, help='Directory for output files')
@@ -30,6 +31,7 @@ def launch() -> None:
     parser.add_argument('-nr', '--nbruns', type=int, default=1, help='Number of simulations to run')
     parser.add_argument('-ph', '--phase', type=str, default="train", help='Agent operation phase: train, eval')
     parser.add_argument('-v', '--verbose', action="store_true", help='Remove prints in stdout')
+    parser.add_argument('-x', '--extra', type=str, help='Add arbitrary entries to configuration')
     args = parser.parse_args()
 
     if args.verbose:
@@ -50,6 +52,10 @@ def launch() -> None:
         options['platform_file'] = args.platform_file
     if args.workload_file:
         options['workload_file'] = args.workload_file
+    if not 'nbtrajectories' in options:
+        options['nbtrajectories'] = '1'
+    if args.nbtrajectories:
+        options['nbtrajectories'] = args.nbtrajectories
     if not 'trajectory_origin' in options:
         options['trajectory_origin'] = '0'
     if args.trajectory_origin:
@@ -66,6 +72,10 @@ def launch() -> None:
 
     if not 'workload_manager' in options:
         options['workload_manager'] = {}
+    if not type(options['workload_manager']) is dict:
+        print('The workload_manager item in the options_file must be a dictionary.')
+        sys.exit(1)
+
 
     if args.workload_manager:
         options['workload_manager']['type'] = path.abspath(args.workload_manager)
@@ -83,6 +93,16 @@ def launch() -> None:
         options['workload_manager']['agent']['output_model'] = path.abspath(args.outmodel)
     if args.phase:
         options['workload_manager']['agent']['phase'] = args.phase
+
+    # TODO: This is very quick and dirty. Improve!
+    if args.extra:
+        dictionary = options
+        for part in args.extra.split("."):
+            pair = part.split("=")
+            if len(pair) == 1:
+                dictionary=dictionary[pair[0]]
+            else:
+                dictionary[pair[0]]=pair[1]
 
     # Check for minimum operating parameters
     if 'platform_name' not in options:
