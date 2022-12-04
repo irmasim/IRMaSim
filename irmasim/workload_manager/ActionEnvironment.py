@@ -19,7 +19,6 @@ class ActionEnvironment(Environment):
         self.workload_manager = workload_manager
         self.simulator = simulator
         self.env_options = Options().get()["workload_manager"]["environment"]
-        self.last_job_queue_length = None
 
         self.NUM_JOBS = self.env_options["num_jobs"]
         self.NUM_NODES = self.env_options["num_nodes"]
