@@ -150,8 +150,8 @@ Attributes:
         self.resources = self.simulator.get_resources(klass)
 
         if 'observation' in self.env_options:
-            if self.env_options['observation'] == 'jaime':
-                self.observation = self.observation_jaime
+            if self.env_options['observation'] == 'action':
+                self.observation = self.observation_action
             else:
                 self.observation = partial(self._base_observation, otype=self.env_options['observation'])
         else:
@@ -269,13 +269,14 @@ Attributes:
         return -self.simulator.waiting_time_statistics()["total"]
         
 
-    def observation_jaime(self):
+    def observation_action(self):
         options = Options().get()
         mod = importlib.import_module("irmasim.platform.models." + options["platform_model_name"] + ".Core")
         klass = getattr(mod, 'Core')
 
         observation = []
-        for job in self.workload_manager.pending_jobs:
+        # Assume that this is only ever going to be called from an Environment with self.NUM_JOBS defined
+        for job in self.workload_manager.pending_jobs[:self.NUM_JOBS]:
             wait_time = self.simulator.simulation_time - job.submit_time
             req_time = job.req_time
             req_core = job.ntasks
