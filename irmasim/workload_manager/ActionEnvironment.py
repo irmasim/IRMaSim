@@ -53,6 +53,6 @@ class ActionEnvironment(Environment):
         return self.observation_space.shape[1]
 
     def get_action_pair(self, action: int):
-        job = action // self.NUM_JOBS
+        job = action // self.NUM_NODES
         node = action % self.NUM_NODES
         return job, node
