@@ -278,7 +278,7 @@ Attributes:
         for job in self.workload_manager.pending_jobs:
             wait_time = self.simulator.simulation_time - job.submit_time
             req_time = job.req_time
-            req_core = job.resources
+            req_core = job.ntasks
             job_obs = [wait_time, req_time, req_core]
 
             for node in self.resources:
