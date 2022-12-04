@@ -9,8 +9,8 @@
     "environment": {
       "queue_sensitivity": 0,
       "objective": "slowdown",
-      "num_jobs": 128,
-      "num_nodes": 20,
+      "num_jobs": 8,
+      "num_nodes": 2,
       "obs_features": 7
     },
     "agent": {
