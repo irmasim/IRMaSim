@@ -1,3 +1,4 @@
+import importlib
 import torch
 import logging
 import os.path as path
@@ -5,6 +6,7 @@ import os.path as path
 from irmasim.Options import Options
 from irmasim.workload_manager.ActionEnvironment import ActionEnvironment
 from irmasim.workload_manager.Policy import Policy
+from irmasim.workload_manager.WorkloadManager import WorkloadManager
 from irmasim.workload_manager.agent.ActionActorCritic import ActionActorCritic
 
 from typing import TYPE_CHECKING
@@ -15,9 +17,26 @@ if TYPE_CHECKING:
 class Action(Policy):
 
     def __init__(self, simulator: 'Simulator'):
-        super().__init__(simulator)
+        WorkloadManager.__init__(self, simulator)
+        if simulator.platform.config["model"] != "modelV1":
+            raise Exception("Policy workload manager needs a modelV1 platform")
+        options = Options().get()
+        mod = importlib.import_module("irmasim.platform.models." + options["platform_model_name"] + ".Node")
+        klass = getattr(mod, 'Node')
+        self.resources = self.simulator.get_resources(klass)
+        self.pending_jobs = []
+        self.running_jobs = []
+        self.load_agent = True
+        self.last_reward = False
+        self.reward = options["workload_manager"]["environment"]["objective"]
+        self.last_time = 0
+
         self.environment = ActionEnvironment(self, simulator)
         self.agent, self.optimizer = self.create_agent()
+        self.flow_flags = {
+            'action_taken': False,
+            'void_taken': False
+        }
 
     def create_agent(self):
         agent_options = Options().get()["workload_manager"]["agent"]
