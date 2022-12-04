@@ -74,10 +74,15 @@ class ActionActor(nn.Module):
         self.actor_output = nn.Linear(8, 1)
 
     def forward(self, observation: torch.Tensor) -> torch.Tensor:
+        mask = torch.where(observation.sum(dim=-1) != 0.0, 1.0, 0.0).unsqueeze(dim=2)
+        return self.forward_action(observation, mask)
+
+    def forward_action(self, observation: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
         out_0 = F.leaky_relu(self.input(observation))
         out_1 = F.leaky_relu(self.actor_hidden_0(out_0))
         out_2 = F.leaky_relu(self.actor_hidden_1(out_1))
-        out = F.softmax(self.actor_output(out_2), dim=0)
+        out_3 = self.actor_output(out_2) + (mask - 1) * 1e6
+        out = F.softmax(out_3, dim=1)
         return torch.squeeze(out)  # Col of scores to row
 
     def loss(self, adv_ph, logp_old_ph) -> torch.Tensor:
