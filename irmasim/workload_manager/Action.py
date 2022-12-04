@@ -63,7 +63,7 @@ class Action(Policy):
         job_idx, node_idx = self.environment.get_action_pair(action)
         logging.getLogger("irmasim").debug(
             f"{self.simulator.simulation_time} performing action Job({job_idx})-Node({node_idx}) ({action})")
-        job, node = self.pending_jobs[job_idx], self.resources[node_idx]
+        job, node = self.pending_jobs.pop(job_idx), self.resources[node_idx]
 
         free_cores = [core for core in node.enumerate_resources(klass) if core.task is None]
         for task in job.tasks:
