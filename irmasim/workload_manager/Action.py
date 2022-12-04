@@ -33,10 +33,6 @@ class Action(Policy):
 
         self.environment = ActionEnvironment(self, simulator)
         self.agent, self.optimizer = self.create_agent()
-        self.flow_flags = {
-            'action_taken': False,
-            'void_taken': False
-        }
 
     def create_agent(self):
         agent_options = Options().get()["workload_manager"]["agent"]
