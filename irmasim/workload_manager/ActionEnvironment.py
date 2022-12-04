@@ -31,7 +31,7 @@ class ActionEnvironment(Environment):
         klass = getattr(mod, 'Node')
         self.resources = self.simulator.get_resources(klass)
 
-        self.observation = self.observation_jaime
+        self.observation = self.observation_action
         self.observation_space = gym.spaces.Box(low=0.0, high=1.0,
                                                 shape=(self.NUM_JOBS * self.NUM_NODES, self.OBS_FEATURES),
                                                 dtype=np.float32)
