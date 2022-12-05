@@ -1,5 +1,6 @@
 {
   "seed": 0,
+  "log_level": "DEBUG",
   "workload_file": "workload.json",
   "platform_file": "platform.json",
   "platform_name": "the_platform",
@@ -9,8 +10,8 @@
     "environment": {
       "queue_sensitivity": 0,
       "objective": "slowdown",
-      "num_jobs": 8,
-      "num_nodes": 2,
+      "num_jobs": 128,
+      "num_nodes": 20,
       "obs_features": 7
     },
     "agent": {
