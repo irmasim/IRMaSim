@@ -151,7 +151,7 @@ class PPOBuffer:
         self.logp_buf[self.ptr] = logp
         self.ptr += 1
 
-    def finish_path(self, last_val=0) -> None:
+    def finish_path(self) -> None:
         """
         Call this at the end of a trajectory, or when one gets cut off
         by an epoch ending. This looks back in the buffer to where the
@@ -167,8 +167,8 @@ class PPOBuffer:
         """
 
         path_slice = slice(self.path_start_idx, self.ptr)
-        rews = np.append(self.rew_buf[path_slice], last_val)
-        vals = np.append(self.val_buf[path_slice], last_val)
+        rews = np.array(self.rew_buf[path_slice])
+        vals = np.array(self.val_buf[path_slice])
 
         # GAE-Lambda advantage calculation
         deltas = rews[:-1] + self.gamma * vals[1:] - vals[:-1]
