@@ -172,6 +172,7 @@ class Simulator:
         job_queue = JobQueue()
         job_id = trajectory_origin
         first_job_subtime = workload['jobs'][trajectory_origin]['subtime']
+        max_nodes = float('inf') if options['workload_manager']['type'] == 'Action' else int(options['max_procs'])
         for i in range(trajectory_length):
             job = workload['jobs'][trajectory_origin+i]
             if 'id' not in job:
@@ -180,8 +181,8 @@ class Simulator:
                 if 'nodes' in job or 'ntasks' in job or 'ntasks_per_node' in job:
                     raise Exception(f"A job can specify a 'res' option or ('nodes','ntasks','ntasks_per_node'). But Job {job['id']} specify both")
                 job['nodes'] = 1
-                job['ntasks'] = job['res']
-                job['ntasks_per_node'] = job['res']
+                job['ntasks'] = min(job['res'], max_nodes)
+                job['ntasks_per_node'] = min(job['res'], max_nodes)
                 del job['res'] 
             if 'profile' in job:
                 job_queue.add_job(
