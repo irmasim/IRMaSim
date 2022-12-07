@@ -23,5 +23,6 @@
     }
   },
   "trajectory_length": 256,
-  "trajectory_origin": "random"
+  "trajectory_origin": "random",
+  "max_procs": 64
 }
