@@ -16,43 +16,52 @@ class ActionActorCritic(Agent):
 
     def __init__(self, actions_size: int, observation_size: int) -> None:
         super(ActionActorCritic, self).__init__()
+        self.actions_size = actions_size
+        self.observation_size = observation_size
         self.actor = ActionActor(actions_size, observation_size)
         self.critic = ActionCritic(actions_size, observation_size)
         self.buffer = PPOBuffer(100)
         self.last_logp = 0
+        self.last_v = 0
+        self.last_rew = 0
 
     def decide(self, observation: np.ndarray) -> int:
-        probs, value = self.forward(observation)
-        print('Actor: ', probs)
-        print('Critic: ', value)
-        return self.get_action(probs)
+        logp_all, probs, value = self.forward(observation)
+        self.last_v = value
+        return self.get_action(probs, logp_all)
 
-    def get_action(self, probabilities: torch.Tensor) -> int:
-        dist = Categorical(probabilities)
+    def get_action(self, probabilities: torch.Tensor, logp_all: torch.Tensor) -> int:
+        dist = Categorical(logits=probabilities)
         action = dist.sample()
+        logp_pi = torch.sum(F.one_hot(action, self.actions_size) * logp_all, dim=1)
         self.last_logp = dist.log_prob(action)
         return action.item()
 
     def forward(self, observation: np.ndarray) -> tuple:
         observation = torch.from_numpy(observation).float().unsqueeze(0)
-        probs = self.actor.forward(observation)
+        logp_all, out = self.actor.forward(observation)
         value = self.critic.forward(observation)
-        return probs, value
+        return logp_all, out, value
 
-    def loss(self) -> float:
-        self.buffer.finish_path()
-        adv_ph, ret_ph, logp_old_ph = self.buffer.get()
-        policy_loss = self.actor.loss(adv_ph)
-        value_loss = self.value.loss(logp_old_ph)
-        return policy_loss.sum()+value_loss.sum()
+    def loss(self):
+        adv_ph, ret_ph, logp_old_ph, v_ph = map(lambda n: torch.tensor(n, requires_grad=True), self.buffer.get())
+        policy_loss = self.actor.loss(adv_ph, logp_old_ph)
+        value_loss = self.critic.loss(ret_ph, v_ph)
+        return MultiLossWrapper(policy_loss, value_loss)
+        #return policy_loss.sum() + value_loss.sum()
 
-    def rewarded(self, environment) -> None:
-        super().rewarded(environment)
-        # TODO Add last val
-        self.buffer.store(self.rewards[-1], 0, self.last_logp)
+    def fixed_reward(self, rew: float):
+        self.last_rew = rew
+        self.store_values()
 
-    def calculate_advantages(self):
-        pass
+    def store_values(self):
+        self.buffer.store(self.last_rew, self.last_v, self.last_logp)
+
+    def finish_trajectory(self, rew: float):
+        self.buffer.drop_last_values()
+        self.last_rew = 0
+        self.store_values()
+        self.buffer.finish_path(rew)
 
     def state_dict(self):
         return {
@@ -66,6 +75,8 @@ class ActionActorCritic(Agent):
 
 
 class ActionActor(nn.Module):
+    clip_ratio = 0.2
+
     def __init__(self, actions_size: int, observation_size: int):
         super(ActionActor, self).__init__()
         self.input = nn.Linear(observation_size, 32)
@@ -73,28 +84,27 @@ class ActionActor(nn.Module):
         self.actor_hidden_1 = nn.Linear(16, 8)
         self.actor_output = nn.Linear(8, 1)
 
-    def forward(self, observation: torch.Tensor) -> torch.Tensor:
-        mask = torch.where(observation.sum(dim=-1) != 0.0, 1.0, 0.0).unsqueeze(dim=2)
+    def forward(self, observation: torch.Tensor) -> tuple:
+        mask = torch.where(observation.sum(dim=-1) != 0.0, 1.0, 0.0)
         return self.forward_action(observation, mask)
 
-    def forward_action(self, observation: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+    def forward_action(self, observation: torch.Tensor, mask: torch.Tensor) -> tuple:
         out_0 = F.leaky_relu(self.input(observation))
         out_1 = F.leaky_relu(self.actor_hidden_0(out_0))
         out_2 = F.leaky_relu(self.actor_hidden_1(out_1))
-        out_3 = self.actor_output(out_2) + (mask - 1) * 1e6
-        out = F.softmax(out_3, dim=1)
-        return torch.squeeze(out)  # Col of scores to row
+        out_3 = torch.squeeze(self.actor_output(out_2), dim=-1)
+        out = out_3 + (mask - 1) * 1e6
+        logp_all = F.log_softmax(out, dim=1)
+        return logp_all, out
+        # logp = torch.sum(F.one_hot(a) * logp_all, dim=1)
+        # logp_pi = torch.sum(F.one_hot(pi) * logp_all, dim=1)
+        # return torch.squeeze(out)  # Col of scores to row
 
     def loss(self, adv_ph, logp_old_ph) -> torch.Tensor:
-        # TODO Definir el adv_buf y el actual sizepppppppppp
-
-
-
-
-
-        ratio = torch.exp(logp - logp_old_ph)
+        # ratio = torch.exp(logp - logp_old_ph)
         min_adv = torch.where(adv_ph > 0, (1 + self.clip_ratio) * adv_ph, (1 - self.clip_ratio) * adv_ph)
-        pi_loss = torch.mean(torch.minimum(ratio * adv_ph, min_adv))
+        # pi_loss = torch.mean(torch.minimum(ratio * adv_ph, min_adv))
+        pi_loss = torch.mean(min_adv)
         return pi_loss
 
 
@@ -121,11 +131,8 @@ class ActionCritic(nn.Module):
         out_1_3 = F.leaky_relu(self.critic_hidden_1_2(out_1_2))
         return self.critic_output(out_1_3)
 
-    def loss(self) -> torch.Tensor:
-        ret_ph = torch.Tensor(self.rewards)
-        out_critic = self.forward_value(torch.Tensor())
-        v = torch.squeeze(out_critic, dim=1)
-        v_loss = torch.mean((ret_ph - v) ** 2)
+    def loss(self, ret_ph, v) -> torch.Tensor:
+        v_loss = torch.mean((torch.Tensor(ret_ph) - torch.Tensor(v)) ** 2)
         return v_loss
 
 
@@ -151,7 +158,10 @@ class PPOBuffer:
         self.logp_buf[self.ptr] = logp
         self.ptr += 1
 
-    def finish_path(self) -> None:
+    def drop_last_values(self):
+        self.ptr -= 1
+
+    def finish_path(self, last_val) -> None:
         """
         Call this at the end of a trajectory, or when one gets cut off
         by an epoch ending. This looks back in the buffer to where the
@@ -167,8 +177,8 @@ class PPOBuffer:
         """
 
         path_slice = slice(self.path_start_idx, self.ptr)
-        rews = np.array(self.rew_buf[path_slice])
-        vals = np.array(self.val_buf[path_slice])
+        rews = np.append(self.rew_buf[path_slice], last_val)
+        vals = np.append(self.val_buf[path_slice], last_val)
 
         # GAE-Lambda advantage calculation
         deltas = rews[:-1] + self.gamma * vals[1:] - vals[:-1]
@@ -196,20 +206,46 @@ class PPOBuffer:
         adv_std = np.sqrt(adv_sum_sq / len(actual_adv_buf)) + 1e-5
         actual_adv_buf = (actual_adv_buf - adv_mean) / adv_std
 
-        return actual_adv_buf, self.ret_buf[:actual_size], self.logp_buf[:actual_size]
+        return actual_adv_buf, self.ret_buf[:actual_size], self.logp_buf[:actual_size], self.val_buf[:actual_size]
 
+
+class MultiLossWrapper:
+    def __init__(self, *losses):
+        self.losses = [*losses]
+
+    def backward(self):
+        for loss in self.losses:
+            loss.backward()
+
+    def __repr__(self):
+        return ','.join([str(l.item()) for l in self.losses])
 
 # TODO Remove
 if __name__ == "__main__":
     JOBS = 3
     NODES = 4
-    ac = ActionActorCritic(JOBS * NODES, 5)
-    obs = np.random.uniform(0.0, 1.0, (JOBS*NODES, 5))
+    ac = ActionActorCritic(JOBS * NODES + 4, 5)
+    obs = np.random.uniform(0.0, 1.0, (JOBS * NODES, 5))
+    obs = np.pad(obs, [(0, 4), (0, 0)])
     print('INPUT: ', obs)
     print('--- End input')
     action = ac.decide(obs)
     print(action)
-    t = torch.Tensor(obs).to(torch.device('cuda:0'))
-    r = torch.Tensor(obs).to(torch.device('cuda:0'))
-    s = torch.Tensor(obs).to(torch.device('cuda:0'))
-    print(t + r * s)
+    print('-----------------')
+    t = torch.Tensor(obs)
+    r = torch.Tensor(obs)
+    s = torch.Tensor(obs)
+    u = (t + r * s)
+
+    mask = np.array(r.detach().numpy().sum(axis=1) != 0.0, dtype=np.float32)
+    mask2 = torch.where(r.sum(dim=1) != 0.0, 1.0, 0.0)
+    #out = ac.actor.forward_action(r, torch.Tensor(mask))
+
+
+    print('-----------------')
+    #print(out)
+    print(mask)
+    print(mask2)
+    #print(out * torch.Tensor(mask))
+
+

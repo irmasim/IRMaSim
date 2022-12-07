@@ -13,6 +13,9 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from irmasim.Simulator import Simulator
 
+options = Options().get()
+mod = importlib.import_module("irmasim.platform.models." + options["platform_model_name"] + ".Core")
+core_klass = getattr(mod, 'Core')
 
 class Action(Policy):
 
@@ -51,21 +54,33 @@ class Action(Policy):
         agent.train() if agent_options['phase'] == 'train' else agent.eval()
         return agent, optimizers
 
-    def apply_policy(self, action: int):
-        options = Options().get()
-        mod = importlib.import_module("irmasim.platform.models." + options["platform_model_name"] + ".Core")
-        klass = getattr(mod, 'Core')
+    def on_end_step(self):
+        if self.pending_jobs and any(self._is_schedulable(job) for job in self.pending_jobs):
+            self.last_time = self.simulator.simulation_time
+            observation = self.agent.observe(self.environment)
+            action = self.agent.decide(observation)
+            self.apply_action(action)
+            self.agent.fixed_reward(0)
 
+    def _is_schedulable(self, job):
+        return job.ntasks <= max([node.count_idle_cores() for node in self.resources])
+
+    def apply_action(self, action: int):
         job_idx, node_idx = self.environment.get_action_pair(action)
         logging.getLogger("irmasim").debug(
             f"{self.simulator.simulation_time} performing action Job({job_idx})-Node({node_idx}) ({action})")
         job, node = self.pending_jobs.pop(job_idx), self.resources[node_idx]
 
-        free_cores = [core for core in node.enumerate_resources(klass) if core.task is None]
+        free_cores = [core for core in node.enumerate_resources(core_klass) if core.task is None]
+        assert len(free_cores) >= job.ntasks
         for task in job.tasks:
             task.allocate(free_cores.pop(0).full_id())
         self.simulator.schedule(job.tasks)
         self.running_jobs.append(job)
+
+    def on_end_trajectory(self):
+        logging.getLogger('irmasim').debug('Ending trajectory')
+        self.agent.finish_trajectory(self.environment.reward())
 
 
 class MultiOptimWrapper:
