@@ -213,13 +213,13 @@ Attributes:
         req_time = np.array(
             [job.req_time for job in self.workload_manager.pending_jobs])
         req_core = np.array(
-            [job.resources for job in self.workload_manager.pending_jobs])
+            [job.ntasks for job in self.workload_manager.pending_jobs])
         req_mem = np.array(
             [job.memory for job in self.workload_manager.pending_jobs])
         req_mem_vol = np.array(
             [job.memory_vol for job in self.workload_manager.pending_jobs])
 
-        job_limits = self.simulator.job_limits
+        job_limits = self.simulator.get_workload_limits()
         reqes = (req_time, req_core, req_mem, req_mem_vol)
         maxes = (job_limits['max_time'], job_limits['max_core'],
                  job_limits['max_mem'], job_limits['max_mem_vol'])

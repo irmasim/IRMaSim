@@ -28,7 +28,7 @@ class Simulator:
         options = Options().get()
         nbtrajectories = int(options['nbtrajectories'])
         for i in range(nbtrajectories):
-            self.job_limits, self.job_queue = self.generate_workload(self.simulation_time)
+            self.job_queue = self.generate_workload(self.simulation_time)
             self.simulate_trajectory()
             self.workload_manager.on_end_trajectory()
         self.workload_manager.on_end_simulation()
@@ -150,6 +150,37 @@ class Simulator:
                     types[group].update(types_from_file[group])
         return types
 
+    def get_workload_limits(self):
+        def ntasks(job: dict):
+            if 'res' in job:
+                return job['res']
+            else:
+                return job['ntasks']
+
+        def from_profile(key: str, job: dict, workload: dict):
+            if 'profile' in job:
+                return workload['profiles'][job['profile']][key]
+            else:
+                return job[key]
+
+        options = Options().get()
+        with open(options['workload_file'], 'r') as in_f:
+            workload = json.load(in_f)
+
+        job_limits = {
+            'max_time': numpy.percentile(numpy.array(
+                [from_profile('req_time',job,workload) for job in workload['jobs']]), 99),
+            'max_core': numpy.percentile(numpy.array(
+                #TODO: Repensar en relacion a ntasks y ntasks-per-node. A lo mejor deberia llamarse max_tasks
+                [ntasks(job) for job in workload['jobs']]), 99),
+            'max_mem': numpy.percentile(numpy.array(
+                [from_profile('mem',job,workload) for job in workload['jobs']]), 99),
+            'max_mem_vol': numpy.percentile(numpy.array(
+                [from_profile('mem_vol',job,workload) for job in workload['jobs']]), 99)
+        }
+
+        return job_limits
+
     def generate_workload(self, simulation_time:float = 0.0):
         options = Options().get()
         with open(options['workload_file'], 'r') as in_f:
@@ -194,8 +225,7 @@ class Simulator:
                     job['req_ops'], job['ipc'], job['req_time'], job['mem'], job['mem_vol']))
             job_id += 1
 
-        job_limits = job_queue.get_limits()
-        return job_limits, job_queue
+        return job_queue
 
     def build_workload_manager(self):
         options = Options().get()
