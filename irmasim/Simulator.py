@@ -14,7 +14,6 @@ import random as rand
 class Simulator:
 
     def __init__(self):
-        rand.seed(1)
         self.platform = self.build_platform()
         #print(self.platform.pstr("  "))
         self.workload = None
