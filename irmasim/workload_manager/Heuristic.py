@@ -22,10 +22,10 @@ class Heuristic(WorkloadManager):
         else:
             self.job_scheduler = options["workload_manager"]["job_selection"]
 
-        if not "core_selection" in options["workload_manager"]:
+        if not "resource_selection" in options["workload_manager"]:
             self.core_scheduler = 'first'
         else:
-            self.core_scheduler = options["workload_manager"]["core_selection"]
+            self.core_scheduler = options["workload_manager"]["resource_selection"]
 
         job_selections = {
             'random': lambda job: job.id,
@@ -72,18 +72,20 @@ class Heuristic(WorkloadManager):
             pass
 
     def schedule_next_job(self):
-        if len(self.pending_jobs) != 0 and len(self.idle_resources) >= len(self.pending_jobs[0].tasks):
+        if len(self.pending_jobs) != 0:
             if self.job_scheduler != "random":
-                next_job = self.pending_jobs.pop(0)
+                next_job = self.pending_jobs[0]
             else: 
                 next_job = rand.choice(self.pending_jobs)
+            if len(self.idle_resources) >= len(next_job.tasks):
                 self.pending_jobs.remove(next_job)
-            for task in next_job.tasks:
-                self.allocate(task)
-            #print(next_job.tasks.resource)
-            self.simulator.schedule(next_job.tasks)
-            self.running_jobs.add(next_job)
-            return True
+                for task in next_job.tasks:
+                    self.allocate(task)
+                self.simulator.schedule(next_job.tasks)
+                self.running_jobs.add(next_job)
+                return True
+            else:
+                return False
         else:
             return False
 
