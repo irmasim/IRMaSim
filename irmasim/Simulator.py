@@ -239,11 +239,15 @@ class Simulator:
         return klass(self)
 
     def log_state(self):
-        future, pending, running, finished = self.job_queue.get_job_counts()
-        self.logger.info(",".join(map(lambda x: str(x), [self.simulation_time, self.energy, future, pending, running, finished])))
+        state = [ self.simulation_time, self.energy ]
+        state.extend(self.job_queue.get_job_counts())
+
+        for stats in [ self.slowdown_statistics(), self.bounded_slowdown_statistics(), self.waiting_time_statistics() ]:
+           state.extend(stats.values())
+
+        self.logger.info(",".join(map(lambda x: str(x), state)))
 
     def slowdown_statistics(self) -> dict:
-
         sld_list = []
         for job in self.job_queue.finished_jobs:
             execution_time = job.finish_time - job.start_time
@@ -256,7 +260,6 @@ class Simulator:
         return self.compute_statistics(sld_list)
 
     def bounded_slowdown_statistics(self) -> dict:
-
         bsld_list = []
         for job in self.job_queue.finished_jobs:
             execution_time = job.finish_time - job.start_time
@@ -268,7 +271,6 @@ class Simulator:
         return self.compute_statistics(bsld_list)
     
     def waiting_time_statistics(self) -> dict:
-
         waiting_time_list = []
         for job in self.job_queue.finished_jobs:
             waiting_time_list.append(float(job.start_time - job.submit_time))
@@ -286,7 +288,6 @@ class Simulator:
         return {"future": counts[0], "queue": counts[1], "running": counts[2], "finished": counts[3]}
 
     def compute_statistics(self, statistic_list) -> dict:
-
         total = 0.0
         avg = 0.0
         max = float(-math.inf)
@@ -307,4 +308,7 @@ class Simulator:
 
     @classmethod
     def header(klass):
-        return "time,energy,future_jobs,pending_jobs,running_jobs,finished_jobs"
+        header = "time,energy,future_jobs,pending_jobs,running_jobs,finished_jobs"
+        for metric in [ "slowdown", "bounded_slowdown", "waiting_time" ]:
+           header += "," + ",".join([metric+"_"+stat for stat in ["total","avg","max","min"]])
+        return header
