@@ -31,7 +31,7 @@ def launch() -> None:
     parser.add_argument('-nr', '--nbruns', type=int, default=1, help='Number of simulations to run')
     parser.add_argument('-ph', '--phase', type=str, default="train", help='Agent operation phase: train, eval')
     parser.add_argument('-v', '--verbose', action="store_true", help='Remove prints in stdout')
-    parser.add_argument('-x', '--extra', type=str, help='Add arbitrary entries to configuration')
+    parser.add_argument('-x', '--extra', type=str, action="append", help='Add arbitrary entries to configuration')
     args = parser.parse_args()
 
     if args.verbose:
@@ -96,13 +96,14 @@ def launch() -> None:
 
     # TODO: This is very quick and dirty. Improve!
     if args.extra:
-        dictionary = options
-        for part in args.extra.split("."):
-            pair = part.split("=")
-            if len(pair) == 1:
-                dictionary=dictionary[pair[0]]
-            else:
-                dictionary[pair[0]]=pair[1]
+        for extra in args.extra:
+            dictionary = options
+            for part in extra.split("."):
+                pair = part.split("=")
+                if len(pair) == 1:
+                    dictionary=dictionary[pair[0]]
+                else:
+                    dictionary[pair[0]]=pair[1]
 
     # Check for minimum operating parameters
     if 'platform_name' not in options:
