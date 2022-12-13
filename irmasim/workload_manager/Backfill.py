@@ -48,7 +48,7 @@ class Backfill(WorkloadManager):
             for node in self.idle_nodes:
                 if node.count_idle_cores() >= len(self.pending_jobs[0].tasks):
                     next_job = self.pending_jobs.pop(0)
-                    # print(f"ENTRA PRIMERO: ", next_job.id)
+                    # print(f"ENTRA PRIMERO: ", next_job.name)
                     self.allocate(node, next_job) # Como se que el job entra, la funcion alocata cada task
                     return True #primer trabajo planificado perfect
             
@@ -94,15 +94,18 @@ class Backfill(WorkloadManager):
         #print(f"node : ", node)
         if node in self.busy_nodes:
             self.busy_nodes.remove(node)
-        self.idle_nodes.add(node)
+            self.idle_nodes.add(node)
     
     def get_next_job_start_point (self, node: BasicNode):
-        running_jobs_eet = sorted(node.running_jobs(), key=lambda j: (j.start_time + j.req_time)) #ASC De menor a meyor
+        running_jobs_eet = sorted(set(node.running_jobs()), key=lambda j: (j.start_time + j.req_time)) #ASC De menor a meyor
+        #print([j.name for j in running_jobs_eet])
         idle_cores_after_end_job=node.count_idle_cores()
         next_job_start_point = self.simulator.simulation_time #Para evitar fallos si no se puede planificar time = now para evitar que haga backfill
         for running_job in running_jobs_eet: #Busco el start time del next job que es = estimated end time de algun running job
+            #print(f"idle_cores = ", idle_cores_after_end_job)
             idle_cores_after_end_job += len(running_job.tasks)
             if idle_cores_after_end_job >= len(self.pending_jobs[0].tasks):
+                #print(f"limmit job: ", running_job.name)
                 next_job_start_point = running_job.start_time + running_job.req_time
                 break
         return next_job_start_point
