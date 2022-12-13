@@ -188,10 +188,7 @@ class Simulator:
     def generate_workload(self, simulation_time:float = 0.0):
         self.load_workload()
         options = Options().get()
-        if options['trajectory_length'] == 'random':
-            trajectory_length = rand.randint(1, len(self.workload['jobs']))
-        else:
-            trajectory_length = int(options['trajectory_length'])
+        trajectory_length = int(options['trajectory_length'])
 
         if options['trajectory_origin'] == 'random':
             if trajectory_length != 0:
@@ -201,6 +198,11 @@ class Simulator:
                 trajectory_length = len(self.workload['jobs']) - trajectory_origin
         else:
             trajectory_origin = int(options['trajectory_origin'])
+
+        if options['trajectory_length'] == 'random':
+            trajectory_length = rand.randint(1, len(self.workload['jobs']))
+        elif trajectory_length == 0:
+            trajectory_length = len(self.workload['jobs']) - trajectory_origin
 
         print(f'Using {trajectory_length} jobs starting with #{trajectory_origin}')
         
