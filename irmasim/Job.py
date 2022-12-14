@@ -75,3 +75,6 @@ class Job:
     @classmethod
     def header(klass):
         return "id,req_time,ntasks,mem,submit_time,start_time,finish_time,execution_time,operations,mem_vol,profile,resources"
+
+    def __hash__(self):
+        return(hash(self.id))
