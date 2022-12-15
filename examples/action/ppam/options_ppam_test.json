@@ -1,0 +1,28 @@
+{
+  "seed": 0,
+  "log_level": "DEBUG",
+  "workload_file": "workload.json",
+  "platform_file": "platform.json",
+  "platform_name": "the_platform",
+  "output_dir": "results",
+  "workload_manager": {
+    "type": "Action",
+    "environment": {
+      "queue_sensitivity": 0,
+      "objective": "slowdown",
+      "num_jobs": 128,
+      "num_nodes": 20,
+      "obs_features": 7
+    },
+    "agent": {
+      "name": "ActionActorCritic",
+      "gamma": 0.99,
+      "lr_pi": 0.0003,
+      "lr_v": 0.001,
+      "phase": "test"
+    }
+  },
+  "trajectory_length": 1000,
+  "trajectory_origin": "random",
+  "max_procs": 64
+}
