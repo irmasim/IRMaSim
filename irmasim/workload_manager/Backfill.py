@@ -20,7 +20,7 @@ class Backfill(WorkloadManager):
 
         self.pending_jobs = []
         self.running_jobs = []
-
+        
         mod = importlib.import_module("irmasim.platform.models." + options["platform_model_name"] + ".Node")
         klass = getattr(mod, 'Node')
 
@@ -45,8 +45,8 @@ class Backfill(WorkloadManager):
         self.busy_nodes = []
         print(f"Node selection: {self.node_scheduler}")
 
-        print(f"Nodo:", [node.id for node in self.idle_nodes], "Power:",
-        [(node.children[0].children[0].static_power + node.children[0].children[0].dynamic_power) * node.count_cores() for node in self.idle_nodes])
+        #print(f"Nodo:", [node.id for node in self.idle_nodes], "Power:",
+        #[(node.children[0].children[0].static_power + node.children[0].children[0].dynamic_power) * node.count_cores() for node in self.idle_nodes])
 
         
     def on_job_submission(self, jobs: list):
@@ -64,38 +64,38 @@ class Backfill(WorkloadManager):
 
     def schedule_next_job(self):
         if len(self.pending_jobs) != 0 and len(self.idle_nodes):
-            idle_nodes_ordered = []
+            idle_nodes_ordered = [] 
             if self.node_scheduler != 'random':
                 self.idle_nodes.sort(key=self.node_sort_key)
                 idle_nodes_ordered = self.idle_nodes
                 #print(f"Nodo:", [node.id for node in idle_nodes_ordered])
             else: 
-                idle_nodes_ordered =  rand.shuffle(self.idle_nodes)
+                idle_nodes_ordered =  rand.shuffle(self.idle_nodes) 
 
             for node in self.idle_nodes:
                 if node.count_idle_cores() >= len(self.pending_jobs[0].tasks):
-                    next_job = self.pending_jobs.pop(0)
+                    next_job = self.pending_jobs.pop(0) 
                     #print(f"job: ", next_job.name, "future jobs:", len(self.pending_jobs))
                     #print(f"ENTRA PRIMERO", next_job.name)
                     self.allocate(node, next_job) # Como se que el job entra, la funcion alocata cada task
-                    print(f"Nodo:",node.id ,"ENTRA PRIMERO: ", next_job.name, "free:", node.count_idle_cores())
+                    #print(f"Nodo:",node.id ,"ENTRA PRIMERO: ", next_job.name, "free:", node.count_idle_cores())
                     return True #primer trabajo planificado perfect
             
             #Ningun nodo tiene espacio para pending_jobs[0]
-            for node in self.idle_nodes.copy(): #La lista se modificara en el bucle
-                if node.count_cores() >= len(self.pending_jobs[0].tasks): #EL nodo tiene suficientes cores para el proceso
-                    next_job_start_time = self.get_next_job_start_point (node)
-                    for job in self.pending_jobs.copy()[1:]: #Quitando el job que bloquea (el primero)
+            #Quitando el job que bloquea (el primero)
+            for job in self.pending_jobs.copy()[1:]:
+             #La lista se modificara en el bucle
+                     for node in self.idle_nodes.copy():
+                        next_job_start_time = self.get_next_job_start_point (node) 
+                        #print(len(job.tasks) <= node.count_idle_cores(), (self.simulator.simulation_time + job.req_time) <= next_job_start_time)
                         if len(job.tasks) <= node.count_idle_cores() and (self.simulator.simulation_time + job.req_time) <= next_job_start_time: #Entra en backfill gap
                             # print(f"BACKFILL: ", job.id)
                             backfill_job = job
                             self.pending_jobs.remove(job)
                             self.allocate(node, backfill_job) # Como se que el job entra, la funcion alocata cada task y actualiza listas
-                            print(f"Nodo:",node.id ,"BACKFILL: ", job.name,"free:", node.count_idle_cores())
+                            #print(f"Nodo:",node.id ,"BACKFILL: ", job.name,"free:", node.count_idle_cores())
                             if node.count_idle_cores() == 0:
                                 break #Si el nodo esta ocupado, Rompemos for de los jobs, y intentamos backfill en el resto de nodos
-                else:
-                    continue
 
             return False
         else:
@@ -131,7 +131,7 @@ class Backfill(WorkloadManager):
         running_jobs_eet = sorted(set(node.running_jobs()), key=lambda j: (j.start_time + j.req_time)) #ASC De menor a meyor
         #print([j.name for j in running_jobs_eet])
         idle_cores_after_end_job=node.count_idle_cores()
-        next_job_start_point = self.simulator.simulation_time #Para evitar fallos si no se puede planificar time = now para evitar que haga backfill
+        next_job_start_point = running_jobs_eet[-1].start_time + running_jobs_eet[-1].req_time #Para evitar fallos si no se puede planificar time = now para evitar que haga backfill
         for running_job in running_jobs_eet: #Busco el start time del next job que es = estimated end time de algun running job
             #print(f"idle_cores = ", idle_cores_after_end_job)
             idle_cores_after_end_job += len(running_job.tasks)
