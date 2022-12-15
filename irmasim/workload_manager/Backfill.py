@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 from irmasim.Options import Options
 from sortedcontainers import SortedList
 import importlib
+import random as rand
 
 if TYPE_CHECKING:
     from irmasim.Simulator import Simulator
@@ -23,10 +24,29 @@ class Backfill(WorkloadManager):
         mod = importlib.import_module("irmasim.platform.models." + options["platform_model_name"] + ".Node")
         klass = getattr(mod, 'Node')
 
-        self.idle_nodes = SortedList(key=lambda node: node.count_cores())
-        self.idle_nodes.update(self.simulator.get_resources(klass))
-        self.busy_nodes = []
+        if not "resource_selection" in options["workload_manager"]:
+            self.node_scheduler = 'first'
+        else:
+            self.node_scheduler = options["workload_manager"]["resource_selection"]
 
+        node_selections = {
+            'random': lambda node: node.id,
+            'first': lambda node: node.id,
+            'high_gflops': lambda node: - node.children[0].mops_per_node, #Supongo todos processor iguales
+            'high_cores': lambda node: - node.count_cores(),
+            'high_mem': lambda node: - node.current_memory,
+            'high_mem_bw': lambda node: node.children[0].requested_memory_bandwidth, #SUpongo todos processor iguales
+            'low_power': lambda node: (node.children[0].children[0].static_power + node.children[0].children[0].dynamic_power) * node.count_cores() #Supongo todos cores iguales
+        }
+
+        self.node_sort_key = node_selections[self.node_scheduler]
+        self.idle_nodes = []
+        self.idle_nodes.extend(self.simulator.get_resources(klass))
+        self.busy_nodes = []
+        print(f"Node selection: {self.node_scheduler}")
+
+        print(f"Nodo:", [node.id for node in self.idle_nodes], "Power:",
+        [(node.children[0].children[0].static_power + node.children[0].children[0].dynamic_power) * node.count_cores() for node in self.idle_nodes])
 
         
     def on_job_submission(self, jobs: list):
@@ -44,12 +64,21 @@ class Backfill(WorkloadManager):
 
     def schedule_next_job(self):
         if len(self.pending_jobs) != 0 and len(self.idle_nodes):
+            idle_nodes_ordered = []
+            if self.node_scheduler != 'random':
+                self.idle_nodes.sort(key=self.node_sort_key)
+                idle_nodes_ordered = self.idle_nodes
+                #print(f"Nodo:", [node.id for node in idle_nodes_ordered])
+            else: 
+                idle_nodes_ordered =  rand.shuffle(self.idle_nodes)
 
             for node in self.idle_nodes:
                 if node.count_idle_cores() >= len(self.pending_jobs[0].tasks):
                     next_job = self.pending_jobs.pop(0)
-                    # print(f"ENTRA PRIMERO: ", next_job.name)
+                    #print(f"job: ", next_job.name, "future jobs:", len(self.pending_jobs))
+                    #print(f"ENTRA PRIMERO", next_job.name)
                     self.allocate(node, next_job) # Como se que el job entra, la funcion alocata cada task
+                    print(f"Nodo:",node.id ,"ENTRA PRIMERO: ", next_job.name, "free:", node.count_idle_cores())
                     return True #primer trabajo planificado perfect
             
             #Ningun nodo tiene espacio para pending_jobs[0]
@@ -62,6 +91,7 @@ class Backfill(WorkloadManager):
                             backfill_job = job
                             self.pending_jobs.remove(job)
                             self.allocate(node, backfill_job) # Como se que el job entra, la funcion alocata cada task y actualiza listas
+                            print(f"Nodo:",node.id ,"BACKFILL: ", job.name,"free:", node.count_idle_cores())
                             if node.count_idle_cores() == 0:
                                 break #Si el nodo esta ocupado, Rompemos for de los jobs, y intentamos backfill en el resto de nodos
                 else:
@@ -87,6 +117,7 @@ class Backfill(WorkloadManager):
             if node.count_idle_cores() == 0:
                 self.idle_nodes.remove(node)
                 self.busy_nodes.append(node)
+                #print("Nodo saturado")
 
     def deallocate(self, task: Task):
         core = self.simulator.get_resource(list(task.resource))
@@ -94,7 +125,7 @@ class Backfill(WorkloadManager):
         #print(f"node : ", node)
         if node in self.busy_nodes:
             self.busy_nodes.remove(node)
-            self.idle_nodes.add(node)
+            self.idle_nodes.append(node)
     
     def get_next_job_start_point (self, node: BasicNode):
         running_jobs_eet = sorted(set(node.running_jobs()), key=lambda j: (j.start_time + j.req_time)) #ASC De menor a meyor
