@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 
 import re
 import sys
@@ -33,7 +34,7 @@ def parse_workload_data(self, file_name : str, freq : float):
 
 
 if len(sys.argv) < 3:
-    print ("ERROR INVALID FORMAT. FORMAT -> $python3 Swf2irmasim_workload.py file_name processor_freq")
+    print ("Usage: \n\n   swf2irmasim_workload.py <swf-filename> <processor-frequensy>\n")
 else :
     text = parse_workload_data(None, file_name=str(sys.argv[1]), freq=float(sys.argv[2])) 
 
