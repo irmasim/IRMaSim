@@ -32,11 +32,11 @@ class Backfill(WorkloadManager):
         node_selections = {
             'random': lambda node: node.id,
             'first': lambda node: node.id,
-            'high_gflops': lambda node: - node.children[0].mops_per_node, #Supongo todos processor iguales
+            'high_gflops': lambda node: - node.children[0].mops_per_node,
             'high_cores': lambda node: - node.count_cores(),
             'high_mem': lambda node: - node.current_memory,
-            'high_mem_bw': lambda node: node.children[0].requested_memory_bandwidth, #SUpongo todos processor iguales
-            'low_power': lambda node: (node.children[0].children[0].static_power + node.children[0].children[0].dynamic_power) * node.count_cores() #Supongo todos cores iguales
+            'high_mem_bw': lambda node: node.children[0].requested_memory_bandwidth,
+            'low_power': lambda node: (node.children[0].children[0].static_power + node.children[0].children[0].dynamic_power) * node.count_cores()
         }
 
         self.node_sort_key = node_selections[self.node_scheduler]
@@ -64,7 +64,7 @@ class Backfill(WorkloadManager):
 
     def schedule_next_job(self):
         if len(self.pending_jobs) != 0 and len(self.idle_nodes):
-            idle_nodes_ordered = [] 
+            idle_nodes_ordered = []
             if self.node_scheduler != 'random':
                 self.idle_nodes.sort(key=self.node_sort_key)
                 idle_nodes_ordered = self.idle_nodes
@@ -74,11 +74,11 @@ class Backfill(WorkloadManager):
 
             for node in self.idle_nodes:
                 if node.count_idle_cores() >= len(self.pending_jobs[0].tasks):
-                    next_job = self.pending_jobs.pop(0) 
+                    next_job = self.pending_jobs.pop(0)
                     #print(f"job: ", next_job.name, "future jobs:", len(self.pending_jobs))
                     #print(f"ENTRA PRIMERO", next_job.name)
                     self.allocate(node, next_job) # Como se que el job entra, la funcion alocata cada task
-                    #print(f"Nodo:",node.id ,"ENTRA PRIMERO: ", next_job.name, "free:", node.count_idle_cores())
+                    print(f"Nodo:",node.id ,"ENTRA PRIMERO: ", next_job.name, "free:", node.count_idle_cores())
                     return True #primer trabajo planificado perfect
             
             #Ningun nodo tiene espacio para pending_jobs[0]
@@ -86,14 +86,12 @@ class Backfill(WorkloadManager):
             for job in self.pending_jobs.copy()[1:]:
              #La lista se modificara en el bucle
                      for node in self.idle_nodes.copy():
-                        next_job_start_time = self.get_next_job_start_point (node) 
-                        #print(len(job.tasks) <= node.count_idle_cores(), (self.simulator.simulation_time + job.req_time) <= next_job_start_time)
-                        if len(job.tasks) <= node.count_idle_cores() and (self.simulator.simulation_time + job.req_time) <= next_job_start_time: #Entra en backfill gap
+                        if self.check_backfill(node=node, job=job):
                             # print(f"BACKFILL: ", job.id)
                             backfill_job = job
                             self.pending_jobs.remove(job)
-                            self.allocate(node, backfill_job) # Como se que el job entra, la funcion alocata cada task y actualiza listas
-                            #print(f"Nodo:",node.id ,"BACKFILL: ", job.name,"free:", node.count_idle_cores())
+                            self.allocate(node, backfill_job) #Como se que el job entra, la funcion alocata cada task y actualiza listas
+                            print(f"Nodo:",node.id ,"BACKFILL: ", job.name,"free:", node.count_idle_cores())
                             if node.count_idle_cores() == 0:
                                 break #Si el nodo esta ocupado, Rompemos for de los jobs, y intentamos backfill en el resto de nodos
 
@@ -126,18 +124,38 @@ class Backfill(WorkloadManager):
         if node in self.busy_nodes:
             self.busy_nodes.remove(node)
             self.idle_nodes.append(node)
-    
-    def get_next_job_start_point (self, node: BasicNode):
+
+    def shadow_time_and_extra_nodes (self, node: BasicNode):
         running_jobs_eet = sorted(set(node.running_jobs()), key=lambda j: (j.start_time + j.req_time)) #ASC De menor a meyor
         #print([j.name for j in running_jobs_eet])
         idle_cores_after_end_job=node.count_idle_cores()
-        next_job_start_point = running_jobs_eet[-1].start_time + running_jobs_eet[-1].req_time #Para evitar fallos si no se puede planificar time = now para evitar que haga backfill
-        for running_job in running_jobs_eet: #Busco el start time del next job que es = estimated end time de algun running job
+        #Si el nodo no tiene suficientes cores para ejecutrar el bloqueante 
+        # se pone como start point cuando finaliza el ultimo job en lista eet
+        blocking_job_start_point = running_jobs_eet[-1].start_time + running_jobs_eet[-1].req_time 
+        extra_nodes = 0
+        for i in range(len(running_jobs_eet)): #Busco el start time del next job que es = estimated end time de algun running job
             #print(f"idle_cores = ", idle_cores_after_end_job)
-            idle_cores_after_end_job += len(running_job.tasks)
+            idle_cores_after_end_job += len(running_jobs_eet[i].tasks)
             if idle_cores_after_end_job >= len(self.pending_jobs[0].tasks):
                 #print(f"limmit job: ", running_job.name)
-                next_job_start_point = running_job.start_time + running_job.req_time
+                blocking_job_start_point = running_jobs_eet[i].start_time + running_jobs_eet[i].req_time
                 break
-        return next_job_start_point
 
+        extra_nodes = node.count_cores() -  len(self.pending_jobs[0].tasks)
+        for job in running_jobs_eet.copy()[i+1:]: 
+            extra_nodes -= len(job.tasks)
+
+
+        return blocking_job_start_point, extra_nodes
+
+    def check_backfill(self, node: BasicNode, job: Job):
+
+        #extra_nodes = Nodes that will not be used by the blocking job and are not used
+        shadow_time , extra_nodes = self.shadow_time_and_extra_nodes(node)
+
+        if len(job.tasks) <= extra_nodes and len(job.tasks) <= node.count_idle_cores():
+            return True
+        elif len(job.tasks) <= node.count_idle_cores() and (self.simulator.simulation_time + job.req_time) <= shadow_time:
+            return True
+
+        return False
