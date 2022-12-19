@@ -1,7 +1,4 @@
-# Python program to read
-# json file
-  
-  
+#!/usr/bin/env python3
 import json
   
 # Opening JSON file
