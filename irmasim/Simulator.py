@@ -219,6 +219,10 @@ class Simulator:
                 job['ntasks'] = job['res']
                 job['ntasks_per_node'] = job['res']
                 del job['res'] 
+            if 'nodes' not in job:
+                job['nodes'] = 0
+            if 'ntasks_per_node' not in job:
+                job['ntasks_per_node'] = 0
             if 'profile' in job:
                 job_queue.add_job(
                 Job.from_profile(job_id, job['id'], job['subtime']-first_job_subtime + simulation_time, job['nodes'], job['ntasks'], job['ntasks_per_node'],
