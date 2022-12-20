@@ -194,13 +194,14 @@ class Simulator:
             trajectory_length = int(options['trajectory_length'])
 
         if options['trajectory_origin'] == 'random':
-            if trajectory_length != 0:
-                trajectory_origin = rand.randint(0, len(self.workload['jobs'])-trajectory_length)
-            else:
-                trajectory_origin = rand.randint(0, len(self.workload['jobs'])-1)
-                trajectory_length = len(self.workload['jobs']) - trajectory_origin
+            l=trajectory_length
+            if l == 0:
+                l = 1
+            trajectory_origin = rand.randint(0, len(self.workload['jobs'])-l)
         else:
             trajectory_origin = int(options['trajectory_origin'])
+        if trajectory_length == 0:
+            trajectory_length = len(self.workload['jobs']) - trajectory_origin
 
         print(f'Using {trajectory_length} jobs starting with #{trajectory_origin}')
         
