@@ -21,3 +21,11 @@ class Node (BasicNode):
     def reap(self, task: Task, resource_id: list):
         super().reap(task, resource_id)
         self.current_memory -= task.job.memory
+
+    @classmethod
+    def header(klass):
+        return "id"
+
+    def log_state(self):
+        return self.id
+

@@ -129,11 +129,13 @@ def launch() -> None:
     start_logging()
     simulator_handler = logging.getLogger("simulator").handlers[0]
     job_handler = logging.getLogger("jobs").handlers[0]
+    resource_handler = logging.getLogger("resources").handlers[0]
     for run in range(args.nbruns):
         simulator = Simulator()
         print(f'Starting simulation run: {run}')
         simulator_handler.setFormatter(logging.Formatter(f'{run},%(message)s'))
         job_handler.setFormatter(logging.Formatter(f'{run},%(message)s'))
+        resource_handler.setFormatter(logging.Formatter(f'{run},%(message)s'))
         simulator.start_simulation()
         print_statistics("Simulation time:", simulator.simulation_time_statistics())
         print_statistics("Energy consumption:", simulator.energy_consumption_statistics())
@@ -182,3 +184,10 @@ def start_logging():
     job_logger.addHandler(FileOutputHandler)
     job_logger.info(Job.header())
     job_logger.propagate = False
+
+    resource_logger = logging.getLogger("resources")
+    FileOutputHandler = logging.FileHandler(options['output_dir']+"/"+"resources.log", mode="w")
+    FileOutputHandler.setFormatter(logging.Formatter(f'run,%(message)s'))
+    resource_logger.setLevel(logging.INFO)
+    resource_logger.addHandler(FileOutputHandler)
+    resource_logger.propagate = False

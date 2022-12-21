@@ -32,3 +32,9 @@ class TaskRunner(Resource, EnergyConsumer):
     def get_joules(self, delta_time: float):
         return sum([child.get_joules(delta_time) for child in self.children])
 
+    @classmethod
+    def header(klass):
+        return "Logging of this kind of resource has not been implemented"
+
+    def log_state(self):
+        return "Unimplemented"
