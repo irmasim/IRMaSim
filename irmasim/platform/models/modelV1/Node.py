@@ -1,4 +1,5 @@
 from irmasim.platform.BasicNode import BasicNode
+from irmasim.platform.BasicProcessor import BasicProcessor
 from irmasim.Task import Task
 
 
@@ -7,6 +8,11 @@ class Node (BasicNode):
     def __init__(self, id: list, config: dict):
         super(Node, self).__init__(id=id, config=config)
         self.current_memory = 0
+        self.cores = 0
+
+    def add_child(self, child: BasicProcessor):
+        super().add_child(child)
+        self.cores += len([ 1 for core in child.children ])
 
     def count_idle_cores(self):
         count = 0
@@ -24,8 +30,8 @@ class Node (BasicNode):
 
     @classmethod
     def header(klass):
-        return "id"
+        return "id,cores,busy_cores"
 
     def log_state(self):
-        return self.id
+        return ",".join(map(lambda x: str(x), [self.id, self.cores, self.cores-self.count_idle_cores()]))
 
