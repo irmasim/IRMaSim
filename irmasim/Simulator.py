@@ -208,7 +208,7 @@ class Simulator:
         job_queue = JobQueue()
         job_id = trajectory_origin
         first_job_subtime = self.workload['jobs'][trajectory_origin]['subtime']
-        max_nodes = float('inf') if options['workload_manager']['type'] == 'Action' else int(options['max_procs'])
+        max_nodes = int(options['max_procs']) if options['workload_manager']['type'] == 'Action' else float('inf')
         for i in range(trajectory_length):
             job = self.workload['jobs'][trajectory_origin+i]
             if 'id' not in job:
