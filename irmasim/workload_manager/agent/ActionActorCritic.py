@@ -185,26 +185,42 @@ class PPOBuffer:
                     adv=self.adv_buf, logp=self.logp_buf)
         return {k: torch.as_tensor(v, dtype=torch.float32) for k, v in data.items()}
 
-        actual_adv_buf = np.array(self.adv_buf, dtype=np.float32)
-        actual_adv_buf = actual_adv_buf[:actual_size]
-        adv_mean = np.mean(actual_adv_buf)
-        adv_sum_sq = np.sum((actual_adv_buf - adv_mean) ** 2)
-        adv_std = np.sqrt(adv_sum_sq / len(actual_adv_buf)) + 1e-5
-        actual_adv_buf = (actual_adv_buf - adv_mean) / adv_std
 
-        return actual_adv_buf, self.ret_buf[:actual_size], self.logp_buf[:actual_size], self.val_buf[:actual_size]
+class PPOTrainer:
 
+    def __init__(self, agent: ActionActorCritic, optim_pi, optim_v, train_pi_iters=80, train_v_iters=80, target_kl=0.01):
+        self.agent = agent
+        self.optim_pi = optim_pi
+        self.optim_v = optim_v
+        self.train_pi_iters = train_pi_iters
+        self.train_v_iters = train_v_iters
+        self.target_kl = target_kl
 
-class MultiLossWrapper:
-    def __init__(self, *losses):
-        self.losses = [*losses]
+    def update(self) -> np.ndarray:
+        data = self.agent.buffer.get()
+        losses = np.zeros((self.train_pi_iters, 2), dtype=np.float32)
 
-    def backward(self):
-        for loss in self.losses:
-            loss.backward()
+        # Train policy with multiple steps of gradient descent
+        for i in range(self.train_pi_iters):
+            self.optim_pi.zero_grad()
+            loss_pi, kl = self.agent.actor.loss(data)
+            losses[i][0] = loss_pi.item()
+            if kl > 1.5 * self.target_kl:
+                print('Early stopping at step %d due to reaching max kl.' % i)
+                break
+            loss_pi.backward()
+            self.optim_pi.step()
 
-    def __repr__(self):
-        return ','.join([str(l.item()) for l in self.losses])
+        # Value function learning
+        for i in range(self.train_v_iters):
+            self.optim_v.zero_grad()
+            loss_v = self.agent.critic.loss(data)
+            losses[i][1] = loss_v.item()
+            loss_v.backward()
+            self.optim_v.step()
+
+        return np.mean(losses, axis=0)
+
 
 # TODO Remove
 if __name__ == "__main__":

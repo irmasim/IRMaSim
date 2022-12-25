@@ -8,6 +8,7 @@ from irmasim.workload_manager.ActionEnvironment import ActionEnvironment
 from irmasim.workload_manager.Policy import Policy
 from irmasim.workload_manager.WorkloadManager import WorkloadManager
 from irmasim.workload_manager.agent.ActionActorCritic import ActionActorCritic
+from irmasim.workload_manager.agent.ActionActorCritic import PPOTrainer
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -35,7 +36,8 @@ class Action(Policy):
         self.last_time = 0
 
         self.environment = ActionEnvironment(self, simulator)
-        self.agent, self.optimizer = self.create_agent()
+        self.agent, self.optimizers = self.create_agent()
+        self.ppo_trainer = PPOTrainer(self.agent, self.optimizers.optimizer_pi, self.optimizers.optimizer_v)
 
     def create_agent(self):
         agent_options = Options().get()["workload_manager"]["agent"]
@@ -82,6 +84,22 @@ class Action(Policy):
         logging.getLogger('irmasim').debug('Ending trajectory')
         self.agent.finish_trajectory(self.environment.reward())
 
+    def on_end_simulation(self):
+        options = Options().get()
+        if options['workload_manager']['agent']['phase'] == 'train':
+            losses = self.ppo_trainer.update()
+            print(losses)
+            with open('{0}/losses.log'.format(options['output_dir']), 'a+') as out_f:
+                out_f.write(f'{losses[0]},{losses[1]}\n')
+            if 'output_model' in options['workload_manager']['agent']:
+                print(f"Writing model to {options['workload_manager']['agent']['output_model']}")
+                torch.save({
+                    'model_state_dict': self.agent.state_dict(),
+                    'optimizer_state_dict': self.optimizers.state_dict()
+                }, options['workload_manager']['agent']['output_model'])
+        with open('{0}/rewards.log'.format(options['output_dir']), 'a+') as out_f:
+            out_f.write(f'{self.agent.total_rewards}\n')
+
 
 class MultiOptimWrapper:
 
@@ -98,11 +116,3 @@ class MultiOptimWrapper:
     def load_state_dict(self, state_dict: dict):
         self.optimizer_pi.load_state_dict(state_dict['pi'])
         self.optimizer_v.load_state_dict(state_dict['v'])
-
-    def zero_grad(self):
-        self.optimizer_pi.zero_grad()
-        self.optimizer_v.zero_grad()
-
-    def step(self):
-        self.optimizer_pi.step()
-        self.optimizer_v.step()
