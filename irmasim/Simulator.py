@@ -253,11 +253,9 @@ class Simulator:
         sld_list = []
         for job in self.job_queue.finished_jobs:
             execution_time = job.finish_time - job.start_time
-            waiting_time = job.start_time - job.submit_time
-            total_job_time = execution_time + waiting_time
             if execution_time == 0:
                 print(f"warning: {job.id} has 0 execution time")
-            sld_list.append(float(total_job_time/execution_time))
+            sld_list.append(float(job.finish_time - job.submit_time) / job.req_time)
 
         return self.compute_statistics(sld_list)
 
