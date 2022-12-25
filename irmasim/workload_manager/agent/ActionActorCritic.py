@@ -5,6 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions import Categorical
 
+from irmasim.Options import Options
 from irmasim.workload_manager.agent.Agent import Agent
 
 
@@ -20,16 +21,12 @@ def discount_cumsum(x, discount):
 
 class ActionActorCritic(Agent):
 
-    def __init__(self, actions_size: int, observation_size: int) -> None:
+    def __init__(self, actions_size: int, observation_size: tuple) -> None:
         super(ActionActorCritic, self).__init__()
-        self.actions_size = actions_size
-        self.observation_size = observation_size
-        self.actor = ActionActor(actions_size, observation_size)
-        self.critic = ActionCritic(actions_size, observation_size)
-        self.buffer = PPOBuffer(100)
-        self.last_logp = 0
-        self.last_v = 0
-        self.last_rew = 0
+        self.actor = ActionActor(actions_size, observation_size[1])
+        self.critic = ActionCritic(actions_size, observation_size[1])
+        options = Options().get()
+        self.buffer = PPOBuffer(observation_size, (), options['trajectory_length'])
 
     def decide(self, observation: torch.Tensor) -> tuple:
         with torch.no_grad():
