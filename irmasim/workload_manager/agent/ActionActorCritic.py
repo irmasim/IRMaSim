@@ -54,9 +54,6 @@ class ActionActorCritic(Agent):
         self.buffer.store(self.last_rew, self.last_v, self.last_logp)
 
     def finish_trajectory(self, rew: float):
-        self.buffer.drop_last_values()
-        self.last_rew = 0
-        self.store_values()
         self.buffer.finish_path(rew)
 
     def state_dict(self):
