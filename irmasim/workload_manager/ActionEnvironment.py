@@ -49,8 +49,8 @@ class ActionEnvironment(Environment):
         self.reward = objective_to_reward[self.env_options['objective']]
 
     @property
-    def observation_size(self):
-        return self.observation_space.shape[1]
+    def observation_size(self) -> tuple:
+        return self.observation_space.shape
 
     def get_action_pair(self, action: int):
         job = action // self.NUM_NODES
