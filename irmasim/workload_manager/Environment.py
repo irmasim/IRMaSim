@@ -260,13 +260,13 @@ Attributes:
         return self.energy_consumption_reward() * self.makespan_reward()
 
     def slowdown_reward(self) -> float:
-        return -self.simulator.slowdown_statistics()["total"]
+        return -self.simulator.slowdown_statistics()["avg"]
 
     def bounded_slowdown_reward(self) -> float:
-        return -self.simulator.bounded_slowdown_statistics()["total"]
+        return -self.simulator.bounded_slowdown_statistics()["avg"]
 
     def waiting_time_reward(self) -> float:
-        return -self.simulator.waiting_time_statistics()["total"]
+        return -self.simulator.waiting_time_statistics()["avg"]
         
 
     def observation_action(self):
