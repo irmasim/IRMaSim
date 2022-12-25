@@ -60,7 +60,7 @@ class Action(Policy):
             observation = self.agent.observe(self.environment)
             action = self.agent.decide(observation)
             self.apply_action(action)
-            self.agent.fixed_reward(0)
+            self.agent.store_values(observation, action, 0, v, logp)
 
     def _is_schedulable(self, job):
         return job.ntasks <= max([node.count_idle_cores() for node in self.resources])

@@ -43,12 +43,8 @@ class ActionActorCritic(Agent):
         value = self.critic.forward(observation)
         return logp_all, out, value
 
-    def loss(self):
-        adv_ph, ret_ph, logp_old_ph, v_ph = map(lambda n: torch.tensor(n, requires_grad=True), self.buffer.get())
-        policy_loss = self.actor.loss(adv_ph, logp_old_ph)
-        value_loss = self.critic.loss(ret_ph, v_ph)
-        return MultiLossWrapper(policy_loss, value_loss)
-        #return policy_loss.sum() + value_loss.sum()
+    def store_values(self, obs, act, rew, val, logp):
+        self.buffer.store(obs, act, rew, val, logp)
 
     def fixed_reward(self, rew: float):
         self.last_rew = rew
