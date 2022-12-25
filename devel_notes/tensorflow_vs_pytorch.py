@@ -221,7 +221,7 @@ class ActionCritic(nn.Module):
         return self.critic_output(out_1_3)
 
     def loss(self, ret_ph, v) -> torch.Tensor:
-        v_loss = torch.mean((torch.Tensor(ret_ph) - torch.Tensor(v)) ** 2)
+        v_loss = torch.mean((torch.tensor(ret_ph) - torch.tensor(v)) ** 2)
         return v_loss
 
 
