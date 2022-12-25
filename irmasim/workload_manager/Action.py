@@ -88,7 +88,6 @@ class Action(Policy):
         options = Options().get()
         if options['workload_manager']['agent']['phase'] == 'train':
             losses = self.ppo_trainer.update()
-            print(losses)
             with open('{0}/losses.log'.format(options['output_dir']), 'a+') as out_f:
                 out_f.write(f'{losses[0]},{losses[1]}\n')
             if 'output_model' in options['workload_manager']['agent']:
