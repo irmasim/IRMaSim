@@ -74,28 +74,34 @@ class ActionActor(nn.Module):
         self.actor_hidden_1 = nn.Linear(16, 8)
         self.actor_output = nn.Linear(8, 1)
 
-    def forward(self, observation: torch.Tensor) -> tuple:
+    def forward(self, observation: torch.Tensor, act=None) -> tuple:
         mask = torch.where(observation.sum(dim=-1) != 0.0, 1.0, 0.0)
-        return self.forward_action(observation, mask)
+        pi = self.forward_action(observation, mask)
+        logp_a = pi.log_prob(act.long()) if act is not None else None
+        return pi, logp_a
 
-    def forward_action(self, observation: torch.Tensor, mask: torch.Tensor) -> tuple:
+    def forward_action(self, observation: torch.Tensor, mask: torch.Tensor) -> Categorical:
         out_0 = F.leaky_relu(self.input(observation))
         out_1 = F.leaky_relu(self.actor_hidden_0(out_0))
         out_2 = F.leaky_relu(self.actor_hidden_1(out_1))
         out_3 = torch.squeeze(self.actor_output(out_2), dim=-1)
         out = out_3 + (mask - 1) * 1e6
-        logp_all = F.log_softmax(out, dim=1)
-        return logp_all, out
-        # logp = torch.sum(F.one_hot(a) * logp_all, dim=1)
-        # logp_pi = torch.sum(F.one_hot(pi) * logp_all, dim=1)
-        # return torch.squeeze(out)  # Col of scores to row
+        return Categorical(logits=out)
 
-    def loss(self, adv_ph, logp_old_ph) -> torch.Tensor:
-        # ratio = torch.exp(logp - logp_old_ph)
-        min_adv = torch.where(adv_ph > 0, (1 + self.clip_ratio) * adv_ph, (1 - self.clip_ratio) * adv_ph)
-        # pi_loss = torch.mean(torch.minimum(ratio * adv_ph, min_adv))
-        pi_loss = torch.mean(min_adv)
-        return pi_loss
+    def loss(self, data: dict) -> tuple:
+        obs, act, adv, logp_old = data['obs'], data['act'], data['adv'], data['logp']
+
+        # Policy loss
+        _, logp = self.forward(obs, act)
+        ratio = torch.exp(logp - logp_old)
+        min_adv = torch.clamp(ratio, 1 - self.clip_ratio, 1 + self.clip_ratio) * adv
+        # min_adv = torch.where(adv > 0, 1 + self.clip_ratio, 1 - self.clip_ratio) * adv
+        loss_pi = -torch.mean(torch.minimum(ratio * adv, min_adv))
+
+        # Useful extra info
+        approx_kl = (logp_old - logp).mean().item()
+
+        return loss_pi, approx_kl
 
 
 class ActionCritic(nn.Module):
