@@ -52,7 +52,7 @@ class ActionEnvironment(Environment):
     def observation_size(self) -> tuple:
         return self.observation_space.shape
 
-    def get_action_pair(self, action: int):
+    def get_action_pair(self, action: int) -> tuple:
         job = action // self.NUM_NODES
         node = action % self.NUM_NODES
         return job, node
