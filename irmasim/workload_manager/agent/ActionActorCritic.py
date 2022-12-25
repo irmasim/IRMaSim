@@ -46,12 +46,9 @@ class ActionActorCritic(Agent):
     def store_values(self, obs, act, rew, val, logp):
         self.buffer.store(obs, act, rew, val, logp)
 
-    def fixed_reward(self, rew: float):
-        self.last_rew = rew
-        self.store_values()
-
-    def store_values(self):
-        self.buffer.store(self.last_rew, self.last_v, self.last_logp)
+    @property
+    def total_rewards(self):
+        return np.sum(self.buffer.rewards)
 
     def finish_trajectory(self, rew: float):
         self.buffer.finish_path(rew)
