@@ -25,23 +25,20 @@ class ActionActorCritic(Agent):
         self.last_v = 0
         self.last_rew = 0
 
-    def decide(self, observation: np.ndarray) -> int:
-        logp_all, probs, value = self.forward(observation)
-        self.last_v = value
-        return self.get_action(probs, logp_all)
+    def decide(self, observation: torch.Tensor) -> tuple:
+        with torch.no_grad():
+            pi, v = self.forward(observation)
+            a, logp_a = self.get_action(pi)
+        return a.numpy(), v.numpy(), logp_a.numpy()
 
-    def get_action(self, probabilities: torch.Tensor, logp_all: torch.Tensor) -> int:
-        dist = Categorical(logits=probabilities)
+    def get_action(self, dist: Categorical) -> tuple:
         action = dist.sample()
-        logp_pi = torch.sum(F.one_hot(action, self.actions_size) * logp_all, dim=1)
-        self.last_logp = dist.log_prob(action)
-        return action.item()
+        return action, dist.log_prob(action)
 
-    def forward(self, observation: np.ndarray) -> tuple:
-        observation = torch.from_numpy(observation).float().unsqueeze(0)
-        logp_all, out = self.actor.forward(observation)
+    def forward(self, observation: torch.Tensor) -> tuple:
+        pi, _ = self.actor.forward(observation)
         value = self.critic.forward(observation)
-        return logp_all, out, value
+        return pi, value
 
     def store_values(self, obs, act, rew, val, logp):
         self.buffer.store(obs, act, rew, val, logp)
@@ -127,9 +124,9 @@ class ActionCritic(nn.Module):
         out_1_3 = F.leaky_relu(self.critic_hidden_1_2(out_1_2))
         return self.critic_output(out_1_3)
 
-    def loss(self, ret_ph, v) -> torch.Tensor:
-        v_loss = torch.mean((torch.Tensor(ret_ph) - torch.Tensor(v)) ** 2)
-        return v_loss
+    def loss(self, data: dict) -> torch.Tensor:
+        obs, ret = data['obs'], data['ret']
+        return ((ret - self.forward(obs)) ** 2).mean()
 
 
 class PPOBuffer:

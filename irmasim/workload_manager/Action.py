@@ -60,7 +60,7 @@ class Action(Policy):
         if self.pending_jobs and any(self._is_schedulable(job) for job in self.pending_jobs):
             self.last_time = self.simulator.simulation_time
             observation = self.agent.observe(self.environment)
-            action = self.agent.decide(observation)
+            action, v, logp = self.agent.decide(torch.as_tensor(observation, dtype=torch.float32))
             self.apply_action(action)
             self.agent.store_values(observation, action, 0, v, logp)
 
