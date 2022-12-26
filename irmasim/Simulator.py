@@ -24,6 +24,17 @@ class Simulator:
         self.energy = 0
         self.logger = logging.getLogger("simulator")
 
+        self.resource_logger = None
+        options = Options().get()
+        if 'log_resource_type' in options:
+            print(f"Logging resources of type {options['log_resource_type']}")
+            mod = importlib.import_module('irmasim.platform.models.' + options['platform_model_name'] + \
+                    '.' + options['log_resource_type'])
+            klass = getattr(mod, options['log_resource_type'])
+            self.log_resources = self.get_resources(klass)
+            self.resource_logger = logging.getLogger("resources")
+            self.resource_logger.info("time," + klass.header())
+
     def start_simulation(self) -> None:
         options = Options().get()
         nbtrajectories = int(options['nbtrajectories'])
@@ -78,7 +89,6 @@ class Simulator:
 
             if delta_time == delta_time_queue or delta_time == delta_time_platform:
                 self.workload_manager.on_end_step()
-
 
             delta_time_platform = self.platform.get_next_step()
             # TODO unify get_next_step return value
@@ -195,13 +205,14 @@ class Simulator:
             trajectory_length = int(options['trajectory_length'])
 
         if options['trajectory_origin'] == 'random':
-            if trajectory_length != 0:
-                trajectory_origin = rand.randint(0, len(self.workload['jobs'])-trajectory_length)
-            else:
-                trajectory_origin = rand.randint(0, len(self.workload['jobs'])-1)
-                trajectory_length = len(self.workload['jobs']) - trajectory_origin
+            l=trajectory_length
+            if l == 0:
+                l = 1
+            trajectory_origin = rand.randint(0, len(self.workload['jobs'])-l)
         else:
             trajectory_origin = int(options['trajectory_origin'])
+        if trajectory_length == 0:
+            trajectory_length = len(self.workload['jobs']) - trajectory_origin
 
         print(f'Using {trajectory_length} jobs starting with #{trajectory_origin}')
         
@@ -220,6 +231,10 @@ class Simulator:
                 job['ntasks'] = min(job['res'], max_nodes)
                 job['ntasks_per_node'] = min(job['res'], max_nodes)
                 del job['res'] 
+            if 'nodes' not in job:
+                job['nodes'] = 0
+            if 'ntasks_per_node' not in job:
+                job['ntasks_per_node'] = 0
             if 'profile' in job:
                 job_queue.add_job(
                 Job.from_profile(job_id, job['id'], job['subtime']-first_job_subtime + simulation_time, job['nodes'], job['ntasks'], job['ntasks_per_node'],
@@ -244,10 +259,16 @@ class Simulator:
         state = [ self.simulation_time, self.energy ]
         state.extend(self.job_queue.get_job_counts())
 
-        for stats in [ self.slowdown_statistics(), self.bounded_slowdown_statistics(), self.waiting_time_statistics() ]:
+        for stats in [ self.slowdown_statistics(),
+                       self.bounded_slowdown_statistics(),
+                       self.waiting_time_statistics() ]:
            state.extend(stats.values())
 
         self.logger.info(",".join(map(lambda x: str(x), state)))
+
+        if self.resource_logger != None:
+            for resource in self.log_resources:
+                self.resource_logger.info(str(self.simulation_time) + "," + resource.log_state())
 
     def slowdown_statistics(self) -> dict:
         sld_list = []

@@ -1,29 +1,27 @@
-
+#!/usr/bin/env python3
 import re
 import sys
-
+import argparse as ap
 
 head = '''{
-   "nb_res": 60,
-   "num_instructions": "TRUE",
    "jobs": ['''
 
 tail = '''\n   ]\n}'''
 
 
-def parse_workload_data(self, file_name : str, freq : float):
-    file = open(file_name)
-    
-    #data = [ x for x in file.readlines() if x[0] != ";"] 
-    
-    
+def parse_workload_data(args):
+    file = open(args.swf_filename)
     print(head)
     sep = ""
     for line in file:
         #print(line)
         if line[0] != ";":
             row = re.split(r'\s+',line)
-            output = f'      {{"id": "job{row[0]}", "subtime": {row[1]}, "res": {row[4]}, "req_ops": {int(int(row[3])*freq)}, "ipc": 1, "req_time": {row[3]}, "mem": 0, "mem_vol": 0 }}'       
+            if args.max_ntasks != None and int(row[4]) > args.max_ntasks:
+                row[4] = args.max_ntasks
+            output = f'      {{"id": "job{row[0]}", "subtime": {row[1]}, "ntasks": {row[4]}, ' + \
+                     f'"nodes": 1, "req_ops": {int(int(row[3])*args.freq)}, "ipc": 1, ' + \
+                     f'"req_time": {row[3]}, "mem": 0, "mem_vol": 0 }}'       
             
             print(sep + output, end="")
             sep = ",\n"
@@ -31,9 +29,17 @@ def parse_workload_data(self, file_name : str, freq : float):
     print(tail)
 
 
+def main():
+    parser = ap.ArgumentParser(description='Converts SWF traces to IRMaSim workload format')
+    parser.add_argument('swf_filename', type=str, nargs='?', help='File containing the SWF trace')
+    parser.add_argument('-f', '--freq', type=float, default=1e9, help='Frequency of the reference processor in Hz')
+    parser.add_argument('--max-ntasks', type=int, help='Number of tasks to limit the jobs to')
 
-if len(sys.argv) < 3:
-    print ("ERROR INVALID FORMAT. FORMAT -> $python3 Swf2irmasim_workload.py file_name processor_freq")
-else :
-    text = parse_workload_data(None, file_name=str(sys.argv[1]), freq=float(sys.argv[2])) 
+    args = parser.parse_args()
 
+    if args.swf_filename:
+        parse_workload_data(args) 
+
+if __name__ == "__main__":
+    # calling the main function
+    main()

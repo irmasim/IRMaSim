@@ -13,14 +13,10 @@ class Job:
         self.submit_time = submit_time
         self.start_time = math.inf
         self.finish_time = 0.0
-        if nodes <= 0:
-            raise Exception(f"Job {id} must have nodes > 0")
         self.nodes = nodes
         if ntasks <= 0:
             raise Exception(f"Job {id} must have ntasks > 0")
         self.ntasks = ntasks
-        if ntasks_per_node <= 0:
-            raise Exception(f"Job {id} must have ntasks_per_node > 0")
         self.ntasks_per_node = ntasks_per_node 
         self.ops = math.ceil(req_ops / ipc)
         self.opc = ipc
