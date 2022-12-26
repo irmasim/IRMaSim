@@ -97,8 +97,8 @@ class ActionActor(nn.Module):
         # Policy loss
         _, logp = self.forward(obs, act)
         ratio = torch.exp(logp - logp_old)
-        min_adv = torch.clamp(ratio, 1 - self.clip_ratio, 1 + self.clip_ratio) * adv
-        # min_adv = torch.where(adv > 0, 1 + self.clip_ratio, 1 - self.clip_ratio) * adv
+        # min_adv = torch.clamp(ratio, 1 - self.clip_ratio, 1 + self.clip_ratio) * adv
+        min_adv = torch.where(adv > 0, 1 + self.clip_ratio, 1 - self.clip_ratio) * adv
         loss_pi = -torch.mean(torch.minimum(ratio * adv, min_adv))
 
         # Useful extra info
