@@ -153,6 +153,7 @@ class ActionActor(nn.Module):
 
         #action = dist.sample()
         #print(action)
+        print(dist)
         print(dist.log_prob(pi))
 
         #print('-'*10)
@@ -237,10 +238,10 @@ def run_torch(obs, mask):
     pi, logpi, lopg_a, out = actor.forward(obs, mask)
     v = critic.forward(obs)
     print('a', pi)
-    print('logpi', logpi)
-    print('logpall', lopg_a)
-    print('out', out)
     print('v', v)
+    print('logpall', lopg_a)
+    print('logpi', logpi)
+    print('out', out)
 
 
 if __name__ == '__main__':
