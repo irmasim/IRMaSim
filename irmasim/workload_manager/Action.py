@@ -57,7 +57,7 @@ class Action(Policy):
         return agent, optimizers
 
     def on_end_step(self):
-        if self.pending_jobs and any(self._is_schedulable(job) for job in self.pending_jobs):
+        if self.pending_jobs and any(self._is_schedulable(job) for job in self.pending_jobs[:self.environment.NUM_JOBS]):
             self.last_time = self.simulator.simulation_time
             observation = self.agent.observe(self.environment)
             action, v, logp = self.agent.decide(torch.as_tensor(observation, dtype=torch.float32))
