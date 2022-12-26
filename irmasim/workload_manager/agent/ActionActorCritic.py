@@ -19,6 +19,9 @@ def discount_cumsum(x, discount):
     return lfilter([1], [1, float(-discount)], x[::-1], axis=0)[::-1]
 
 
+DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+
 class ActionActorCritic(Agent):
 
     def __init__(self, actions_size: int, observation_size: tuple) -> None:
@@ -30,9 +33,9 @@ class ActionActorCritic(Agent):
 
     def decide(self, observation: torch.Tensor) -> tuple:
         with torch.no_grad():
-            pi, v = self.forward(observation)
+            pi, v = self.forward(observation.to(DEVICE))
             a, logp_a = self.get_action(pi)
-        return a.numpy(), v.numpy(), logp_a.numpy()
+        return a.cpu().numpy(), v.cpu().numpy(), logp_a.cpu().numpy()
 
     def get_action(self, dist: Categorical) -> tuple:
         action = dist.sample()
@@ -69,10 +72,10 @@ class ActionActor(nn.Module):
 
     def __init__(self, actions_size: int, observation_size: int):
         super(ActionActor, self).__init__()
-        self.input = nn.Linear(observation_size, 32)
-        self.actor_hidden_0 = nn.Linear(32, 16)
-        self.actor_hidden_1 = nn.Linear(16, 8)
-        self.actor_output = nn.Linear(8, 1)
+        self.input = nn.Linear(observation_size, 32, device=DEVICE)
+        self.actor_hidden_0 = nn.Linear(32, 16, device=DEVICE)
+        self.actor_hidden_1 = nn.Linear(16, 8, device=DEVICE)
+        self.actor_output = nn.Linear(8, 1, device=DEVICE)
 
     def forward(self, observation: torch.Tensor, act=None) -> tuple:
         mask = torch.where(observation.sum(dim=-1) != 0.0, 1.0, 0.0)
@@ -107,14 +110,14 @@ class ActionActor(nn.Module):
 class ActionCritic(nn.Module):
     def __init__(self, actions_size: int, observation_size: int):
         super(ActionCritic, self).__init__()
-        self.input = nn.Linear(observation_size, 32)
-        self.critic_hidden_0_0 = nn.Linear(32, 16)
-        self.critic_hidden_0_1 = nn.Linear(16, 8)
-        self.critic_hidden_0_2 = nn.Linear(8, 1)
-        self.critic_hidden_1_0 = nn.Linear(actions_size, 64)
-        self.critic_hidden_1_1 = nn.Linear(64, 32)
-        self.critic_hidden_1_2 = nn.Linear(32, 8)
-        self.critic_output = nn.Linear(8, 1)
+        self.input = nn.Linear(observation_size, 32, device=DEVICE)
+        self.critic_hidden_0_0 = nn.Linear(32, 16, device=DEVICE)
+        self.critic_hidden_0_1 = nn.Linear(16, 8, device=DEVICE)
+        self.critic_hidden_0_2 = nn.Linear(8, 1, device=DEVICE)
+        self.critic_hidden_1_0 = nn.Linear(actions_size, 64, device=DEVICE)
+        self.critic_hidden_1_1 = nn.Linear(64, 32, device=DEVICE)
+        self.critic_hidden_1_2 = nn.Linear(32, 8, device=DEVICE)
+        self.critic_output = nn.Linear(8, 1, device=DEVICE)
 
     def forward(self, observation: torch.Tensor) -> torch.Tensor:
         out_0_0 = F.leaky_relu(self.input(observation))
@@ -183,7 +186,7 @@ class PPOBuffer:
 
         data = dict(obs=self.obs_buf, act=self.act_buf, ret=self.ret_buf,
                     adv=self.adv_buf, logp=self.logp_buf)
-        return {k: torch.as_tensor(v, dtype=torch.float32) for k, v in data.items()}
+        return {k: torch.as_tensor(v, dtype=torch.float32, device=DEVICE) for k, v in data.items()}
 
 
 class PPOTrainer:
