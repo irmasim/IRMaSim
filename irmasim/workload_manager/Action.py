@@ -83,7 +83,7 @@ class Action(Policy):
         logging.getLogger("irmasim").debug(f'Job {job_idx} was scheduled with a slowdown of {slowdown}')
 
     def on_end_trajectory(self):
-        logging.getLogger('irmasim').debug('Ending trajectory')
+        logging.getLogger('irmasim').debug(f'{self.simulator.simulation_time} - Ending trajectory')
         self.agent.finish_trajectory(self.environment.reward())
 
     def on_end_simulation(self):
