@@ -4,24 +4,24 @@ import numpy as np
 
 
 def plot_losses(exp_dir: str):
-    with open(f'../{exp_dir}/results/losses.log', 'r') as l_f:
+    with open(f'../{exp_dir}/losses.log', 'r') as l_f:
         losses_pairs = [tuple(map(float, lp.strip().split(','))) for lp in l_f.readlines()]
 
     plt.plot([l[0] for l in losses_pairs])
-    plt.savefig(f'../{exp_dir}/results/pi_loss.png')
+    plt.savefig(f'../{exp_dir}/pi_loss.png')
     plt.clf()
 
     plt.plot([l[1] for l in losses_pairs])
-    plt.savefig(f'../{exp_dir}/results/v_loss.png')
+    plt.savefig(f'../{exp_dir}/v_loss.png')
     plt.clf()
 
 
 def plot_rewards(exp_dir: str):
-    with open(f'../{exp_dir}/results/rewards.log', 'r') as r_f:
+    with open(f'../{exp_dir}/rewards.log', 'r') as r_f:
         rews_pairs = [float(r.strip()) for r in r_f.readlines()]
 
     plt.plot([r for r in rews_pairs])
-    plt.savefig(f'../{exp_dir}/results/rewards.png')
+    plt.savefig(f'../{exp_dir}/rewards.png')
     plt.clf()
 
 
