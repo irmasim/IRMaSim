@@ -224,6 +224,18 @@ class PPOTrainer:
 
 # TODO Remove
 if __name__ == "__main__":
+
+    print('-' * 30)
+    clip_ratio = 0.2
+    logp = torch.as_tensor([0.03, -0.65, 0.78, -0.32])
+    logp_old = torch.as_tensor([0.7321, -0.89, -0.123, 0.241])
+    adv = torch.as_tensor([-0.123, -0.525, -0.643, 0.523])
+    ratio = torch.exp(logp - logp_old)
+    print(torch.clamp(ratio, 1 - clip_ratio, 1 + clip_ratio) * adv)
+    print(torch.where(adv > 0, (1 + clip_ratio), (1 - clip_ratio)) * adv)
+    print('-' * 30)
+
+
     JOBS = 3
     NODES = 4
     ac = ActionActorCritic(JOBS * NODES + 4, 5)
