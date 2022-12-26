@@ -158,9 +158,6 @@ class PPOBuffer:
         self.logp_buf[self.ptr] = logp
         self.ptr += 1
 
-    def drop_last_values(self):
-        self.ptr -= 1
-
     def finish_path(self, last_val) -> None:
         path_slice = slice(self.path_start_idx, self.ptr)
         rews = np.append(self.rew_buf[path_slice], last_val)
