@@ -1,3 +1,3 @@
-mkdir -p results
-rm -f agent.model results/*
-irmasim -nr 1 -im agent.model -om agent.model options_ppam_test.json
+mkdir -p test
+irmasim -nr 50 -im agent.model --phase test options_ppam_test.json
+python ../plotter.py -d ppam/test -r

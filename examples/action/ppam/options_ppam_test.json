@@ -4,7 +4,7 @@
   "workload_file": "workload.json",
   "platform_file": "platform.json",
   "platform_name": "the_platform",
-  "output_dir": "results",
+  "output_dir": "test",
   "workload_manager": {
     "type": "Action",
     "environment": {
