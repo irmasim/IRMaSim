@@ -51,7 +51,7 @@ class ActionActorCritic(Agent):
 
     @property
     def total_rewards(self):
-        return np.sum(self.buffer.rewards)
+        return self.buffer.total_rewards
 
     def finish_trajectory(self, rew: float):
         self.buffer.finish_path(rew)
@@ -147,7 +147,7 @@ class PPOBuffer:
         self.logp_buf = np.zeros(size, dtype=np.float32)
         self.gamma, self.lam = gamma, lam
         self.ptr, self.path_start_idx, self.max_size = 0, 0, size
-        self.rewards = []
+        self.total_rewards = 0
 
     def store(self, obs, act, rew, val, logp) -> None:
         assert self.ptr < self.max_size  # buffer has to have room so you can store
@@ -162,7 +162,7 @@ class PPOBuffer:
         path_slice = slice(self.path_start_idx, self.ptr)
         rews = np.append(self.rew_buf[path_slice], last_val)
         vals = np.append(self.val_buf[path_slice], last_val)
-        self.rewards = rews
+        self.total_rewards = np.sum(rews)
 
         # GAE-Lambda advantage calculation
         deltas = rews[:-1] + self.gamma * vals[1:] - vals[:-1]
