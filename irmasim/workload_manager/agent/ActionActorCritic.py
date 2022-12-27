@@ -29,7 +29,7 @@ class ActionActorCritic(Agent):
         self.actor = ActionActor(actions_size, observation_size[1])
         self.critic = ActionCritic(actions_size, observation_size[1])
         options = Options().get()
-        self.buffer = PPOBuffer(observation_size, (), options['trajectory_length'])
+        self.buffer = PPOBuffer(observation_size, (), options['trajectory_length'] * options['nbtrajectories'])
 
     def decide(self, observation: torch.Tensor) -> tuple:
         with torch.no_grad():
