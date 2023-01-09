@@ -217,12 +217,22 @@ class Simulator:
                     raise Exception(f"A job can specify a 'res' option or ('nodes','ntasks','ntasks_per_node'). But Job {job['id']} specify both")
                 job['nodes'] = 1
                 job['ntasks'] = job['res']
-                job['ntasks_per_node'] = job['res']
                 del job['res'] 
+            if 'ntasks' not in job and 'nodes' not in job:
+                raise Exception(f"Job {job['id']} requires specifying 'nodes' or 'ntasks' at least")
+            if 'ntasks' in job and 'nodes' in job and 'ntasks_per_node' in job:
+                raise Exception(f"Job {job['id']} can not specify 'nodes' and 'ntasks' and 'ntasks_per_node' at once")
             if 'nodes' not in job:
-                job['nodes'] = 0
-            if 'ntasks_per_node' not in job:
-                job['ntasks_per_node'] = 0
+                if 'ntasks_per_node' not in job:
+                   job['ntasks_per_node'] = 1
+                job['nodes'] = math.ceil(job['ntasks'] / job['ntasks_per_node'])
+            else:
+                if 'ntasks' not in job:
+                    if 'ntasks_per_node' not in job:
+                        job['ntasks_per_node'] = 1
+                    job['ntasks'] = job['nodes'] * job['ntasks_per_node']
+                else:
+                    job['ntasks_per_node'] = math.ceil(job['ntasks']/job['nodes'])
             if 'profile' in job:
                 job_queue.add_job(
                 Job.from_profile(job_id, job['id'], job['subtime']-first_job_subtime + simulation_time, job['nodes'], job['ntasks'], job['ntasks_per_node'],
