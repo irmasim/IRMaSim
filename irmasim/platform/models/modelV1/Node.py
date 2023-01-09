@@ -8,11 +8,14 @@ class Node (BasicNode):
         super(Node, self).__init__(id=id, config=config)
         self.current_memory = 0
 
+    def cores(self):
+        return [ core for processor in self.children for core in processor.children ]
+
     def count_idle_cores(self):
-        count = 0
-        for processor in self.children:
-            count += len([ 1 for core in processor.children if core.task is None  ])
-        return count
+        return len([ 1 for core in self.cores() if core.task is None ])
+
+    def max_power_consumption(self):
+        return sum([ processor.max_power_consumption for processor in self.children ])
 
     def schedule(self, task: Task, resource_id: list):
         super().schedule(task, resource_id)
