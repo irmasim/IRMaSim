@@ -24,6 +24,17 @@ class Simulator:
         self.energy = 0
         self.logger = logging.getLogger("simulator")
 
+        self.resource_logger = None
+        options = Options().get()
+        if 'log_resource_type' in options:
+            print(f"Logging resources of type {options['log_resource_type']}")
+            mod = importlib.import_module('irmasim.platform.models.' + options['platform_model_name'] + \
+                    '.' + options['log_resource_type'])
+            klass = getattr(mod, options['log_resource_type'])
+            self.log_resources = self.get_resources(klass)
+            self.resource_logger = logging.getLogger("resources")
+            self.resource_logger.info("time," + klass.header())
+
     def start_simulation(self) -> None:
         options = Options().get()
         nbtrajectories = int(options['nbtrajectories'])
@@ -77,7 +88,6 @@ class Simulator:
 
             if delta_time == delta_time_queue or delta_time == delta_time_platform:
                 self.workload_manager.on_end_step()
-
 
             delta_time_platform = self.platform.get_next_step()
             # TODO unify get_next_step return value
@@ -257,10 +267,16 @@ class Simulator:
         state = [ self.simulation_time, self.energy ]
         state.extend(self.job_queue.get_job_counts())
 
-        for stats in [ self.slowdown_statistics(), self.bounded_slowdown_statistics(), self.waiting_time_statistics() ]:
+        for stats in [ self.slowdown_statistics(),
+                       self.bounded_slowdown_statistics(),
+                       self.waiting_time_statistics() ]:
            state.extend(stats.values())
 
         self.logger.info(",".join(map(lambda x: str(x), state)))
+
+        if self.resource_logger != None:
+            for resource in self.log_resources:
+                self.resource_logger.info(str(self.simulation_time) + "," + resource.log_state())
 
     def slowdown_statistics(self) -> dict:
         sld_list = []
