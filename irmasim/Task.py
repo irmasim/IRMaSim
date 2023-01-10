@@ -19,8 +19,7 @@ class Task:
         self.resource = resource
 
     def advance(self, delta_time: float, delta_ops: float):
-        self.ops -= delta_ops
-        self.ops = math.floor(self.ops)
+        self.ops -= math.floor(delta_ops)
         if self.ops >= 0:
             self.execution_time += delta_time
 
