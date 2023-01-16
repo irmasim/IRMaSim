@@ -18,14 +18,22 @@ def parse_workload_data(args):
             row = re.split(r'\s+',line)
             if len(row) < 4:
                continue
-            if args.max_ntasks != None and int(row[4]) > args.max_ntasks:
-                row[4] = args.max_ntasks
-            output = f'      {{"id": "job{row[0]}", "subtime": {row[1]}, "ntasks": {row[4]}, ' + \
-                     f'"nodes": 1, "req_ops": {int(int(row[3])*args.freq)}, "ipc": 1, ' + \
-                     f'"req_time": {row[3]}, "mem": 0, "mem_vol": 0 }}'       
-            
-            print(sep + output, end="")
-            sep = ",\n"
+            ntasks = int(row[4])
+            if args.max_ntasks != None and ntasks > args.max_ntasks:
+                ntasks = args.max_ntasks
+            id=1
+            while ntasks > 0:
+                if args.split_ntasks != None:
+                    n = min(ntasks, args.split_ntasks)
+                else:
+                    n = ntasks
+                ntasks -= n
+                output = f'      {{"id": "job{row[0]}.{id}", "subtime": {row[1]}, "ntasks": {n}, ' + \
+                         f'"nodes": 1, "req_ops": {int(int(row[3])*args.freq)}, "ipc": 1, ' + \
+                         f'"req_time": {row[3]}, "mem": 0, "mem_vol": 0 }}'
+                print(sep + output, end="")
+                sep = ",\n"
+                id += 1
     
     print(tail)
 
@@ -35,6 +43,7 @@ def main():
     parser.add_argument('swf_filename', help='File containing the SWF trace')
     parser.add_argument('-f', '--freq', type=float, default=1e9, help='Frequency of the reference processor in Hz')
     parser.add_argument('--max-ntasks', type=int, help='Number of tasks to limit the jobs to')
+    parser.add_argument('--split-ntasks', type=int, help='Number of tasks to limit the jobs to')
 
     args = parser.parse_args()
 
