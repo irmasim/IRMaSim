@@ -290,7 +290,7 @@ class Simulator:
     def bounded_slowdown_statistics(self) -> dict:
         bsld_list = []
         for job in self.job_queue.finished_jobs:
-            bsld_list.append( float(max(((job.finish_time - job.submit_time)/max(job.finish_time - job.start_time,10)), 1)) )
+            bsld_list.append( max(float(job.finish_time - job.submit_time)/max(job.finish_time - job.start_time,10), 1) )
 
         return self.compute_statistics(bsld_list)
     

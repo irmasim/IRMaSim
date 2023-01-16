@@ -23,9 +23,9 @@ class Heuristic(WorkloadManager):
             self.job_scheduler = options["workload_manager"]["job_selection"]
 
         if not "resource_selection" in options["workload_manager"]:
-            self.core_scheduler = 'first'
+            self.node_scheduler = 'first'
         else:
-            self.core_scheduler = options["workload_manager"]["resource_selection"]
+            self.node_scheduler = options["workload_manager"]["resource_selection"]
 
         job_selections = {
             'random': lambda job: job.id,
@@ -36,26 +36,25 @@ class Heuristic(WorkloadManager):
             'low_mem_ops': lambda job: job.memory_vol
         }
 
-        core_selections = {
-            'random': lambda core: core.parent.parent.id,
-            'first': lambda core: core.parent.parent.id,
-            'high_gflops': lambda core: - core.parent.mops_per_core,
-            'high_cores': lambda core: - len([c for c in core.parent.children \
-                                              if c.task is None]),
-            'high_mem': lambda core: - core.parent.parent.current_memory,
-            'high_mem_bw': lambda core: core.parent.requested_memory_bandwidth,
-            'low_power': lambda core: core.static_power + core.dynamic_power
+        node_selections = {
+            'random': lambda node: node.id,
+            'first': lambda node: node.id,
+            'high_gflops': lambda node: - node.children[0].mops_per_core,
+            'high_cores': lambda node: - node.count_idle_cores(),
+            'high_mem': lambda node: - node.current_memory,
+            'high_mem_bw': lambda node: node.children[0].requested_memory_bandwidth,
+            'low_power': lambda node: - node.max_power_consumption()
         }
 
         self.pending_jobs = SortedList(key=job_selections[self.job_scheduler])
         self.running_jobs = SortedList(key=job_selections[self.job_scheduler])
-        self.core_sort_key = core_selections[self.core_scheduler]
+        self.node_sort_key = node_selections[self.node_scheduler]
 
-        mod = importlib.import_module("irmasim.platform.models." + options["platform_model_name"] + ".Core")
-        klass = getattr(mod, 'Core')
-        self.idle_resources = self.simulator.get_resources(klass)
-        self.busy_resources = []
-        print(f"Job selection: {self.job_scheduler}, Core selection: {self.core_scheduler}")
+        mod = importlib.import_module("irmasim.platform.models." + options["platform_model_name"] + ".Node")
+        klass = getattr(mod, 'Node')
+        self.resources = self.simulator.get_resources(klass)
+        #print("\n".join([ f'{node.id}: {node.max_power_consumption()}' for node in self.resources]))
+        print(f"Job selection: {self.job_scheduler}, Node selection: {self.node_scheduler}")
         
 
     def on_job_submission(self, jobs: list):
@@ -65,29 +64,45 @@ class Heuristic(WorkloadManager):
 
     def on_job_completion(self, jobs: list):
         for job in jobs:
-            for task in job.tasks:
-                self.deallocate(task)
             self.running_jobs.remove(job)
         while self.schedule_next_job():
             pass
 
     def schedule_next_job(self):
-        if len(self.pending_jobs) != 0:
-            if self.job_scheduler != "random":
-                next_job = self.pending_jobs[0]
-            else: 
-                next_job = rand.choice(self.pending_jobs)
-            if len(self.idle_resources) >= len(next_job.tasks):
-                self.pending_jobs.remove(next_job)
-                for task in next_job.tasks:
-                    self.allocate(task)
-                self.simulator.schedule(next_job.tasks)
-                self.running_jobs.add(next_job)
-                return True
-            else:
-                return False
-        else:
+        if len(self.pending_jobs) == 0:
             return False
+        if self.job_scheduler != "random":
+            next_job = self.pending_jobs[0]
+        else: 
+            next_job = rand.choice(self.pending_jobs)
+        selected_nodes = self.layout_job(next_job)
+        if selected_nodes == []:
+            return False
+
+        for task,node in zip(next_job.tasks,selected_nodes):
+            for core in node.cores():
+                if core.task == None:
+                    task.allocate(core.full_id())
+                    self.simulator.schedule([task])
+                    break
+
+        self.pending_jobs.remove(next_job)
+        self.running_jobs.add(next_job)
+        return True
+
+    def layout_job(self, job: Job):
+        viable_nodes = [ node for node in self.resources if node.count_idle_cores() >= job.ntasks_per_node ]
+
+        if self.node_scheduler == 'random':
+            rand.shuffle(viable_nodes)
+        else:
+            viable_nodes.sort(key=self.node_sort_key)
+        selected_nodes = []
+        if len(viable_nodes) >= job.nodes:
+            while len(selected_nodes) < job.ntasks:
+                node_count = min(job.ntasks-len(selected_nodes), job.nodes)
+                selected_nodes.extend(viable_nodes[0:node_count])
+        return selected_nodes
 
     def on_end_step(self):
         pass
@@ -95,18 +110,4 @@ class Heuristic(WorkloadManager):
     def on_end_simulation(self):
         pass
 
-    def allocate(self, task: Task):
-        if len(self.idle_resources) != 0:
-            if self.core_scheduler != 'random':
-                self.idle_resources.sort(key=self.core_sort_key)
-                core = self.idle_resources.pop(0)
-            else: 
-                core = rand.choice(self.idle_resources)
-                self.idle_resources.remove(core)
-            self.busy_resources.append(core)
-            task.allocate(core.full_id())
 
-    def deallocate(self, task: Task):
-        core = self.simulator.get_resource(list(task.resource))
-        self.busy_resources.remove(core)
-        self.idle_resources.append(core)
