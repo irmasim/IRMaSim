@@ -18,6 +18,8 @@ def parse_workload_data(args):
             row = re.split(r'\s+',line)
             if len(row) < 4:
                continue
+            if int(row[4]) <= 0:
+               continue
             if args.max_ntasks != None and int(row[4]) > args.max_ntasks:
                 row[4] = args.max_ntasks
             output = f'      {{"id": "job{row[0]}", "subtime": {row[1]}, "ntasks": {row[4]}, ' + \
