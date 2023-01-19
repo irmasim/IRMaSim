@@ -10,7 +10,7 @@
     "environment": {
       "queue_sensitivity": 0,
       "objective": "slowdown",
-      "num_jobs": 128,
+      "num_jobs": 64,
       "num_nodes": 20,
       "obs_features": 7
     },
@@ -22,6 +22,7 @@
       "phase": "test"
     }
   },
+  "nbtrajectories": 3,
   "trajectory_length": 1000,
   "trajectory_origin": "random",
   "max_procs": 64
