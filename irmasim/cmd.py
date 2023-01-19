@@ -78,7 +78,7 @@ def launch() -> None:
 
 
     if args.workload_manager:
-        options['workload_manager']['type'] = path.abspath(args.workload_manager)
+        options['workload_manager']['type'] = args.workload_manager
     else:
         if not 'type' in options['workload_manager']:
             options['workload_manager']['type'] = "Minimal"

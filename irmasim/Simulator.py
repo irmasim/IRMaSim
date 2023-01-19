@@ -232,10 +232,21 @@ class Simulator:
                 job['ntasks'] = min(job['res'], max_nodes)
                 job['ntasks_per_node'] = min(job['res'], max_nodes)
                 del job['res'] 
+            if 'ntasks' not in job and 'nodes' not in job:
+                raise Exception(f"Job {job['id']} requires specifying 'nodes' or 'ntasks' at least")
+            if 'ntasks' in job and 'nodes' in job and 'ntasks_per_node' in job:
+                raise Exception(f"Job {job['id']} can not specify 'nodes' and 'ntasks' and 'ntasks_per_node' at once")
             if 'nodes' not in job:
-                job['nodes'] = 0
-            if 'ntasks_per_node' not in job:
-                job['ntasks_per_node'] = 0
+                if 'ntasks_per_node' not in job:
+                   job['ntasks_per_node'] = 1
+                job['nodes'] = math.ceil(job['ntasks'] / job['ntasks_per_node'])
+            else:
+                if 'ntasks' not in job:
+                    if 'ntasks_per_node' not in job:
+                        job['ntasks_per_node'] = 1
+                    job['ntasks'] = job['nodes'] * job['ntasks_per_node']
+                else:
+                    job['ntasks_per_node'] = math.ceil(job['ntasks']/job['nodes'])
             if 'profile' in job:
                 job_queue.add_job(
                 Job.from_profile(job_id, job['id'], job['subtime']-first_job_subtime + simulation_time, job['nodes'], job['ntasks'], job['ntasks_per_node'],
@@ -274,21 +285,16 @@ class Simulator:
     def slowdown_statistics(self) -> dict:
         sld_list = []
         for job in self.job_queue.finished_jobs:
-            execution_time = job.finish_time - job.start_time
-            if execution_time == 0:
+            if job.finish_time - job.start_time == 0:
                 print(f"warning: {job.id} has 0 execution time")
-            sld_list.append(float(job.finish_time - job.submit_time) / job.req_time)
+            sld_list.append(float(job.finish_time - job.submit_time) / (job.finish_time - job.start_time))
 
         return self.compute_statistics(sld_list)
 
     def bounded_slowdown_statistics(self) -> dict:
         bsld_list = []
         for job in self.job_queue.finished_jobs:
-            execution_time = job.finish_time - job.start_time
-            waiting_time = job.start_time - job.submit_time
-            total_job_time = execution_time + waiting_time
-            bsld_list.append( float(max((total_job_time/max(execution_time,10)), 1)) )
-
+            bsld_list.append( max(float(job.finish_time - job.submit_time)/max(job.finish_time - job.start_time,10), 1) )
 
         return self.compute_statistics(bsld_list)
     

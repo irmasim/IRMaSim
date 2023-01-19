@@ -1,4 +1,5 @@
 from irmasim.platform.BasicProcessor import BasicProcessor
+from irmasim.platform.BasicCore import BasicCore
 from irmasim.Task import Task
 
 
@@ -12,7 +13,7 @@ class Processor (BasicProcessor):
         self.max_power_consumption = 0.0
         self.update_power()
 
-    def add_child(self, child: BasicProcessor):
+    def add_child(self, child: BasicCore):
         super().add_child(child)
         self.max_power_consumption += child.dynamic_power + child.static_power
 
