@@ -39,6 +39,7 @@ class Simulator:
         options = Options().get()
         nbtrajectories = int(options['nbtrajectories'])
         for i in range(nbtrajectories):
+            self.simulation_time = 0
             self.job_queue = self.generate_workload(self.simulation_time)
             self.simulate_trajectory()
             self.workload_manager.on_end_trajectory()
