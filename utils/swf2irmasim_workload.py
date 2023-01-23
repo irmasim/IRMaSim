@@ -78,6 +78,7 @@ def main():
     parser.add_argument('--split-ntasks', type=int, help='Number of tasks to split large jobs to')
     parser.add_argument('--from-time', type=str, help='Submission time of the first job')
     parser.add_argument('--to-time', type=str, help='Submission time of the last job')
+    parser.add_argument('--speed', type=float, help='Apply factor to submission times (> 1 speed up, <1 slow down)')
     parser.add_argument('--include-abort', type=bool, help='Include jobs with zero execution time.')
 
     args = parser.parse_args()
