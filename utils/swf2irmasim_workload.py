@@ -31,7 +31,7 @@ def parse_workload_data(args):
             if args.max_ntasks != None and ntasks > args.max_ntasks:
                 ntasks = args.max_ntasks
             if args.speed != None:
-                row[1] = float(row[1]) * args.speed
+                row[1] = float(row[1]) / args.speed
             postfix = ""
             if args.split_ntasks != None and ntasks > args.split_ntasks:
                 postfix = ".x"
