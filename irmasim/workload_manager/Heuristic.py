@@ -28,7 +28,7 @@ class Heuristic(WorkloadManager):
             self.node_scheduler = options["workload_manager"]["resource_selection"]
 
         job_selections = {
-            'random': lambda job: job.id,
+            'random': lambda job: job.rand,
             'first': lambda job: job.submit_time,
             'shortest': lambda job: job.req_time,
             'smallest': lambda job: job.ntasks,
@@ -58,6 +58,8 @@ class Heuristic(WorkloadManager):
         
 
     def on_job_submission(self, jobs: list):
+        for job in jobs:
+           job.rand=rand.random()
         self.pending_jobs.update(jobs)
         while self.schedule_next_job():
             pass
@@ -71,10 +73,7 @@ class Heuristic(WorkloadManager):
     def schedule_next_job(self):
         if len(self.pending_jobs) == 0:
             return False
-        if self.job_scheduler != "random":
-            next_job = self.pending_jobs[0]
-        else: 
-            next_job = rand.choice(self.pending_jobs)
+        next_job = self.pending_jobs[0]
         selected_nodes = self.layout_job(next_job)
         if selected_nodes == []:
             return False
