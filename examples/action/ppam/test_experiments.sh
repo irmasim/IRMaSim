@@ -1,4 +1,4 @@
 mkdir -p test
-rm -f test/*
-irmasim -nr 20 -im agent.model --phase test options_ppam_test.json
-python ../plotter.py -d ppam/test -r
+rm -f agent.model test/*
+irmasim -nr 200 -im agent.model -om agent.model options_ppam_test.json
+python ../plotter.py -d ppam/test -r -l

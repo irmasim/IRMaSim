@@ -1,17 +1,17 @@
 {
   "seed": 0,
   "log_level": "DEBUG",
-  "workload_file": "workload.json",
-  "platform_file": "platform.json",
+  "workload_file": "workload_test.json",
+  "platform_file": "platform_test.json",
   "platform_name": "the_platform",
   "output_dir": "test",
   "workload_manager": {
     "type": "Action",
     "environment": {
       "queue_sensitivity": 0,
-      "objective": "slowdown",
-      "num_jobs": 64,
-      "num_nodes": 20,
+      "objective": "bounded_slowdown",
+      "num_jobs": 8,
+      "num_nodes": 3,
       "obs_features": 7
     },
     "agent": {
@@ -19,11 +19,11 @@
       "gamma": 0.99,
       "lr_pi": 0.0003,
       "lr_v": 0.001,
-      "phase": "test"
+      "phase": "train"
     }
   },
-  "nbtrajectories": 3,
-  "trajectory_length": 1000,
+  "nbtrajectories": 1,
+  "trajectory_length": 10,
   "trajectory_origin": "random",
-  "max_procs": 64
+  "max_procs": 8
 }
