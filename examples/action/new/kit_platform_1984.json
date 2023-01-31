@@ -1,0 +1,299 @@
+{
+   "platform" : {
+      "the_platform" : {
+         "model_name" : "modelV1",
+         "id" : "the_platform",
+         "clusters" : [
+            {
+               "id" : "cluster0",
+               "nodes" : [
+                  {
+                     "type" : "node_4_2.5",
+                     "number" : 8
+                  },
+                  {
+                     "type" : "node_4_3",
+                     "number" : 8
+                  },
+                  {
+                     "number" : 8,
+                     "type" : "node_8_2.5"
+                  },
+                  {
+                     "type" : "node_8_3",
+                     "number" : 8
+                  },
+                  {
+                     "number" : 8,
+                     "type" : "node_16_2.5"
+                  },
+                  {
+                     "number" : 8,
+                     "type" : "node_16_3"
+                  },
+                  {
+                     "number" : 8,
+                     "type" : "node_32_2.5"
+                  },
+                  {
+                     "type" : "node_32_3",
+                     "number" : 8
+                  },
+                  {
+                     "number" : 8,
+                     "type" : "node_64_2.5"
+                  },
+                  {
+                     "number" : 8,
+                     "type" : "node_64_3"
+                  }
+               ]
+            }
+         ]
+      }
+   },
+   "processor" : {
+      "proc_4_2.5" : {
+         "dpflops_per_cycle" : 1,
+         "static_power" : 6.14211,
+         "da" : 1.75,
+         "clock_rate" : 2.5,
+         "db" : 2000,
+         "dynamic_power" : 5.59316,
+         "b" : -1.85e-05,
+         "dc" : 50000,
+         "power" : 100,
+         "cores" : 4,
+         "c" : 32000,
+         "dd" : 6000,
+         "min_power" : 0.05,
+         "id" : "proc_4_2.5"
+      },
+      "proc_8_3" : {
+         "c" : 32000,
+         "dd" : 6000,
+         "min_power" : 0.05,
+         "cores" : 8,
+         "id" : "proc_8_3",
+         "static_power" : 6.14211,
+         "da" : 1.75,
+         "dpflops_per_cycle" : 1,
+         "power" : 100,
+         "b" : -1.85e-05,
+         "dc" : 50000,
+         "db" : 2000,
+         "clock_rate" : 3,
+         "dynamic_power" : 5.59316
+      },
+      "proc_64_3" : {
+         "db" : 2000,
+         "clock_rate" : 3,
+         "dynamic_power" : 5.59316,
+         "power" : 100,
+         "b" : -1.85e-05,
+         "dc" : 50000,
+         "dpflops_per_cycle" : 1,
+         "static_power" : 6.14211,
+         "da" : 1.75,
+         "id" : "proc_64_3",
+         "cores" : 64,
+         "dd" : 6000,
+         "c" : 32000,
+         "min_power" : 0.05
+      },
+      "proc_32_3" : {
+         "cores" : 32,
+         "c" : 32000,
+         "dd" : 6000,
+         "min_power" : 0.05,
+         "id" : "proc_32_3",
+         "dpflops_per_cycle" : 1,
+         "static_power" : 6.14211,
+         "da" : 1.75,
+         "clock_rate" : 3,
+         "db" : 2000,
+         "dynamic_power" : 5.59316,
+         "dc" : 50000,
+         "b" : -1.85e-05,
+         "power" : 100
+      },
+      "proc_16_3" : {
+         "dpflops_per_cycle" : 1,
+         "static_power" : 6.14211,
+         "da" : 1.75,
+         "db" : 2000,
+         "clock_rate" : 3,
+         "dynamic_power" : 5.59316,
+         "b" : -1.85e-05,
+         "power" : 100,
+         "dc" : 50000,
+         "cores" : 16,
+         "c" : 32000,
+         "dd" : 6000,
+         "min_power" : 0.05,
+         "id" : "proc_16_3"
+      },
+      "proc_16_2.5" : {
+         "dynamic_power" : 5.59316,
+         "clock_rate" : 2.5,
+         "db" : 2000,
+         "power" : 100,
+         "b" : -1.85e-05,
+         "dc" : 50000,
+         "dpflops_per_cycle" : 1,
+         "da" : 1.75,
+         "static_power" : 6.14211,
+         "id" : "proc_16_2.5",
+         "cores" : 16,
+         "min_power" : 0.05,
+         "c" : 32000,
+         "dd" : 6000
+      },
+      "proc_8_2.5" : {
+         "min_power" : 0.05,
+         "c" : 32000,
+         "dd" : 6000,
+         "cores" : 8,
+         "id" : "proc_8_2.5",
+         "static_power" : 6.14211,
+         "da" : 1.75,
+         "dpflops_per_cycle" : 1,
+         "b" : -1.85e-05,
+         "power" : 100,
+         "dc" : 50000,
+         "clock_rate" : 2.5,
+         "db" : 2000,
+         "dynamic_power" : 5.59316
+      },
+      "proc_4_3" : {
+         "static_power" : 6.14211,
+         "da" : 1.75,
+         "dpflops_per_cycle" : 1,
+         "b" : -1.85e-05,
+         "power" : 100,
+         "dc" : 50000,
+         "clock_rate" : 3,
+         "db" : 2000,
+         "dynamic_power" : 5.59316,
+         "c" : 32000,
+         "min_power" : 0.05,
+         "dd" : 6000,
+         "cores" : 4,
+         "id" : "proc_4_3"
+      },
+      "proc_32_2.5" : {
+         "id" : "proc_32_2.5",
+         "dd" : 6000,
+         "c" : 32000,
+         "min_power" : 0.05,
+         "cores" : 32,
+         "power" : 100,
+         "b" : -1.85e-05,
+         "dc" : 50000,
+         "db" : 2000,
+         "clock_rate" : 2.5,
+         "dynamic_power" : 5.59316,
+         "static_power" : 6.14211,
+         "da" : 1.75,
+         "dpflops_per_cycle" : 1
+      },
+      "proc_64_2.5" : {
+         "id" : "proc_64_2.5",
+         "dd" : 6000,
+         "c" : 32000,
+         "min_power" : 0.05,
+         "cores" : 64,
+         "b" : -1.85e-05,
+         "dc" : 50000,
+         "power" : 100,
+         "dynamic_power" : 5.59316,
+         "clock_rate" : 2.5,
+         "db" : 2000,
+         "da" : 1.75,
+         "static_power" : 6.14211,
+         "dpflops_per_cycle" : 1
+      }
+   },
+   "node" : {
+      "node_8_3" : {
+         "processors" : [
+            {
+               "type" : "proc_8_3"
+            }
+         ],
+         "id" : "node"
+      },
+      "node_32_2.5" : {
+         "processors" : [
+            {
+               "type" : "proc_32_2.5"
+            }
+         ],
+         "id" : "node"
+      },
+      "node_4_3" : {
+         "id" : "node",
+         "processors" : [
+            {
+               "type" : "proc_4_3"
+            }
+         ]
+      },
+      "node_8_2.5" : {
+         "id" : "node",
+         "processors" : [
+            {
+               "type" : "proc_8_2.5"
+            }
+         ]
+      },
+      "node_16_2.5" : {
+         "processors" : [
+            {
+               "type" : "proc_16_2.5"
+            }
+         ],
+         "id" : "node"
+      },
+      "node_4_2.5" : {
+         "processors" : [
+            {
+               "type" : "proc_4_2.5"
+            }
+         ],
+         "id" : "node"
+      },
+      "node_16_3" : {
+         "processors" : [
+            {
+               "type" : "proc_16_3"
+            }
+         ],
+         "id" : "node"
+      },
+      "node_64_3" : {
+         "processors" : [
+            {
+               "type" : "proc_64_3"
+            }
+         ],
+         "id" : "node"
+      },
+      "node_32_3" : {
+         "processors" : [
+            {
+               "type" : "proc_32_3"
+            }
+         ],
+         "id" : "node"
+      },
+      "node_64_2.5" : {
+         "processors" : [
+            {
+               "type" : "proc_64_2.5"
+            }
+         ],
+         "id" : "node"
+      }
+   }
+}
