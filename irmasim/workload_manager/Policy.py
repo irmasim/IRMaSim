@@ -90,6 +90,8 @@ class Policy(WorkloadManager):
 
     def on_job_completion(self, jobs: list):
         for job in jobs:
+            logging.getLogger("irmasim").debug(
+                f"{self.simulator.simulation_time} {job.name} finished")
             self.running_jobs.remove(job)
 
     def on_end_step(self):
