@@ -1,0 +1,28 @@
+{
+  "seed": 0,
+  "log_level": "DEBUG",
+  "workload_file": "kit_64l8s_2.5GHz_18w-34w.json",
+  "platform_file": "kit_platform_1984.json",
+  "platform_name": "the_platform",
+  "output_dir": "test",
+  "workload_manager": {
+    "type": "Action",
+    "environment": {
+      "queue_sensitivity": 0,
+      "objective": "slowdown",
+      "num_jobs": 16,
+      "num_nodes": 80,
+      "obs_features": 7
+    },
+    "agent": {
+      "name": "ActionActorCritic",
+      "gamma": 0.99,
+      "lr_pi": 0.0003,
+      "lr_v": 0.001,
+      "phase": "train"
+    }
+  },
+  "nbtrajectories": 10,
+  "trajectory_length": 1000,
+  "trajectory_origin": "random"
+}
