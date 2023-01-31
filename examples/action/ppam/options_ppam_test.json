@@ -24,6 +24,5 @@
   },
   "nbtrajectories": 1,
   "trajectory_length": 10,
-  "trajectory_origin": "random",
-  "max_procs": 8
+  "trajectory_origin": "random"
 }
