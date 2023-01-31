@@ -220,7 +220,6 @@ class Simulator:
         job_queue = JobQueue()
         job_id = trajectory_origin
         first_job_subtime = self.workload['jobs'][trajectory_origin]['subtime']
-        max_nodes = int(options['max_procs']) if options['workload_manager']['type'] == 'Action' else float('inf')
         for i in range(trajectory_length):
             job = self.workload['jobs'][trajectory_origin+i]
             if 'id' not in job:
@@ -229,13 +228,13 @@ class Simulator:
                 if 'nodes' in job or 'ntasks' in job or 'ntasks_per_node' in job:
                     raise Exception(f"A job can specify a 'res' option or ('nodes','ntasks','ntasks_per_node'). But Job {job['id']} specify both")
                 job['nodes'] = 1
-                job['ntasks'] = min(job['res'], max_nodes)
-                job['ntasks_per_node'] = min(job['res'], max_nodes)
-                del job['res'] 
+                job['ntasks'] = job['res']
+                del job['res']
             if 'ntasks' not in job and 'nodes' not in job:
                 raise Exception(f"Job {job['id']} requires specifying 'nodes' or 'ntasks' at least")
             if 'ntasks' in job and 'nodes' in job and 'ntasks_per_node' in job:
-                raise Exception(f"Job {job['id']} can not specify 'nodes' and 'ntasks' and 'ntasks_per_node' at once")
+                if job['nodes'] != math.ceil(job['ntasks'] / job['ntasks_per_node']):
+                    raise Exception(f"Job {job['id']} has incompatible values of 'nodes', 'ntasks' and 'ntasks_per_node'")
             if 'nodes' not in job:
                 if 'ntasks_per_node' not in job:
                    job['ntasks_per_node'] = 1
