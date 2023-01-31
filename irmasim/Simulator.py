@@ -231,7 +231,8 @@ class Simulator:
             if 'ntasks' not in job and 'nodes' not in job:
                 raise Exception(f"Job {job['id']} requires specifying 'nodes' or 'ntasks' at least")
             if 'ntasks' in job and 'nodes' in job and 'ntasks_per_node' in job:
-                raise Exception(f"Job {job['id']} can not specify 'nodes' and 'ntasks' and 'ntasks_per_node' at once")
+                if job['nodes'] != math.ceil(job['ntasks'] / job['ntasks_per_node']):
+                    raise Exception(f"Job {job['id']} specifies incompatible values of 'nodes' and 'ntasks' and 'ntasks_per_node'")
             if 'nodes' not in job:
                 if 'ntasks_per_node' not in job:
                    job['ntasks_per_node'] = 1
