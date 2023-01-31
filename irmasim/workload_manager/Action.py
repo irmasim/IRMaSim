@@ -80,7 +80,7 @@ class Action(Policy):
         self.simulator.schedule(job.tasks)
         self.running_jobs.append(job)
         slowdown = float(job.start_time) - float(job.submit_time)
-        logging.getLogger("irmasim").debug(f'Job {job_idx} was scheduled with a slowdown of {slowdown}')
+        logging.getLogger("irmasim").debug(f'{self.simulator.simulation_time} {job.name} was scheduled with a slowdown of {slowdown}')
 
     def on_end_trajectory(self):
         logging.getLogger('irmasim').debug(f'{self.simulator.simulation_time} - Ending trajectory')
