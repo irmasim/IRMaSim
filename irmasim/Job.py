@@ -7,6 +7,7 @@ class Job:
     def __init__(self, id: int, name: str, submit_time: float, nodes: int, ntasks: int, ntasks_per_node: int, req_ops : int, ipc : float, req_time : float, mem : int, mem_vol : float):
         self.tasks = None
         self.id = id
+        self.rand = 0
         self.name = name
         self.type = id
         self.profile = None
