@@ -1,7 +1,7 @@
 {
   "seed": 0,
   "log_level": "DEBUG",
-  "workload_file": "kit_64l8s_2.5GHz_18w-34w.json",
+  "workload_file": "kit_64l4s_2.5GHz_50w-75w.json",
   "platform_file": "kit_platform_1984.json",
   "platform_name": "the_platform",
   "output_dir": "results",
