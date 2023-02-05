@@ -22,7 +22,7 @@
       "phase": "train"
     }
   },
-  "nbtrajectories": 10,
-  "trajectory_length": 256,
+  "nbtrajectories": 5,
+  "trajectory_length": 512,
   "trajectory_origin": "random"
 }
