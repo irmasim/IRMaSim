@@ -1,0 +1,53 @@
+#!/usr/bin/perl -nl 
+
+use Getopt::Std;
+use JSON;
+
+INIT {
+   getopts('m:f:t:',\%opts) or exit(1);
+   if($opts{m} eq 's') {
+      $opts{m} = "Slowdown";
+   } elsif($opts{m} eq 'b') {
+      $opts{m} = "Bounded Slowdown";
+   } elsif($opts{m} eq 'w') {
+      $opts{m} = "Waiting Time";
+   } else {
+      print "Invalid metric '$opts{m}'";
+      exit(1);
+   }
+   unless(defined $opts{f}) {
+      print "Must supply a lower boundary with -f";
+      exit(1);
+   }
+   unless(defined $opts{t}) {
+      print "Must supply an upper boundary with -t";
+      exit(1);
+   }
+   %out = (jobs => []);
+}
+
+$workload=$1 if(/Loaded .* jobs from (.*)/);
+$value = $1 if(/$opts{m}: *total: .*, avg: (.*), max: .*, min: .*/);
+
+if(defined $previous and $ARGV ne $previous){
+   spit();
+}
+$previous=$ARGV;
+
+END {
+   spit(); 
+   print to_json(\%out, {utf8 => 1, pretty => 1});
+}
+
+sub spit {
+   if($value >= $opts{f} and $value <= $opts{t}) {
+      print STDERR "$ARGV $workload $value";
+      $json = do {
+         open(my $in,"$workload") or die $!;
+         local $/;
+         <$in>
+      };
+      $trajectory = decode_json($json);
+      push @{$out{jobs}},@{$trajectory->{jobs}}
+   }
+}
