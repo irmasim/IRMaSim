@@ -4,7 +4,7 @@ from irmasim.Task import Task
 
 class Job:
 
-    def __init__(self, id: int, name: str, submit_time: float, nodes: int, ntasks: int, ntasks_per_node: int, req_ops : int, ipc : float, req_time : float, mem : int, mem_vol : float):
+    def __init__(self, id: int, name: str, submit_time: float, nodes: int, ntasks: int, ntasks_per_node: int, req_ops : int, ipc : float, req_time : float, req_energy : int, mem : int, mem_vol : float):
         self.tasks = None
         self.id = id
         self.rand = 0
@@ -22,6 +22,7 @@ class Job:
         self.ops = math.ceil(req_ops / ipc)
         self.opc = ipc
         self.req_time = req_time
+        self.req_energy = req_energy
         self.memory = mem
         self.memory_vol = mem_vol
         self.generate_tasks()
@@ -29,7 +30,7 @@ class Job:
     @classmethod
     def from_profile(klass, id: int, name: str, submit_time: float, nodes: int, ntasks: int, ntasks_per_node: int, profile: dict, type: str):
         self=klass(id,name,submit_time, nodes, ntasks, ntasks_per_node, profile['req_ops'], profile['ipc'],
-                   profile['req_time'], profile['mem'], profile['mem_vol'])
+                   profile['req_time'], profile['req_energy'], profile['mem'], profile['mem_vol'])
         self.type = type
         self.profile = profile
         return self

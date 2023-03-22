@@ -251,7 +251,7 @@ class Simulator:
             else:
                 job_queue.add_job(
                 Job(job_id, job['id'], job['subtime']-first_job_subtime + simulation_time, job['nodes'], job['ntasks'], job['ntasks_per_node'],
-                    job['req_ops'], job['ipc'], job['req_time'], job['mem'], job['mem_vol']))
+                    job['req_ops'], job['ipc'], job['req_time'], job['req_energy'], job['mem'], job['mem_vol']))
             job_id += 1
 
         return job_queue
