@@ -1,0 +1,7 @@
+{"jobs": [
+  {"id":  "1", "subtime":  0, "res":  1, "req_time":  10, "req_energy":  10, "req_ops":  20000000000, "ipc": 1, "mem": 1100, "mem_vol": 19},
+  {"id":  "2", "subtime":  0, "res":  1, "req_time":  20, "req_energy":  7, "req_ops":  35000000000, "ipc": 1, "mem": 1100, "mem_vol": 19},
+  {"id":  "3", "subtime":  1, "res":  1, "req_time":  5, "req_energy":  14, "req_ops":  10000000000, "ipc": 1, "mem": 1100, "mem_vol": 19},
+  {"id":  "4", "subtime":  1, "res":  1, "req_time":  100, "req_energy":  30, "req_ops":  2000000000000, "ipc": 1, "mem": 1100, "mem_vol": 19}
+]
+}
