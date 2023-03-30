@@ -100,6 +100,10 @@ class Energy(WM):
         pass
 
     def on_end_simulation(self):
+        a = self.simulator.energy_consumption_statistics()
+        b = self.simulator.simulation_time_statistics()
+
+        print("Simulation EDP:", a["total"]*b["total"])
         pass
 
 
