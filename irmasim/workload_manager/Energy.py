@@ -17,16 +17,39 @@ class Energy(WM):
     def __init__(self, simulator: 'Simulator'):
         super(Energy, self).__init__(simulator)
 
+        if simulator.platform.config["model"] != "modelV1":
+            raise Exception("Heuristic workload manager needs a modelV1 platform")
+
         options = Options().get()
 
-        job_edp = lambda job: -job.req_time * job.req_energy
+        if not "job_selection" in options["workload_manager"]:
+            self.job_scheduler = 'energy'
+        else:
+            self.job_scheduler = options["workload_manager"]["job_selection"]
 
-        self.pending_jobs = SortedList(key=job_edp)
-        self.running_jobs = SortedList(key=job_edp)
+        if not "resource_selection" in options["workload_manager"]:
+            self.node_scheduler = 'energy'
+        else:
+            self.node_scheduler = options["workload_manager"]["resource_selection"]
+
+        job_selections = {
+            'energy': lambda job: -job.req_energy,
+            'edp': lambda job: -job.req_energy*job.req_time
+        }
+
+        node_selections = {
+            'energy': lambda node, job: -node_energy(job, node),
+            'edp': lambda node, job: -node_edp(job, node)
+        }
+
+        self.pending_jobs = SortedList(key=job_selections[self.job_scheduler])
+        self.running_jobs = SortedList(key=job_selections[self.job_scheduler])
+        self.node_sort_key = node_selections[self.node_scheduler]
 
         mod = importlib.import_module("irmasim.platform.models." + options["platform_model_name"] + ".Node")
         klass = getattr(mod, 'Node')
         self.resources = self.simulator.get_resources(klass)
+        print(f"Job selection: {self.job_scheduler}")
 
     def on_job_submission(self, jobs: list):
 
@@ -64,7 +87,7 @@ class Energy(WM):
     def layout_job(self, job: Job):
         viable_nodes = [node for node in self.resources if node.count_idle_cores() >= job.ntasks_per_node]
 
-        viable_nodes.sort(key=lambda node: -calc_edp(job, node))
+        viable_nodes.sort(key=lambda node: self.node_sort_key(node, job))
 
         selected_nodes = []
         if len(viable_nodes) >= job.nodes:
@@ -80,13 +103,16 @@ class Energy(WM):
         pass
 
 
-def calc_edp(job: Job, node):
-    edp = 0
+def node_energy(job: Job, node):
+    energy = 0
 
-    for i in range(min(job.ntasks, node.count_idle_cores())):
-        edp += node.cores()[i].dynamic_power
+    for i in range(job.ntasks_per_node):
+        energy += node.cores()[i].dynamic_power
 
-    edp += node.cores()[0].static_power
-    edp *= job.req_time
+    energy += node.cores()[0].static_power
+    energy *= job.req_time
 
-    return edp
+    return energy
+
+def node_edp(job: Job, node):
+    return node_energy(job, node) * job.req_time
