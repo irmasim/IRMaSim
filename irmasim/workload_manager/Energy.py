@@ -11,8 +11,6 @@ if TYPE_CHECKING:
 '''
 TODO: Documentar esto
 '''
-
-
 class Energy(WM):
     def __init__(self, simulator: 'Simulator'):
         super(Energy, self).__init__(simulator)
@@ -38,8 +36,8 @@ class Energy(WM):
         }
 
         node_selections = {
-            'energy': lambda node, job: -node_energy(job, node),
-            'edp': lambda node, job: -node_edp(job, node)
+            'energy': lambda node, job, min_freq: -node_energy(job, node, min_freq),
+            'edp': lambda node, job, min_freq: -node_edp(job, node, min_freq)
         }
 
         self.pending_jobs = SortedList(key=job_selections[self.job_scheduler])
@@ -86,8 +84,8 @@ class Energy(WM):
 
     def layout_job(self, job: Job):
         viable_nodes = [node for node in self.resources if node.count_idle_cores() >= job.ntasks_per_node]
-
-        viable_nodes.sort(key=lambda node: self.node_sort_key(node, job))
+        min_freq = min([node.cores()[0].clock_rate for node in self.resources])
+        viable_nodes.sort(key=lambda node: self.node_sort_key(node, job, min_freq))
 
         selected_nodes = []
         if len(viable_nodes) >= job.nodes:
@@ -107,16 +105,18 @@ class Energy(WM):
         pass
 
 
-def node_energy(job: Job, node):
+def node_energy(job: Job, node, min_freq):
     energy = 0
+    node_time = job.req_time * (node.cores()[0].clock_rate/min_freq) * (1/node.cores()[0].mops)
 
     for i in range(job.ntasks_per_node):
-        energy += node.cores()[i].dynamic_power
+        energy += node.cores()[i].dynamic_power + node.cores()[i].static_power
 
-    energy += node.cores()[0].static_power
-    energy *= job.req_time
+    energy *= node_time  # TODO: Arreglar el calculo de dpflops, que ahora está en mops (pdflops x clock_rate x 1000)
 
     return energy
 
-def node_edp(job: Job, node):
-    return node_energy(job, node) * job.req_time
+
+def node_edp(job: Job, node, min_freq):
+    node_time = job.req_time * (node.cores()[0].clock_rate/min_freq) * (1/node.cores()[0].mops)
+    return node_energy(job, node, min_freq) * node_time
