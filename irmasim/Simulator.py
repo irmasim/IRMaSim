@@ -305,6 +305,9 @@ class Simulator:
     def energy_consumption_statistics(self) -> dict:
         return {"total": self.energy}
 
+    def energy_efficiency_statistics(self) -> dict:
+        return {"total": self.energy * self.simulation_time}
+
     def simulation_time_statistics(self) -> dict:
         return {"total": self.simulation_time}
 
