@@ -1,17 +1,12 @@
 {"jobs": [
   {"id":  "1", "subtime":  0, "res":  1, "profile": "High_Intensity"},
-  {"id":  "2", "subtime":  0, "res":  1, "profile": "Low_Intensity"},
-  {"id":  "3", "subtime":  1, "res":  2, "profile": "Low_Intensity"},
-  {"id":  "4", "subtime":  2, "res":  2, "profile": "Low_Intensity"},
-  {"id":  "5", "subtime":  5, "res":  2, "profile": "High_Intensity"},
-  {"id":  "6", "subtime":  5, "res":  2, "profile": "Low_Intensity"},
-  {"id":  "7", "subtime":  6, "res":  3, "profile": "Low_Intensity"},
-  {"id":  "8", "subtime":  7, "res":  3, "profile": "Low_Intensity"},
-  {"id":  "9", "subtime":  20, "res":  3, "profile": "High_Intensity"},
-  {"id":  "10", "subtime": 20, "res":  3, "profile": "Low_Intensity"}
+  {"id":  "2", "subtime":  0, "res":  1, "profile": "Med_Intensity"},
+  {"id":  "3", "subtime":  0, "res":  1, "profile": "Low_Intensity"},
+  {"id":  "4", "subtime":  1, "res":  1, "profile": "Med_Intensity"}
 ],
   "profiles": {
-    "High_Intensity": {"req_time":  10, "req_energy":  5, "req_ops":  10000000000, "ipc": 1, "mem": 1100, "mem_vol": 19},
-    "Low_Intensity": {"req_time":  1, "req_energy":  1, "req_ops":  1000000000, "ipc": 1, "mem": 1100, "mem_vol": 19}
+    "High_Intensity": {"req_time":  10, "req_energy":  1000, "req_ops":  10000000000, "ipc": 1, "mem": 1100, "mem_vol": 19},
+    "Med_Intensity": {"req_time":  5, "req_energy":  500, "req_ops":  5000000000, "ipc": 1, "mem": 1100, "mem_vol": 19},
+    "Low_Intensity": {"req_time":  1, "req_energy":  100, "req_ops":  1000000000, "ipc": 1, "mem": 1100, "mem_vol": 19}
   }
 }
