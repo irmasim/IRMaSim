@@ -253,6 +253,9 @@ Returns:
 
         raise NotImplementedError
 
+    def get_probs(self) -> list:
+        return self.probs
+
     def get_action(self, probabilities: torch.Tensor) -> int:
         """Gets an action based on the provided probabilities.
 
@@ -289,8 +292,6 @@ Returns:
         """
 
         policy_loss = []
-        with open('{0}/probs.log'.format(Options().get()['output_dir']), 'a+') as out_f:
-            out_f.write(" ".join([str(p) for p in self.probs])+"\n")
         for log_prob, rew_or_adv in zip(self.log_probs, rews_or_advs):
             policy_loss.append(- log_prob * rew_or_adv)
         return policy_loss

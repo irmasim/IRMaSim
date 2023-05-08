@@ -1,4 +1,5 @@
 import importlib
+import os
 import json
 import numpy as np
 import torch
@@ -117,6 +118,12 @@ class Policy(WorkloadManager):
     def on_end_simulation(self):
         options = Options().get()
         if options['workload_manager']['agent']['phase'] == 'train':
+            probs = self.agent.get_probs()
+            header = not os.path.isfile('{0}/probs.log'.format(Options().get()['output_dir']))
+            with open('{0}/probs.log'.format(Options().get()['output_dir']), 'a+') as out_f:
+                if header:
+                   out_f.write(" ".join([self.environment.actions[action][2]+"-"+self.environment.actions[action][3] for action in range(len(probs))])+"\n")
+                out_f.write(" ".join([str(p) for p in probs])+"\n")
             loss = self.agent.loss()
             with open('{0}/losses.log'.format(options['output_dir']), 'a+') as out_f:
                 out_f.write(f'{loss}\n')
