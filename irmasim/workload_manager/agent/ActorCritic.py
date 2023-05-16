@@ -1,5 +1,5 @@
 """
-An example of an Agent implementing the Advantage Actor-Critic algorithm in HDeepRM.
+An example of an Agent implementing the Advantage Actor-Critic algorithm in IRMaSim.
 """
 
 import numpy as np
@@ -8,6 +8,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from irmasim.workload_manager.agent.Agent import PolicyLearningAgent, ValueLearningAgent
 from irmasim.Options import Options
+
+DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 class ActorCritic(PolicyLearningAgent, ValueLearningAgent):
     """Class for the agent implementing the Adavantage Actor-Critic algorithm.
@@ -49,27 +51,27 @@ Attributes:
         gamma = Options().get()["workload_manager"]["agent"]["gamma"]
         hidden = Options().get()["workload_manager"]["agent"]["hidden"]
         super(ActorCritic, self).__init__(Options().get()["workload_manager"])
-        self.input = nn.Linear(observation_size, hidden)
-        self.actor_hidden_0 = nn.Linear(hidden, hidden)
-        self.actor_hidden_1 = nn.Linear(hidden, hidden)
-        self.actor_hidden_2 = nn.Linear(hidden, hidden)
-        self.actor_output = nn.Linear(hidden, action_size)
-        self.critic_hidden_0 = nn.Linear(hidden, hidden)
-        self.critic_hidden_1 = nn.Linear(hidden, hidden)
-        self.critic_hidden_2 = nn.Linear(hidden, hidden)
-        self.critic_output = nn.Linear(hidden, 1)
+        self.input = nn.Linear(observation_size, hidden, device=DEVICE)
+        self.actor_hidden_0 = nn.Linear(hidden, hidden, device=DEVICE)
+        self.actor_hidden_1 = nn.Linear(hidden, hidden, device=DEVICE)
+        self.actor_hidden_2 = nn.Linear(hidden, hidden, device=DEVICE)
+        self.actor_output = nn.Linear(hidden, action_size, device=DEVICE)
+        self.critic_hidden_0 = nn.Linear(hidden, hidden, device=DEVICE)
+        self.critic_hidden_1 = nn.Linear(hidden, hidden, device=DEVICE)
+        self.critic_hidden_2 = nn.Linear(hidden, hidden, device=DEVICE)
+        self.critic_output = nn.Linear(hidden, 1, device=DEVICE)
 
     def decide(self, observation: np.ndarray) -> int:
-        probs, value = self.forward(observation)
-        self.save_value(value)
+        observation_tensor = torch.from_numpy(observation)
+        probs, value = self.forward(observation_tensor.to(DEVICE))
+        self.save_value(value.cpu())
         if not self.probs:
-            self.probs = probs.detach().numpy().flatten().tolist()
+            self.probs = probs.cpu().detach().numpy().flatten().tolist()
         return self.get_action(probs)
 
-    def forward(self, observation: np.ndarray) -> tuple:
-        observation = torch.from_numpy(observation).float().unsqueeze(0)
-        probs = self.forward_policy(observation)
-        value = self.forward_value(observation)
+    def forward(self, observation_tensor: torch.Tensor) -> tuple:
+        probs = self.forward_policy(observation_tensor)
+        value = self.forward_value(observation_tensor)
         return probs, value
 
     def loss(self) -> float:
@@ -80,12 +82,12 @@ Attributes:
         value_loss = self.value_loss(rews)
         return torch.stack(policy_loss).sum()+torch.stack(value_loss).sum()
 
-    def forward_policy(self, observation: np.ndarray) -> torch.Tensor:
-        out_0 = F.leaky_relu(self.input(observation))
+    def forward_policy(self, observation_tensor: torch.Tensor) -> torch.Tensor:
+        out_0 = F.leaky_relu(self.input(observation_tensor))
         out_1 = F.leaky_relu(self.actor_hidden_0(out_0))
         out_2 = F.leaky_relu(self.actor_hidden_1(out_1))
         out_3 = F.leaky_relu(self.actor_hidden_2(out_2))
-        return F.softmax(self.actor_output(out_3), dim=1)
+        return F.softmax(self.actor_output(out_3), dim=0)
 
 
 
