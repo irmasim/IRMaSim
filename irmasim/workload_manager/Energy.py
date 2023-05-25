@@ -12,6 +12,9 @@ if TYPE_CHECKING:
 Workload Manager that schedules tasks based on 
 optimising energy consumption and/or energy efficiency
 '''
+
+# FIXME: El scheduler va de trabajo en trabajo, si hay uno delante en la cola que no puede
+# FIXME: ser encajado, el siguiente NO será encolado.
 class Energy(WM):
     def __init__(self, simulator: 'Simulator'):
         super(Energy, self).__init__(simulator)
@@ -23,21 +26,20 @@ class Energy(WM):
 
         # Definition of the different scheduling policies for jobs and nodes
         job_selections = {
-            'energy': lambda job: job.req_energy,
-            'edp': lambda job: job.req_energy * job.req_time
+            'energy': lambda job: job.req_energy * job.ntasks,
+            'edp': lambda job: job.req_energy * job.req_time * job.ntasks
         }
 
         node_selections = {
-            'energy': lambda node, job: self.node_energy(job, node),
+            'energy': lambda node, job: -self.node_energy(job, node),
             'edp': lambda node, job: self.node_edp(job, node)
         }
 
         # Choose energy prioritisation as default job and node scheduler
-        if not "policy" in options["workload_manager"]:
+        if "policy" not in options["workload_manager"]:
             self.policy = 'energy'
         else:
             self.policy = options["workload_manager"]["job_selection"]
-
 
         # The job lists are sorted using one of the scheduling policies
         # (nodes with the lower "score" are given preference)
@@ -61,39 +63,44 @@ class Energy(WM):
     Method that simulates the arrival of a new job to the scheduler
     The job is added to the pending list
     '''
+
     def on_job_submission(self, jobs: list):
 
         self.pending_jobs.update(jobs)
-        while self.schedule_next_job():
-            pass
+        for j in self.pending_jobs:
+            self.schedule_job(j)
+
+        pass
 
     '''
     Method that simulates the end of a running job in the cluster
     The job is removed from the running jobs list and
     the job counter of the assigned node is updated
     '''
+
     def on_job_completion(self, jobs: list):
         for job in jobs:
             self.assigned_nodes[job.tasks[0].resource[2]] -= 1
             self.running_jobs.remove(job)
 
-        while self.schedule_next_job():
-            pass
+        for j in self.pending_jobs:
+            self.schedule_job(j)
+
+        pass
 
     '''
     Method that schedules a pending job
     The job chosen is the one with the lowest score (according to
     the chosen scheduling policy)
     '''
-    def schedule_next_job(self):
-        if len(self.pending_jobs) == 0:
-            return False
+
+    def schedule_job(self, job):
 
         # Get the next best pending job
-        next_job = self.pending_jobs[0]
+        # next_job = self.pending_jobs[0]
 
         # Get the list of nodes to which send the job
-        selected_nodes = self.layout_job(next_job)
+        selected_nodes = self.layout_job(job)
 
         # If the list is empty, do not schedule
         if not selected_nodes:
@@ -102,7 +109,7 @@ class Energy(WM):
         # Each core of the node is assigned one of the tasks of the job
         # until there are no more tasks to assign (doesnt necessarily fill
         # all the cores in the node)
-        for task, node in zip(next_job.tasks, selected_nodes):
+        for task, node in zip(job.tasks, selected_nodes):
             for core in node.cores():
                 if core.task is None:
                     task.allocate(core.full_id())
@@ -110,13 +117,14 @@ class Energy(WM):
                     break
 
         # Move the job from pending to running
-        self.pending_jobs.remove(next_job)
-        self.running_jobs.add(next_job)
+        self.pending_jobs.remove(job)
+        self.running_jobs.add(job)
         return True
 
     '''
     Method that decides to which node the job to be scheduled can be assigned to
     '''
+
     def layout_job(self, job: Job):
 
         # Get all the nodes with enough free cores to run the job
@@ -149,11 +157,12 @@ class Energy(WM):
     Method that estimates the energy consumption of a job if it were to
     be assigned to a certain node 
     '''
+
     def node_energy(self, job: Job, node):
         node_info = node.cores()[0]
 
-        freq_speedup = (self.min_freq/node_info.clock_rate)
-        inverted_dpflops = ((node_info.clock_rate * 1e3)/node_info.mops)
+        freq_speedup = (self.min_freq / node_info.clock_rate)
+        inverted_dpflops = ((node_info.clock_rate * 1e3) / node_info.mops)
 
         # Estimated execution time in node
         node_time = job.req_time * freq_speedup * inverted_dpflops
@@ -179,6 +188,7 @@ class Energy(WM):
     '''
     Method that estimates a jobs energy efficiency on a given node
     '''
+
     def node_edp(self, job: Job, node):
         node_info = node.cores()[0]
         freq_speedup = (self.min_freq / node_info.clock_rate)
