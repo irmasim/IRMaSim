@@ -3,5 +3,5 @@
   "workload_file": "workload.json",
   "platform_file": "platform.json",
   "platform_name": "the_platform",
-  "workload_manager": {"type":  "Energy"}
+  "workload_manager": {"type":  "Energy2"}
 }

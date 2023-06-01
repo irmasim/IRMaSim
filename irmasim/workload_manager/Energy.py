@@ -15,6 +15,10 @@ optimising energy consumption and/or energy efficiency
 
 # FIXME: El scheduler va de trabajo en trabajo, si hay uno delante en la cola que no puede
 # FIXME: ser encajado, el siguiente NO será encolado.
+
+# TODO: ordenacion jobs: mayor consumo, menor consumo
+# TODO: ordenacion nodos: mayor conumo, menor consumo
+# TODO: lo mismo para edp
 class Energy(WM):
     def __init__(self, simulator: 'Simulator'):
         super(Energy, self).__init__(simulator)
