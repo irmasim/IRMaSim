@@ -192,3 +192,5 @@ def start_logging():
     resource_logger.setLevel(logging.INFO)
     resource_logger.addHandler(FileOutputHandler)
     resource_logger.propagate = False
+
+launch()

@@ -73,37 +73,46 @@ class Energy(WM):
 
     def on_job_submission(self, jobs: list):
         self.pending_jobs.update(jobs)
-        for j in self.pending_jobs:
-            self.schedule_job(j)
+        self.schedule_jobs()
         pass
 
+
+    # FIXME: esto se esta ejecutando todo el rato para
+    # FIXME: el experimento 1 lo high ???, por que no
+    # FIXME: terminan los 2 trabajos pero sí porque llama
+    # FIXME: a este metodo
     def on_job_completion(self, jobs: list):
         for job in jobs:
             self.assigned_nodes[job.tasks[0].resource[2]] -= 1
             self.running_jobs.remove(job)
-
-        for j in self.pending_jobs:
-            self.schedule_job(j)
+        if len(jobs) > 0:
+            self.schedule_jobs()
         pass
 
-    def schedule_job(self, job: Job):
-        selected_node = self.select_node(job)
+    def schedule_jobs(self):
+        to_assign = []
 
-        if selected_node is not None:
-            self.assigned_nodes[selected_node.id] += 1
-            for task in job.tasks:
-                for core in selected_node.cores():
-                    if core.task is None:
-                        task.allocate(core.full_id())
-                        self.simulator.schedule([task])
-                        break
+        for j in self.pending_jobs:
+            selected_node = self.select_node(j)
+            if selected_node is not None:
+                for task in j.tasks:
+                    for core in selected_node.cores():
+                        if core.task is None:
+                            task.allocate(core.full_id())
+                            self.simulator.schedule([task])
+                            break
+                to_assign.append(j)
+                self.assigned_nodes[selected_node.id] += 1
 
+        for job in to_assign:
             self.pending_jobs.remove(job)
             self.running_jobs.add(job)
 
+
+
     def select_node(self, job):
         selected_node = None
-        best = 9999999.99
+        best = float('inf')
 
         for node in self.resources:
             if node.count_idle_cores() >= job.ntasks_per_node:
