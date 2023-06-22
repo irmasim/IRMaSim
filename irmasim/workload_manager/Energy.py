@@ -23,12 +23,12 @@ class Energy(WM):
 
         job_selections = {
             'energy': {
-                'lo_first': lambda job: job.req_energy * job.ntasks,
-                'hi_first': lambda job: -(job.req_energy * job.ntasks)
+                'lo_first': lambda job: job.req_energy * job.ntasks + job.submit_time,
+                'hi_first': lambda job: -(job.req_energy * job.ntasks) + job.submit_time
             },
             'edp': {
-                'lo_first': lambda job: job.req_energy * job.req_time * job.ntasks,
-                'hi_first': lambda job: -(job.req_energy * job.req_time * job.ntasks)
+                'lo_first': lambda job: job.req_energy * job.req_time * job.ntasks + job.submit_time,
+                'hi_first': lambda job: -(job.req_energy * job.req_time * job.ntasks) + job.submit_time
             }
         }
 
