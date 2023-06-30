@@ -23,6 +23,24 @@ class Node (BasicNode):
     def max_power_consumption(self):
         return sum([ processor.max_power_consumption for processor in self.children ])
 
+    def idle_cores(self):
+        cores = []
+        for processor in self.children:
+            cores.extend([ core for core in processor.children if core.task is None  ])
+        return cores
+    
+    def count_cores(self):
+        cores = 0
+        for processor in self.children:
+            cores += sum([ 1 for core in processor.children ])
+        return cores
+
+    def running_jobs(self):
+        jobs = []
+        for processor in self.children:
+            jobs.extend([ core.task.job for core in processor.children if core.task is not None])
+        return jobs
+
     def schedule(self, task: Task, resource_id: list):
         super().schedule(task, resource_id)
         self.current_memory += task.job.memory
