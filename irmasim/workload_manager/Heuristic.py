@@ -31,6 +31,7 @@ class Heuristic(WorkloadManager):
             'random': lambda job: job.rand,
             'first': lambda job: job.submit_time,
             'shortest': lambda job: job.req_time,
+            'longest': lambda job: -job.req_time,
             'smallest': lambda job: job.ntasks,
             'low_mem': lambda job: job.memory,
             'low_mem_ops': lambda job: job.memory_vol
@@ -108,5 +109,4 @@ class Heuristic(WorkloadManager):
 
     def on_end_simulation(self):
         pass
-
 
