@@ -23,12 +23,12 @@ class Energy(WM):
 
         job_selections = {
             'energy': {
-                'lo_first': lambda job: job.req_energy * job.ntasks + job.submit_time,
-                'hi_first': lambda job: -(job.req_energy * job.ntasks) + job.submit_time
+                'lo_first': lambda job: job.req_energy * job.ntasks,
+                'hi_first': lambda job: -(job.req_energy * job.ntasks)
             },
             'edp': {
-                'lo_first': lambda job: job.req_energy * job.req_time * job.ntasks + job.submit_time,
-                'hi_first': lambda job: -(job.req_energy * job.req_time * job.ntasks) + job.submit_time
+                'lo_first': lambda job: job.req_energy * job.req_time * job.ntasks,
+                'hi_first': lambda job: -(job.req_energy * job.req_time * job.ntasks)
             }
         }
 
@@ -76,11 +76,6 @@ class Energy(WM):
         self.schedule_jobs()
         pass
 
-
-    # FIXME: esto se esta ejecutando todo el rato para
-    # FIXME: el experimento 1 lo high ???, por que no
-    # FIXME: terminan los 2 trabajos pero sí porque llama
-    # FIXME: a este metodo
     def on_job_completion(self, jobs: list):
         for job in jobs:
             self.assigned_nodes[job.tasks[0].resource[2]] -= 1
@@ -93,22 +88,34 @@ class Energy(WM):
         to_assign = []
 
         for j in self.pending_jobs:
-            selected_node = self.select_node(j)
-            if selected_node is not None:
-                for task in j.tasks:
-                    for core in selected_node.cores():
-                        if core.task is None:
-                            task.allocate(core.full_id())
-                            self.simulator.schedule([task])
-                            break
-                to_assign.append(j)
-                self.assigned_nodes[selected_node.id] += 1
+            if (self.simulator.simulation_time - j.submit_time) >= 60:
+                to_assign = self.assign_job(j, to_assign)
 
         for job in to_assign:
             self.pending_jobs.remove(job)
             self.running_jobs.add(job)
 
+        to_assign = []
 
+        for j in self.pending_jobs:
+            to_assign = self.assign_job(j, to_assign)
+
+        for job in to_assign:
+            self.pending_jobs.remove(job)
+            self.running_jobs.add(job)
+
+    def assign_job(self, j, assigned_list):
+        selected_node = self.select_node(j)
+        if selected_node is not None:
+            for task in j.tasks:
+                for core in selected_node.cores():
+                    if core.task is None:
+                        task.allocate(core.full_id())
+                        self.simulator.schedule([task])
+                        break
+            assigned_list.append(j)
+            self.assigned_nodes[selected_node.id] += 1
+        return assigned_list
 
     def select_node(self, job):
         selected_node = None
