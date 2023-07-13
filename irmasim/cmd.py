@@ -143,6 +143,7 @@ def launch() -> None:
         print_statistics("Slowdown: ",simulator.slowdown_statistics())
         print_statistics("Bounded Slowdown: ",simulator.bounded_slowdown_statistics())
         print_statistics("Waiting Time: ",simulator.waiting_time_statistics())
+        print_statistics("Relative Execution Time: ",simulator.relative_execution_time_statistics())
 
     #os.remove(options['output_dir'] + "/simulator.pickle")
     print("Execution time " + str(time.time() - start_time) + " seconds")

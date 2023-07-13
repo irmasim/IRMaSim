@@ -272,7 +272,8 @@ class Simulator:
 
         for stats in [ self.slowdown_statistics(),
                        self.bounded_slowdown_statistics(),
-                       self.waiting_time_statistics() ]:
+                       self.waiting_time_statistics(),
+                       self.relative_execution_time_statistics()]:
            state.extend(stats.values())
 
         self.logger.info(",".join(map(lambda x: str(x), state)))
@@ -296,6 +297,13 @@ class Simulator:
             bsld_list.append( max(float(job.finish_time - job.submit_time)/max(job.finish_time - job.start_time,10), 1) )
 
         return self.compute_statistics(bsld_list)
+
+    def relative_execution_time_statistics(self) -> dict:
+        ret_list = []
+        for job in self.job_queue.finished_jobs:
+            ret_list.append( float(job.finish_time - job.start_time)/job.req_time )
+
+        return self.compute_statistics(ret_list)
     
     def waiting_time_statistics(self) -> dict:
         waiting_time_list = []
@@ -336,6 +344,6 @@ class Simulator:
     @classmethod
     def header(klass):
         header = "time,energy,future_jobs,pending_jobs,running_jobs,finished_jobs"
-        for metric in [ "slowdown", "bounded_slowdown", "waiting_time" ]:
+        for metric in [ "slowdown", "bounded_slowdown", "waiting_time", "relative_execution_time" ]:
            header += "," + ",".join([metric+"_"+stat for stat in ["total","avg","max","min"]])
         return header
