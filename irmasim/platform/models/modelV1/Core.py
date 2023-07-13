@@ -22,6 +22,9 @@ class Core(BasicCore):
         self.task = None
         self.requested_memory_bandwidth = 0.0
 
+    def get_mops(self):
+        return self.mops
+
     def schedule(self, task: Task, resource_id: list):
         if self.task is not None:
             raise Exception("This core does not model oversubscription")

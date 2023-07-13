@@ -1,0 +1,43 @@
+{
+   "platform": {
+      "the_platform": {
+         "id": "the_platform",
+         "clusters": [
+            { "id": "cluster0",
+               "nodes": [
+                  { "type": "n1111", "number": 1 },
+                  { "type": "n1112", "number": 1 }
+               ]
+            }
+         ],
+         "model_name" : "modelV1"
+      }
+   },
+   "node": {
+      "n1111": {
+         "id": "n1111",
+         "processors": [
+            {"type": "proc_n1111", "number": 1 }
+         ]
+      },
+      "n1112": {
+         "id": "n1112",
+         "processors": [
+            {"type": "proc_n1112", "number": 1 }
+         ]
+      }
+   },
+   "processor": {
+      "proc_n1111": {
+         "uarch": "basic_arch", "id": "n1111", "type": "CPU",
+         "cores": 1, "clock_rate": 1.0,
+         "llc_size": 8, "power": 100, "dpflops_per_cycle": 1, "min_power" : 0.05,
+         "dc": 50000, "dynamic_power": 1.59482, "da": 1.75, "static_power": 2.31082, "dd": 6000, "c": 32000, "db": 2000, "b": -1.85e-05 },
+      "proc_n1112": {
+         "uarch": "basic_arch", "id": "n1112", "type": "CPU",
+         "cores": 1, "clock_rate": 2.0,
+         "llc_size": 8, "power": 100, "dpflops_per_cycle": 1, "min_power" : 0.05,
+         "dc": 50000, "dynamic_power": 1.59482, "da": 1.75, "static_power": 2.31082, "dd": 6000, "c": 32000, "db": 2000, "b": -1.85e-05 }
+   }
+}
+

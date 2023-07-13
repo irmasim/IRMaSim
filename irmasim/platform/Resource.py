@@ -45,6 +45,13 @@ class Resource:
             else:
                 return child.get_resource(resource_id)
 
+    def get_mops(self):
+        mops = 0
+        if self.children:
+            for child in self.children:
+                mops += child.get_mops()
+        return mops
+
     def count_resources(self):
         if self.children:
             child_counts = []
