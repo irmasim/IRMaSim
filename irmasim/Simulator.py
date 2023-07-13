@@ -167,10 +167,12 @@ class Simulator:
                 return job['ntasks']
 
         def from_profile(key: str, job: dict, workload: dict):
-            if 'profile' in job:
+            if 'profile' in job and key in workload['profiles'][job['profile']] and workload['profiles'][job['profile']][key] is not None:
                 return workload['profiles'][job['profile']][key]
-            else:
+            elif key in job and job[key] is not None:
                 return job[key]
+            else:
+                return 1.0
 
         self.load_workload()
 

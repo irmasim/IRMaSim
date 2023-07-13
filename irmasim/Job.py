@@ -32,8 +32,20 @@ class Job:
 
     @classmethod
     def from_profile(klass, id: int, name: str, submit_time: float, nodes: int, ntasks: int, ntasks_per_node: int, profile: dict, type: str):
-        self=klass(id,name,submit_time, nodes, ntasks, ntasks_per_node, profile['req_ops'], profile['ipc'],
-                   profile['req_time'], profile['mem'], profile['mem_vol'])
+        if 'ipc' in profile:
+           ipc = profile['ipc']
+        else:
+           ipc = 1.0
+        if 'mem_vol' in profile:
+            mem_vol = profile['mem_vol']
+        else:
+            mem_vol = 1.0
+        if 'mem' in profile:
+            mem = profile['mem']
+        else:
+            mem = 0
+        self=klass(id,name,submit_time, nodes, ntasks, ntasks_per_node, profile['req_ops'], ipc,
+                   profile['req_time'], mem, mem_vol)
         self.type = type
         self.profile = profile
         return self
