@@ -49,9 +49,11 @@ class Resource:
         if self.children:
             child_counts = []
             for child in self.children:
-                child_counts += child.count_resources()
-            counts = [sum(x) for x in zip(*child_counts)]
-            return [1] + counts
+                if child_counts == []:
+                    child_counts = child.count_resources()
+                else:
+                    child_counts = [ sum(x) for x in zip(child_counts,child.count_resources()) ]
+            return [1] + child_counts
         else:
             return [1]
 

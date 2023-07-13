@@ -18,8 +18,6 @@ class Simulator:
         #print(self.platform.pstr("  "))
         self.workload = None
         self.workload_manager = self.build_workload_manager()
-        # TODO
-        # self.statistics = Statistics(options)
         self.simulation_time = 0
         self.energy = 0
         self.logger = logging.getLogger("simulator")
@@ -270,7 +268,8 @@ class Simulator:
         state = [ self.simulation_time, self.energy ]
         state.extend(self.job_queue.get_job_counts())
 
-        for stats in [ self.slowdown_statistics(),
+        for stats in [ self.utilisation_statistics(),
+                       self.slowdown_statistics(),
                        self.bounded_slowdown_statistics(),
                        self.waiting_time_statistics(),
                        self.relative_execution_time_statistics()]:
@@ -304,6 +303,14 @@ class Simulator:
             ret_list.append( float(job.finish_time - job.start_time)/job.req_time )
 
         return self.compute_statistics(ret_list)
+    
+    def utilisation_statistics(self) -> dict:
+        cpu_hours = sum([ (job.finish_time - job.start_time) * job.ntasks for job in self.job_queue.finished_jobs ])
+        cores = self.platform.count_resources()[-1]
+        if(self.simulation_time == 0):
+            return {"total": 0}
+        else:
+            return {"total": cpu_hours/self.simulation_time/cores}
     
     def waiting_time_statistics(self) -> dict:
         waiting_time_list = []
@@ -343,7 +350,7 @@ class Simulator:
 
     @classmethod
     def header(klass):
-        header = "time,energy,future_jobs,pending_jobs,running_jobs,finished_jobs"
+        header = "time,energy,future_jobs,pending_jobs,running_jobs,finished_jobs,utilisation"
         for metric in [ "slowdown", "bounded_slowdown", "waiting_time", "relative_execution_time" ]:
            header += "," + ",".join([metric+"_"+stat for stat in ["total","avg","max","min"]])
         return header
