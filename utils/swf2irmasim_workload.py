@@ -49,6 +49,8 @@ def parse_workload_data(args):
             ntasks = int(row[4])
             if ntasks <= 0:
                 continue
+            if args.reqtime > 0:
+                row[8] = float(row[3]) * args.reqtime
             if args.scale_ntasks != None:
                 ntasks = math.ceil(ntasks/args.scale_ntasks)
             if args.max_ntasks != None and ntasks > args.max_ntasks:
@@ -99,6 +101,7 @@ def main():
     parser.add_argument('-f', '--freq', type=float, default=1e9, help='Frequency of the reference processor in Hz')
     parser.add_argument('--max-ntasks', type=int, help='Number of tasks to limit large jobs to')
     parser.add_argument('--split-ntasks', type=int, help='Number of tasks to split large jobs to')
+    parser.add_argument('--reqtime', type=float, default=-1.0, help='Set the requested time to the actual runtime times a factor')
     parser.add_argument('--scale-ntasks', type=int, help='Divide the number of tasks by a factor')
     parser.add_argument('--from-time', type=str, help='Submission time of the first job')
     parser.add_argument('--to-time', type=str, help='Submission time of the last job')
