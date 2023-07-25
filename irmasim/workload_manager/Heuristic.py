@@ -42,6 +42,7 @@ class Heuristic(WorkloadManager):
             'first': lambda node: node.id,
             'high_gflops': lambda node: - node.children[0].mops_per_core,
             'high_cores': lambda node: - node.count_idle_cores(),
+            'low_cores': lambda node: node.count_idle_cores(),
             'high_mem': lambda node: - node.current_memory,
             'high_mem_bw': lambda node: node.children[0].requested_memory_bandwidth,
             'low_power': lambda node: - node.max_power_consumption()
