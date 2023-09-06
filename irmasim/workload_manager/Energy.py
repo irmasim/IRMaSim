@@ -73,37 +73,53 @@ class Energy(WM):
 
     def on_job_submission(self, jobs: list):
         self.pending_jobs.update(jobs)
-        for j in self.pending_jobs:
-            self.schedule_job(j)
+        self.schedule_jobs()
         pass
 
     def on_job_completion(self, jobs: list):
         for job in jobs:
             self.assigned_nodes[job.tasks[0].resource[2]] -= 1
             self.running_jobs.remove(job)
-
-        for j in self.pending_jobs:
-            self.schedule_job(j)
+        if len(jobs) > 0:
+            self.schedule_jobs()
         pass
 
-    def schedule_job(self, job: Job):
-        selected_node = self.select_node(job)
+    def schedule_jobs(self):
+        to_assign = []
 
+        for j in self.pending_jobs:
+            if (self.simulator.simulation_time - j.submit_time) >= 60:
+                to_assign = self.assign_job(j, to_assign)
+
+        for job in to_assign:
+            self.pending_jobs.remove(job)
+            self.running_jobs.add(job)
+
+        to_assign = []
+
+        for j in self.pending_jobs:
+            to_assign = self.assign_job(j, to_assign)
+
+        for job in to_assign:
+            self.pending_jobs.remove(job)
+            self.running_jobs.add(job)
+
+    def assign_job(self, j, assigned_list):
+        selected_node = self.select_node(j)
         if selected_node is not None:
-            self.assigned_nodes[selected_node.id] += 1
-            for task in job.tasks:
+            for task in j.tasks:
                 for core in selected_node.cores():
                     if core.task is None:
                         task.allocate(core.full_id())
                         self.simulator.schedule([task])
                         break
-
-            self.pending_jobs.remove(job)
-            self.running_jobs.add(job)
+            assigned_list.append(j)
+            self.assigned_nodes[selected_node.id] += 1
+        return assigned_list
 
     def select_node(self, job):
         selected_node = None
-        best = 9999999.99
+        best = float('inf')
 
         for node in self.resources:
             if node.count_idle_cores() >= job.ntasks_per_node:
