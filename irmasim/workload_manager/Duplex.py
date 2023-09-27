@@ -76,7 +76,7 @@ class Duplex(WorkloadManager):
             for n in range(0, len(self.nodes)):
                 for sch in self.node_queue[n]:
                     if sch.job == job:
-                        print("Job ", job.id, " completed in node ", n, " at time ", self.simulator.simulation_time, " and the estimated completion time was ", sch.completion_time)
+                        #print("Job ", job.id, " completed in node ", n, " at time ", self.simulator.simulation_time, " and the estimated completion time was ", sch.completion_time)
                         self.node_queue[n].pop(self.node_queue[n].index(sch))
 
         self.schedule()
@@ -108,12 +108,12 @@ class Duplex(WorkloadManager):
             best_completion_time = -1
             for i in range(0, len(self.nodes)):
                 completion_time = self.calculate_completion_time(job, i, scheduling)
-                print("Job ", job.id, " in node ", i, " completion time: ", completion_time)
+                #print("Job ", job.id, " in node ", i, " completion time: ", completion_time)
                 if completion_time > 0:
                     if best_completion_time == -1 or completion_time < best_completion_time:
                         best_completion_time = completion_time
                         best_node = i
-            print("Best node: ", best_node, " completion time: ", best_completion_time)
+            #print("Best node: ", best_node, " completion time: ", best_completion_time)
             scheduling.append(Schedule(best_node, job, best_completion_time))
         return scheduling
 
