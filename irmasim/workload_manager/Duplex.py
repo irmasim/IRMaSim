@@ -68,13 +68,15 @@ class Duplex(WorkloadManager):
             for sch in max_min_scheduling:
                 self.node_queue[sch.node].append(sch)
         self.schedule()
+        #for n in range(0, len(self.nodes)):
+        #    print("Node ", n, " queue: \n", "\n".join(str(x) for x in self.node_queue[n]))
 
     def on_job_completion(self, jobs: list):
         for job in jobs:
             for n in range(0, len(self.nodes)):
                 for sch in self.node_queue[n]:
                     if sch.job == job:
-                        #print("Job ", job.id, " completed in node ", n, " at time ", self.simulator.simulation_time, " and the estimated completion time was ", sch.completion_time)
+                        print("Job ", job.id, " completed in node ", n, " at time ", self.simulator.simulation_time, " and the estimated completion time was ", sch.completion_time)
                         self.node_queue[n].pop(self.node_queue[n].index(sch))
 
         self.schedule()
@@ -106,18 +108,21 @@ class Duplex(WorkloadManager):
             best_completion_time = -1
             for i in range(0, len(self.nodes)):
                 completion_time = self.calculate_completion_time(job, i, scheduling)
+                print("Job ", job.id, " in node ", i, " completion time: ", completion_time)
                 if completion_time > 0:
                     if best_completion_time == -1 or completion_time < best_completion_time:
                         best_completion_time = completion_time
                         best_node = i
+            print("Best node: ", best_node, " completion time: ", best_completion_time)
             scheduling.append(Schedule(best_node, job, best_completion_time))
         return scheduling
 
-    def calculate_completion_time(self, job: Job, node: int, scheduling: list):
+    def calculate_completion_time(self, job: Job, node: int, schedule: list):
         if job.ntasks_per_node > self.nodes[node].count_cores():
             return -1
-        if len(scheduling) != 0:
-            return scheduling[-1].completion_time + job.req_time / self.node_speedup[node]
+        node_schedule = [ sch for sch in schedule if sch.node == node ]
+        if len(node_schedule) != 0:
+            return node_schedule[-1].completion_time + job.req_time / self.node_speedup[node]
         if len(self.node_queue[node]) != 0:
             return self.node_queue[node][-1].completion_time + job.req_time / self.node_speedup[node]
         return self.simulator.simulation_time + job.req_time / self.node_speedup[node]
@@ -149,6 +154,7 @@ class Duplex(WorkloadManager):
             for n in range(0 , len(self.nodes)):
                 if min_time in cores_temporal_times[n]:
                     cores_times[n] = cores_temporal_times[n].copy()
+                    #print("Job " + str(jobs[j].id) + " scheduled in node " + str(n))
                     scheduling[n].append(jobs[j])
                     break
         return cores_times
