@@ -272,6 +272,7 @@ class Simulator:
                        self.exploitation_statistics(),
                        self.slowdown_statistics(),
                        self.bounded_slowdown_statistics(),
+                       self.user_slowdown_statistics(),
                        self.waiting_time_statistics(),
                        self.relative_execution_time_statistics()]:
            state.extend(stats.values())
@@ -288,6 +289,15 @@ class Simulator:
             if job.finish_time - job.start_time == 0:
                 print(f"warning: {job.id} has 0 execution time")
             sld_list.append(float(job.finish_time - job.submit_time) / (job.finish_time - job.start_time))
+
+        return self.compute_statistics(sld_list)
+
+    def user_slowdown_statistics(self) -> dict:
+        sld_list = []
+        for job in self.job_queue.finished_jobs:
+            if job.finish_time - job.start_time == 0:
+                print(f"warning: {job.id} has 0 execution time")
+            sld_list.append(float(job.finish_time - job.submit_time) / (job.req_time))
 
         return self.compute_statistics(sld_list)
 
@@ -325,7 +335,6 @@ class Simulator:
         waiting_time_list = []
         for job in self.job_queue.finished_jobs:
             waiting_time_list.append(float(job.start_time - job.submit_time))
-        
         return self.compute_statistics(waiting_time_list)
 
     def energy_consumption_statistics(self) -> dict:
@@ -360,6 +369,6 @@ class Simulator:
     @classmethod
     def header(klass):
         header = "time,energy,future_jobs,pending_jobs,running_jobs,finished_jobs,utilisation,exploitation"
-        for metric in [ "slowdown", "bounded_slowdown", "waiting_time", "relative_execution_time" ]:
+        for metric in [ "slowdown", "bounded_slowdown", "user_slowdown", "waiting_time", "relative_execution_time" ]:
            header += "," + ",".join([metric+"_"+stat for stat in ["total","avg","max","min"]])
         return header
