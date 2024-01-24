@@ -45,7 +45,7 @@ class Heuristic(WorkloadManager):
             'low_cores': lambda node: node.count_idle_cores(),
             'high_mem': lambda node: - node.current_memory,
             'high_mem_bw': lambda node: node.children[0].requested_memory_bandwidth,
-            'low_power': lambda node: - node.max_power_consumption()
+            'low_power': lambda node: node.max_power_consumption()
         }
 
         self.pending_jobs = SortedList(key=job_selections[self.job_scheduler])
@@ -55,7 +55,7 @@ class Heuristic(WorkloadManager):
         mod = importlib.import_module("irmasim.platform.models." + options["platform_model_name"] + ".Node")
         klass = getattr(mod, 'Node')
         self.resources = self.simulator.get_resources(klass)
-        #print("\n".join([ f'{node.id}: {node.max_power_consumption()}' for node in self.resources]))
+        #print("\n".join([ f'{node.id}: {node.children[0].mops_per_core} {node.max_power_consumption()}' for node in self.resources]))
         print(f"Job selection: {self.job_scheduler}, Node selection: {self.node_scheduler}")
         
 
