@@ -12,6 +12,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from irmasim.Options import Options
 
+DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 class Agent(nn.Module):
     """Superclass for all Agents.
 
@@ -221,7 +223,7 @@ Returns:
         """
 
         observation = torch.from_numpy(observation).float().unsqueeze(0)
-        return self.forward_policy(observation)
+        return self.forward_policy(observation.to(DEVICE))
 
     def loss(self) -> float:
         """Calculates the loss for the policy learning agent.
