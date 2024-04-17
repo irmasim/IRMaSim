@@ -139,6 +139,7 @@ def launch() -> None:
         simulator.start_simulation()
         print_statistics("Simulation time:", simulator.simulation_time_statistics())
         print_statistics("Energy consumption:", simulator.energy_consumption_statistics())
+        print_statistics("Energy efficiency:", simulator.energy_efficiency_statistics())
         print_statistics("Utilisation:", simulator.utilisation_statistics())
         print_statistics("Exploitation:", simulator.exploitation_statistics())
         print_statistics("Jobs:", simulator.job_statistics())
