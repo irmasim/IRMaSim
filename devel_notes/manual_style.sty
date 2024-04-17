@@ -1,0 +1,78 @@
+% Document encoding
+\usepackage{t1enc}
+
+\usepackage{titlesec}
+\usepackage[obeyspaces,hyphens]{url}
+\usepackage{fancyhdr}
+\usepackage{enumitem}
+
+\usepackage[usenames,dvipsnames]{xcolor}
+
+% Colors
+\definecolor{prime}{RGB}{0,92,100}
+
+% Fonts
+\usepackage[sfdefault]{universalis} % Follow instalation instructions in http://www.ctan.org/tex-archive/fonts/universalis/ ; updmap-sys --enable Map=universalis.map; texhash
+\usepackage[scaled]{beramono}
+\usepackage[T1]{fontenc}
+
+\DeclareUrlCommand\path{\color{prime}\footnotesize\tt\urlstyle{same}}
+
+% Page size and margins
+\usepackage[top=1.2cm,bottom=1.2cm,left=3.6cm,right=1.1cm,
+            headsep=6pt,headheight=26pt]{geometry}
+\setlength{\footskip}{20pt}
+
+% Paragraphs
+\setlength\parindent{0pt}
+\setlength\parskip{10pt}
+\setlist[itemize]{leftmargin=*,label={\color{prime}\textbullet}}
+
+% Chapters, sections...
+\titlespacing{\chapter}{-1.5cm}{-50pt}{0pt}
+\titleformat{\chapter}[hang]{\sffamily\fontsize{30}{35}\selectfont}{}{0pt}{\color{prime}\rule{\dimexpr +1.5cm+\textwidth\relax}{3pt}\\} 
+\titlespacing{\section}{-1.5cm}{5pt}{0pt}
+\titleformat{\section}[hang]{\sffamily\fontsize{22}{27}\selectfont}{}{0pt}{\color{prime}}
+\titlespacing{\subsection}{-1.5cm}{0pt}{-5pt}
+\titleformat{\subsection}[hang]{\sffamily\fontsize{17}{21}\selectfont}{}{0pt}{\color{prime}}
+\titlespacing{\subsubsection}{-1.5cm}{0pt}{-10pt}
+\titleformat{\subsubsection}[hang]{\sffamily\fontsize{12}{15}\selectfont}{}{0pt}{\color{prime}}
+
+\newcommand{\chapsubhead}[1]{%
+  \\{\Large #1}%
+}
+
+% Headers and footers
+\pagestyle{fancy}
+\renewcommand{\chaptermark}[1]{\markboth{#1}{}}
+\fancyhf{}
+\rfoot{\leftmark\hspace{0.5cm}\thepage}
+\renewcommand{\headrulewidth}{0pt}
+\fancypagestyle{plain}{%
+   \fancyhf{}
+   \rfoot{\leftmark\hspace{0.5cm}\thepage}
+   \renewcommand{\headrulewidth}{0pt}
+}
+
+\usepackage[colorlinks=true,linkcolor=prime,linktoc=page]{hyperref}
+
+\makeatletter
+\renewcommand\maketitle{%
+\begin{titlepage}
+   \begin{tikzpicture}[remember picture,overlay]
+   \node[anchor=north,yshift=-6.5cm] at (current page.north) {\includegraphics[width=0.7\paperwidth]{images/irmasim}};
+   \node[anchor=north west,xshift=2.2cm,yshift=-1.2cm] at (current page.north west) {\parbox{\textwidth}{%
+   \fontsize{30pt}{50pt}\selectfont\raggedright
+   \@title }};
+   
+   \node[anchor=north west,xshift=2.2cm,yshift=2.5cm] at (current page.south west) {\parbox{12cm}{%
+   \fontsize{20pt}{40pt}\selectfont
+   \@author
+
+   \fontsize{15pt}{25pt}\selectfont
+   \@date }};
+   \node[anchor=north east,xshift=-1.5cm,yshift=2.5cm] at (current page.south east) {\includegraphics[height=2cm]{images/logo_atc_l_en}};
+   \end{tikzpicture}
+\end{titlepage}
+}
+\makeatother

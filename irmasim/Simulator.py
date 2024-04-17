@@ -246,12 +246,14 @@ class Simulator:
                     job['ntasks_per_node'] = math.ceil(job['ntasks']/job['nodes'])
             if 'profile' in job:
                 job_queue.add_job(
-                Job.from_profile(job_id, job['id'], job['subtime']-first_job_subtime + simulation_time, job['nodes'], job['ntasks'], job['ntasks_per_node'],
-                    self.workload['profiles'][job['profile']], job['profile']))
+                Job.from_profile(job_id, job['id'], job['subtime']-first_job_subtime + simulation_time,
+                                 job['nodes'], job['ntasks'], job['ntasks_per_node'],
+                                 self.workload['profiles'][job['profile']], job['profile']))
             else:
                 job_queue.add_job(
-                Job(job_id, job['id'], job['subtime']-first_job_subtime + simulation_time, job['nodes'], job['ntasks'], job['ntasks_per_node'],
-                    job['req_ops'], job['ipc'], job['req_time'], job['mem'], job['mem_vol']))
+                Job(job_id, job['id'], job['subtime']-first_job_subtime + simulation_time,
+                    job['nodes'], job['ntasks'], job['ntasks_per_node'], job['req_ops'], job['ipc'],
+                    job['req_time'], job['req_energy'], job['mem'], job['mem_vol']))
             job_id += 1
 
         return job_queue
@@ -339,6 +341,9 @@ class Simulator:
 
     def energy_consumption_statistics(self) -> dict:
         return {"total": self.energy}
+
+    def energy_efficiency_statistics(self) -> dict:
+        return {"total": self.energy * self.simulation_time}
 
     def simulation_time_statistics(self) -> dict:
         return {"total": self.simulation_time}
