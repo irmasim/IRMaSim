@@ -6,6 +6,7 @@ from irmasim.Options import Options
 import importlib
 import os.path as path
 import json
+import csv
 import numpy
 import logging
 import random as rand
@@ -20,6 +21,7 @@ class Simulator:
         self.workload_manager = self.build_workload_manager()
         self.simulation_time = 0
         self.energy = 0
+        self.energy_user_estimation = 0
         self.logger = logging.getLogger("simulator")
 
         self.resource_logger = None
@@ -81,6 +83,7 @@ class Simulator:
                 for job in jobs:
                     job.finish_time = self.simulation_time
                     [ job_logger.info(task_str) for task_str in job.task_strs() ]
+                    self.energy_user_estimation += job.req_energy * job.ntasks
                 self.reap([task for job in jobs for task in job.tasks])
                 self.workload_manager.on_job_completion(jobs)
 
@@ -191,9 +194,30 @@ class Simulator:
     def load_workload(self):
         options = Options().get()
         if self.workload == None:
-            with open(options['workload_file'], 'r') as in_f:
-                self.workload = json.load(in_f)
+            if options['workload_file'].endswith('.json'):
+                with open(options['workload_file'], 'r') as in_f:
+                    self.workload = json.load(in_f)
+            elif options['workload_file'].endswith('.csv'):
+                self.workload = self.load_csv_workload(options['workload_file'])
+            else:
+                raise Exception(f"Unsupported workload file extension: {options['workload_file']}")
             print(f'Loaded {len(self.workload["jobs"])} jobs from {options["workload_file"]}')
+
+    def load_csv_workload(self, filename:str):
+        workload = {'jobs': []}
+        with open(filename, 'r') as in_f:
+            reader = csv.DictReader(in_f)
+            for row in reader:
+                for key in row:
+                    try:
+                        row[key] = int(row[key])
+                    except:
+                        try:
+                            row[key] = float(row[key])
+                        except:
+                            pass
+                workload['jobs'].append(row)
+        return workload
 
     def generate_workload(self, simulation_time:float = 0.0):
         self.load_workload()
@@ -250,6 +274,12 @@ class Simulator:
                                  job['nodes'], job['ntasks'], job['ntasks_per_node'],
                                  self.workload['profiles'][job['profile']], job['profile']))
             else:
+                if 'ipc' not in job:
+                    job['ipc'] = 1.0
+                if 'mem' not in job:
+                    job['mem'] = 0.0
+                if 'mem_vol' not in job:
+                    job['mem_vol'] = 0.0
                 job_queue.add_job(
                 Job(job_id, job['id'], job['subtime']-first_job_subtime + simulation_time,
                     job['nodes'], job['ntasks'], job['ntasks_per_node'], job['req_ops'], job['ipc'],
@@ -341,6 +371,9 @@ class Simulator:
 
     def energy_consumption_statistics(self) -> dict:
         return {"total": self.energy}
+
+    def energy_user_estimation_statistics(self) -> dict:
+        return {"total": self.energy_user_estimation}
 
     def energy_efficiency_statistics(self) -> dict:
         return {"total": self.energy * self.simulation_time}
