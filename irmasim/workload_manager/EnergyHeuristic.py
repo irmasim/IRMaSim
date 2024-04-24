@@ -8,9 +8,9 @@ import importlib
 if TYPE_CHECKING:
     from irmasim.Simulator import Simulator
 
-class Energy(WM):
+class EnergyHeuristic(WM):
     def __init__(self, simulator: 'Simulator'):
-        super(Energy, self).__init__(simulator)
+        super(EnergyHeuristic, self).__init__(simulator)
 
         if simulator.platform.config["model"] != "modelV1":
             raise Exception("Heuristic workload manager needs a modelV1 platform")
@@ -28,7 +28,7 @@ class Energy(WM):
             }
         }
 
-        node_criteria = {
+        resource_criteria = {
             'energy': {
                 'lowest': lambda node, job: self.node_energy(job, node),
                 'highest': lambda node, job: -self.node_energy(job, node),
@@ -44,21 +44,21 @@ class Energy(WM):
         else:
             self.metric = options["workload_manager"]["metric"]
 
-        if 'job_criterion' not in options['workload_manager']:
-            self.job_criterion = 'lowest'
+        if 'job_selection' not in options['workload_manager']:
+            self.job_selection = 'lowest'
         else:
-            self.job_criterion = options["workload_manager"]["job_criterion"]
+            self.job_selection = options["workload_manager"]["job_selection"]
 
-        if 'node_criterion' not in options['workload_manager']:
-            self.node_criterion = 'lowest'
+        if 'resource_selection' not in options['workload_manager']:
+            self.resource_selection = 'lowest'
         else:
-            self.node_criterion = options["workload_manager"]["node_criterion"]
+            self.resource_selection = options["workload_manager"]["resource_selection"]
 
-        print(self.job_criterion, self.node_criterion, self.metric)
+        print(self.job_selection, self.resource_selection, self.metric)
 
-        self.pending_jobs = SortedList(key=job_criteria[self.metric][self.job_criterion])
-        self.running_jobs = SortedList(key=job_criteria[self.metric][self.job_criterion])
-        self.node_estimation = node_criteria[self.metric][self.node_criterion]
+        self.pending_jobs = SortedList(key=job_criteria[self.metric][self.job_selection])
+        self.running_jobs = SortedList(key=job_criteria[self.metric][self.job_selection])
+        self.node_estimation = resource_criteria[self.metric][self.resource_selection]
 
         mod = importlib.import_module("irmasim.platform.models." + options["platform_model_name"] + ".Node")
         klass = getattr(mod, 'Node')
