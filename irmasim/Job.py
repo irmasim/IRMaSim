@@ -8,7 +8,7 @@ class Job:
         self.tasks = None
         self.id = id
         self.rand = 0
-        self.name = name
+        self.name = str(name)
         self.type = id
         self.profile = None
         self.submit_time = submit_time
