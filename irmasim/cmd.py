@@ -166,6 +166,8 @@ def print_statistics(message: str, stats: dict):
 def start_logging():
     options = Options().get()
     levels = { 'DEBUG': logging.DEBUG, 'INFO': logging.INFO }
+    if not path.exists(options['output_dir']):
+        os.makedirs(options['output_dir'])
     irmasim_logger = logging.getLogger("irmasim")
     FileOutputHandler = logging.FileHandler(options['output_dir']+"/"+"irmasim.log", mode="w")
     if 'log_level' in options:
