@@ -1,4 +1,4 @@
-from irmasim.workload_manager.WorkloadManager import WorkloadManager
+from irmasim.workload_manager.Minimal import Minimal
 from irmasim.Job import Job
 from irmasim.Task import Task
 from typing import TYPE_CHECKING
@@ -6,64 +6,44 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from irmasim.Simulator import Simulator
 
-class Minimal(WorkloadManager):
+class Pareto(Minimal):
     def __init__(self, simulator: 'Simulator'):
-        super(Minimal, self).__init__(simulator)
+        super(Pareto, self).__init__(simulator)
         if simulator.platform.config["model"] != "modelV1":
-            raise Exception("Minimal workload manager needs a modelV1 platform")
+            raise Exception("Pareto workload manager needs a modelV1 platform")
         self.resources = [ [ resource_id, 1 ] for resource_id in self.simulator.get_resources_ids() ]
         self.idle_resources = len(self.resources)
         self.pending_jobs = []
         self.running_jobs = []
 
     def on_job_submission(self, jobs: list):
-        print("Minimal on_job_submission")
+        print("Pareto on_job_submission")
         self.pending_jobs.extend(jobs)
-        while self.schedule_next_job():
-            pass
+        print(self.pending_jobs)
+        return self.schedule_next_job()
 
     def on_job_completion(self, jobs: list):
         for job in jobs:
             for task in job.tasks:
                 self.deallocate(task)
             self.running_jobs.remove(job)
-        while self.schedule_next_job():
-            pass
+        return self.schedule_next_job()
 
-    def schedule_next_job(self):
+    def schedule_next_job(self, choices=None):
         if self.pending_jobs != [] and self.idle_resources >= len(self.pending_jobs[0].tasks):
             print(f" {len(self.pending_jobs)} jobs pending")
             print(f" {self.idle_resources} resources available >= {len(self.pending_jobs[0].tasks)} tasks")
-            next_job = self.pending_jobs.pop(0)
+            if choices == None:
+                choices = len(self.pending_jobs)
+            print(f" Scheduling next job from {choices} choices")
+            next_job = self.pending_jobs.pop(choices - 1)
             print(f" Scheduling job {next_job.id}")
             for task in next_job.tasks:
                 self.allocate(task)
             self.simulator.schedule(next_job.tasks)
             self.running_jobs.append(next_job)
-            print(f" Returning True")
-            return True
+            print(f" Returning {choices - 1}")
+            return choices - 1
         else:
             print(" No jobs to schedule")
-            return False
-
-    def on_end_step(self):
-        pass
-
-    def on_end_simulation(self):
-        pass
-
-    def allocate(self, task: Task):
-        resource = 0
-        while self.resources[resource][1] == 0:
-            resource += 1
-        self.resources[resource][1] = 0
-        self.idle_resources -= 1
-        task.allocate(self.resources[resource][0])
-
-    def deallocate(self, task: Task):
-        for resource in range(len(self.resources)):
-           if self.resources[resource][1] == 0 and self.resources[resource][0] == task.resource:
-               self.resources[resource][1] = 1
-               self.idle_resources += 1
-               break
-
+            return None
