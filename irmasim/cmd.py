@@ -9,6 +9,7 @@ import random as rnd
 import time
 import logging
 from irmasim.Simulator import Simulator
+from irmasim.BruteSimulator import BruteSimulator
 from irmasim.Options import Options
 from irmasim.Job import Job
 
@@ -130,24 +131,33 @@ def launch() -> None:
     simulator_handler = logging.getLogger("simulator").handlers[0]
     job_handler = logging.getLogger("jobs").handlers[0]
     resource_handler = logging.getLogger("resources").handlers[0]
-    for run in range(args.nbruns):
-        simulator = Simulator()
-        print(f'Starting simulation run: {run}')
+    if args.nbruns == 0:
+        run = 0
+        simulator = BruteSimulator()
         simulator_handler.setFormatter(logging.Formatter(f'{run},%(message)s'))
         job_handler.setFormatter(logging.Formatter(f'{run},%(message)s'))
         resource_handler.setFormatter(logging.Formatter(f'{run},%(message)s'))
         simulator.start_simulation()
-        print_statistics("Simulation time:", simulator.simulation_time_statistics())
-        print_statistics("Energy consumption:", simulator.energy_consumption_statistics())
-        print_statistics("User energy estimation:", simulator.energy_user_estimation_statistics())
-        print_statistics("Energy efficiency:", simulator.energy_efficiency_statistics())
-        print_statistics("Utilisation:", simulator.utilisation_statistics())
-        print_statistics("Exploitation:", simulator.exploitation_statistics())
-        print_statistics("Jobs:", simulator.job_statistics())
-        print_statistics("Slowdown: ",simulator.slowdown_statistics())
-        print_statistics("Bounded Slowdown: ",simulator.bounded_slowdown_statistics())
-        print_statistics("Waiting Time: ",simulator.waiting_time_statistics())
-        print_statistics("Relative Execution Time: ",simulator.relative_execution_time_statistics())
+
+    else:
+        for run in range(args.nbruns):
+            simulator = Simulator()
+            print(f'Starting simulation run: {run}')
+            simulator_handler.setFormatter(logging.Formatter(f'{run},%(message)s'))
+            job_handler.setFormatter(logging.Formatter(f'{run},%(message)s'))
+            resource_handler.setFormatter(logging.Formatter(f'{run},%(message)s'))
+            simulator.start_simulation()
+            print_statistics("Simulation time:", simulator.simulation_time_statistics())
+            print_statistics("Energy consumption:", simulator.energy_consumption_statistics())
+            print_statistics("User energy estimation:", simulator.energy_user_estimation_statistics())
+            print_statistics("Energy efficiency:", simulator.energy_efficiency_statistics())
+            print_statistics("Utilisation:", simulator.utilisation_statistics())
+            print_statistics("Exploitation:", simulator.exploitation_statistics())
+            print_statistics("Jobs:", simulator.job_statistics())
+            print_statistics("Slowdown: ",simulator.slowdown_statistics())
+            print_statistics("Bounded Slowdown: ",simulator.bounded_slowdown_statistics())
+            print_statistics("Waiting Time: ",simulator.waiting_time_statistics())
+            print_statistics("Relative Execution Time: ",simulator.relative_execution_time_statistics())
 
     #os.remove(options['output_dir'] + "/simulator.pickle")
     print("Execution time " + str(time.time() - start_time) + " seconds")

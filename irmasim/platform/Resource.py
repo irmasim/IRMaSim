@@ -77,3 +77,17 @@ class Resource:
 
     def pstr(self, indent: str, current: str = ""):
         return current + self.id + "\n" + "".join(map(lambda x: x.pstr(indent,current+indent), self.children))
+
+    def dump(self):
+        ret = "id: " + self.id + "\n"
+        for child in self.children:
+            ret += child.dump()
+        return ret
+
+
+
+
+
+
+
+

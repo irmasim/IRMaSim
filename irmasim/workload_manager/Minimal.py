@@ -17,7 +17,7 @@ class Minimal(WorkloadManager):
         self.running_jobs = []
 
     def on_job_submission(self, jobs: list):
-        print("Minimal on_job_submission")
+        print("Pareto on_job_submission")
         self.pending_jobs.extend(jobs)
         while self.schedule_next_job():
             pass

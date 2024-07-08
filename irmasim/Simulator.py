@@ -11,7 +11,6 @@ import numpy
 import logging
 import random as rand
 
-
 class Simulator:
 
     def __init__(self):
@@ -43,68 +42,57 @@ class Simulator:
             self.simulate_trajectory()
         self.workload_manager.on_end_simulation()
 
-    def simulate_step(self, delta_time, delta_time_platform, delta_time_queue):
-        if delta_time != 0:
-            self.platform.advance(delta_time)
-            self.energy += self.platform.get_joules(delta_time)
-            self.simulation_time += delta_time
-
-        if delta_time == delta_time_queue:
-            jobs = self.job_queue.get_next_jobs(self.simulation_time)
-            logging.getLogger("irmasim").debug("{} Received job submission: {}".format( \
-                    self.simulation_time, ",".join([str(job.id)+"("+job.name+")" for job in jobs])))
-            while self.workload_manager.on_job_submission(jobs) != None:
-                jobs = []
-
-        if delta_time == delta_time_platform:
-            jobs = self.job_queue.finish_jobs()
-            job_logger = logging.getLogger("jobs")
-            for job in jobs:
-                job.finish_time = self.simulation_time
-                [ job_logger.info(task_str) for task_str in job.task_strs() ]
-                self.energy_user_estimation += job.req_energy * job.ntasks
-            self.reap([task for job in jobs for task in job.tasks])
-            while self.workload_manager.on_job_completion(jobs) != None:
-                jobs = []
-
-        if delta_time == delta_time_queue or delta_time == delta_time_platform:
-            self.workload_manager.on_end_step()
-
-#def sim():
-#    t = 0
-#    branch = 0
-#    branches = 1
-#    stack = []
-#    end = False
-#    while not end:
-#        parent = t
-#        t += random.randrange(7)+1
-#        print(f"{parent}.{branch} -> {t}.{branch}")
-#        end = is_end() or len(stack) > 3
-#        if not end:
-#            o = random.randrange(3)
-#            for i in range(o):
-#                stack.append((t, branches, f"{parent}.{branch}"))
-#                print(f"{parent}.{branch} -> {t}.{branches}")
-#                branches += 1
-#        else:
-#            print(f"{t}.{branch} [color=red]")
-#            if stack:
-#                t,branch,parent = stack.pop()
-#                end = False
-
     def simulate_trajectory(self) -> None:
         logging.getLogger("irmasim").debug("Simulation start")
+        self.log_state()
+        first_jobs = self.job_queue.get_next_jobs(self.job_queue.get_next_step())
+        self.simulation_time += first_jobs[0].submit_time
+        self.platform.advance(self.simulation_time)
+        # TODO do something with joules
+        self.energy = self.platform.get_joules(self.simulation_time)
+        # self.statistics.calculate_energy_and_edp(self.resource_manager.core_pool, self.simulation_time)
+        logging.getLogger("irmasim").debug("{} Received job submission: {}".format( \
+                self.simulation_time, ",".join([str(job.id)+"("+job.name+")" for job in first_jobs])))
+        self.workload_manager.on_job_submission(first_jobs)
+        self.workload_manager.on_end_step()
+        
+        self.log_state()
 
-        while True:
-            self.log_state()
+        delta_time_platform = self.platform.get_next_step()
+        # TODO unify get_next_step return value
+        delta_time_queue = self.job_queue.get_next_step() - self.simulation_time
+
+        delta_time = min([delta_time_platform, delta_time_queue])
+
+        while delta_time != math.inf:
+            if delta_time != 0:
+                self.platform.advance(delta_time)
+                self.energy += self.platform.get_joules(delta_time)
+                self.simulation_time += delta_time
+
+            if delta_time == delta_time_queue:
+                jobs = self.job_queue.get_next_jobs(self.simulation_time)
+                logging.getLogger("irmasim").debug("{} Received job submission: {}".format( \
+                        self.simulation_time, ",".join([str(job.id)+"("+job.name+")" for job in jobs])))
+                self.workload_manager.on_job_submission(jobs)
+
+            if delta_time == delta_time_platform:
+                jobs = self.job_queue.finish_jobs()
+                job_logger = logging.getLogger("jobs")
+                for job in jobs:
+                    job.finish_time = self.simulation_time
+                    [ job_logger.info(task_str) for task_str in job.task_strs() ]
+                self.reap([task for job in jobs for task in job.tasks])
+                self.workload_manager.on_job_completion(jobs)
+
+            if delta_time == delta_time_queue or delta_time == delta_time_platform:
+                self.workload_manager.on_end_step()
+
             delta_time_platform = self.platform.get_next_step()
             # TODO unify get_next_step return value
             delta_time_queue = self.job_queue.get_next_step() - self.simulation_time
             delta_time = min([delta_time_platform, delta_time_queue])
-            if delta_time == math.inf:
-                break
-            self.simulate_step(delta_time, delta_time_platform, delta_time_queue)
+            self.log_state()
 
     def schedule(self, tasks: list):
         for task in tasks:
@@ -124,9 +112,6 @@ class Simulator:
                 logging.getLogger("irmasim").debug("{} {} complete task {}".format( \
                         self.simulation_time, ".".join(task.resource), task.job.name))
                 self.platform.reap(task, task.resource[1:])
-
-    def get_next_step(self) -> float:
-        return min([self.platform.get_next_step(), self.job_queue.get_next_step()])
 
     def get_resources_ids(self):
         return self.platform.enumerate_ids()
@@ -290,6 +275,8 @@ class Simulator:
                     job['mem'] = 0.0
                 if 'mem_vol' not in job:
                     job['mem_vol'] = 0.0
+                if 'req_energy' not in job:
+                    job['req_energy'] = 0.0
                 job_queue.add_job(
                 Job(job_id, job['id'], job['subtime']-first_job_subtime + simulation_time,
                     job['nodes'], job['ntasks'], job['ntasks_per_node'], job['req_ops'], job['ipc'],

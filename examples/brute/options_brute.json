@@ -1,9 +1,9 @@
 {
   "seed": 1995,
-  "workload_file": "workload.json",
+  "workload_file": "workload.csv",
   "platform_file": "platform.json",
   "platform_name": "the_platform",
   "workload_manager": {
-    "type": "Pareto"
+    "type": "Hesitant"
   }
 }

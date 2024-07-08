@@ -49,3 +49,8 @@ class JobQueue:
             + " submitted = [ " + ", ".join([str(job.id) for job in self.submitted_jobs]) + " ]" \
             + " finished = [ " + ", ".join([str(job.id) for job in self.finished_jobs]) + " ]"
 
+    def dump(self):
+        return "future = [ [ "    + " ],\n    [ ".join([ ", ".join(job.task_strs()) for job in self.future_jobs]) + " ] ]\n" \
+            + " submitted = [ [ " + " ],\n    [ ".join([ ", ".join(job.task_strs()) for job in self.submitted_jobs]) + " ] ]\n" \
+            + " finished = [ [ "  + " ],\n    [ ".join([ ", ".join(job.task_strs()) for job in self.finished_jobs]) + " ] ]\n"
+

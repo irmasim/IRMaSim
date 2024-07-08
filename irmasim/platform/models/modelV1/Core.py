@@ -28,13 +28,13 @@ class Core(BasicCore):
     def schedule(self, task: Task, resource_id: list):
         if self.task is not None:
             raise Exception("This core does not model oversubscription")
-
         self.task = task
         self.requested_memory_bandwidth = task.memory_volume / \
                                           (task.ops / (self.mops * 1e6))
 
+
     def get_next_step(self):
-        if not self.task:
+        if self.task is None:
             return math.inf
         else:
             return self.task.ops / (self.mops * 1e6 * self.speedup)
@@ -56,3 +56,6 @@ class Core(BasicCore):
             return 0
         else:
             return self.task.ops/self.task.job.ops
+
+    def dump(self):
+        return f"Core with {self.mops} MOPS\n"
