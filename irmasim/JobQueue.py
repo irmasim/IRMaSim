@@ -45,7 +45,7 @@ class JobQueue:
 
 
     def __str__(self):
-        return "future = [ " + ", ".join([str(job.id) for job in self.future_jobs]) + " ]" \
+        return str(hex(id(self))) + " future = [ " + ", ".join([str(job.id) for job in self.future_jobs]) + " ]" \
             + " submitted = [ " + ", ".join([str(job.id) for job in self.submitted_jobs]) + " ]" \
             + " finished = [ " + ", ".join([str(job.id) for job in self.finished_jobs]) + " ]"
 

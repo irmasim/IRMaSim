@@ -430,3 +430,6 @@ class Simulator:
         for metric in [ "slowdown", "bounded_slowdown", "user_slowdown", "waiting_time", "relative_execution_time" ]:
            header += "," + ",".join([metric+"_"+stat for stat in ["total","avg","max","min"]])
         return header
+
+    def __str__(self):
+        return f"{hex(id(self))} simulation_time: {self.simulation_time} energy: {self.energy} jobs: [ {self.job_queue} ] wm: [ {self.workload_manager} ]"

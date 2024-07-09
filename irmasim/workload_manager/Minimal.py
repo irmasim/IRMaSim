@@ -17,7 +17,6 @@ class Minimal(WorkloadManager):
         self.running_jobs = []
 
     def on_job_submission(self, jobs: list):
-        print("Pareto on_job_submission")
         self.pending_jobs.extend(jobs)
         while self.schedule_next_job():
             pass
@@ -32,18 +31,13 @@ class Minimal(WorkloadManager):
 
     def schedule_next_job(self):
         if self.pending_jobs != [] and self.idle_resources >= len(self.pending_jobs[0].tasks):
-            print(f" {len(self.pending_jobs)} jobs pending")
-            print(f" {self.idle_resources} resources available >= {len(self.pending_jobs[0].tasks)} tasks")
             next_job = self.pending_jobs.pop(0)
-            print(f" Scheduling job {next_job.id}")
             for task in next_job.tasks:
                 self.allocate(task)
             self.simulator.schedule(next_job.tasks)
             self.running_jobs.append(next_job)
-            print(f" Returning True")
             return True
         else:
-            print(" No jobs to schedule")
             return False
 
     def on_end_step(self):

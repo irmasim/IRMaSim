@@ -17,7 +17,7 @@ class Hesitant(Minimal):
         self.running_jobs = []
 
     def on_job_submission(self, jobs: list):
-        print("Pareto on_job_submission")
+        print("on_job_submission")
         self.pending_jobs.extend(jobs)
 
     def on_job_completion(self, jobs: list):
@@ -28,6 +28,8 @@ class Hesitant(Minimal):
 
     def get_choices(self):
         if self.pending_jobs != [] and self.idle_resources >= len(self.pending_jobs[0].tasks):
+            print(f" {len(self.pending_jobs)} jobs pending")
+            print(f" {self.idle_resources} resources available >= {len(self.pending_jobs[0].tasks)} tasks")
             return [ (job,None) for job in range(len(self.pending_jobs)) ]
         else:
             return []
@@ -55,3 +57,6 @@ class Hesitant(Minimal):
 #               self.idle_resources += 1
 #               break
 #
+    def __str__(self):
+        return f"{hex(id(self))} pending: {len(self.pending_jobs)} running: {len(self.running_jobs)}"
+
