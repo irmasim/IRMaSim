@@ -11,6 +11,15 @@ import numpy
 import logging
 import random as rand
 
+def print_statistics(message: str, stats: dict):
+
+    total_message = message
+    for s in stats.items():
+        total_message += " "+ str(s[0])+": " + str(s[1])+","
+    
+    print(total_message[:-1])
+    #print(f"{message} total: {stats['total']}, avg: {stats['avg']}, max: {stats['max']}, min: {stats['min']}")
+
 class Simulator:
 
     def __init__(self):
@@ -41,6 +50,7 @@ class Simulator:
             self.job_queue = self.generate_workload(self.simulation_time)
             self.simulate_trajectory()
         self.workload_manager.on_end_simulation()
+        self.simulation_summary()
 
     def simulate_trajectory(self) -> None:
         logging.getLogger("irmasim").debug("Simulation start")
@@ -311,6 +321,19 @@ class Simulator:
         if self.resource_logger != None:
             for resource in self.log_resources:
                 self.resource_logger.info(str(self.simulation_time) + "," + resource.log_state())
+
+    def simulation_summary(self):
+        print_statistics("Simulation time:", self.simulation_time_statistics())
+        print_statistics("Energy consumption:", self.energy_consumption_statistics())
+        print_statistics("User energy estimation:", self.energy_user_estimation_statistics())
+        print_statistics("Energy efficiency:", self.energy_efficiency_statistics())
+        print_statistics("Utilisation:", self.utilisation_statistics())
+        print_statistics("Exploitation:", self.exploitation_statistics())
+        print_statistics("Jobs:", self.job_statistics())
+        print_statistics("Slowdown: ",self.slowdown_statistics())
+        print_statistics("Bounded Slowdown: ",self.bounded_slowdown_statistics())
+        print_statistics("Waiting Time: ",self.waiting_time_statistics())
+        print_statistics("Relative Execution Time: ",self.relative_execution_time_statistics())
 
     def slowdown_statistics(self) -> dict:
         sld_list = []

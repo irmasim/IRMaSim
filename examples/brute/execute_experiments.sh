@@ -1,4 +1,7 @@
-for scheduler in minimal pareto; do
+for scheduler in minimal brute; do
     rm -rf ${scheduler}/*
-    irmasim  -o ${scheduler} options_${scheduler}.json
+    if [ ${scheduler} == "brute" ]; then
+        op="-nr 0"
+    fi
+    irmasim $op -o ${scheduler} options_${scheduler}.json
 done

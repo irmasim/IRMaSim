@@ -7,6 +7,9 @@ class BruteSimulator(Simulator):
 
     def __init__(self):
         super().__init__()
+        self.job_log = []
+        self.job_logger = logging.getLogger("jobs")
+        job_handler = logging.getLogger("jobs").handlers[0]
 
     def checkpoint(self):
         ret = {
@@ -27,6 +30,11 @@ class BruteSimulator(Simulator):
         self.platform = checkpoint["platform"]
         self.workload_manager = checkpoint["workload_manager"]
         self.workload_manager.simulator = self
+
+    def simulation_summary_branch(self, branch):
+        self.simulation_summary()
+        self.job_logger.handlers[0].setFormatter(logging.Formatter(f'{branch},%(message)s'))
+        [ self.job_logger.info(task_str) for task_str in self.job_log ]
 
     def simulate_step(self):
         delta_time_platform = self.platform.get_next_step()
@@ -52,20 +60,21 @@ class BruteSimulator(Simulator):
             job_logger = logging.getLogger("jobs")
             for job in jobs:
                 job.finish_time = self.simulation_time
-                [ job_logger.info(task_str) for task_str in job.task_strs() ]
+                self.job_log.extend(job.task_strs())
                 self.energy_user_estimation += job.req_energy * job.ntasks
             self.reap([task for job in jobs for task in job.tasks])
             self.workload_manager.on_job_completion(jobs)
 
         return False
 
-
     def simulate_trajectory(self) -> None:
+        simulator_handler = logging.getLogger("simulator").handlers[0]
         logging.getLogger("irmasim").debug("Simulation start")
         branch = 0
         branches = 1
         stack = []
         end = False
+        simulator_handler.setFormatter(logging.Formatter(f'{branch},%(message)s'))
         self.log_state()
 
         while not end:
@@ -84,6 +93,8 @@ class BruteSimulator(Simulator):
                 choice = choices[0] if choices else None
             else:
                 if stack:
+                    print(f"Branch: {branch}")
+                    self.simulation_summary_branch(branch)
                     print("Backtracking")
                     checkpoint = stack.pop()
                     self.restore(checkpoint)
@@ -93,5 +104,8 @@ class BruteSimulator(Simulator):
 
             if choice is not None:
                 self.workload_manager.schedule_choice(choice)
+            simulator_handler.setFormatter(logging.Formatter(f'{branch},%(message)s'))
             self.log_state()
+        print(f"Branch: {branch}")
+        self.simulation_summary_branch(branch)
 

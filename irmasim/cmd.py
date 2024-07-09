@@ -147,31 +147,10 @@ def launch() -> None:
             job_handler.setFormatter(logging.Formatter(f'{run},%(message)s'))
             resource_handler.setFormatter(logging.Formatter(f'{run},%(message)s'))
             simulator.start_simulation()
-            print_statistics("Simulation time:", simulator.simulation_time_statistics())
-            print_statistics("Energy consumption:", simulator.energy_consumption_statistics())
-            print_statistics("User energy estimation:", simulator.energy_user_estimation_statistics())
-            print_statistics("Energy efficiency:", simulator.energy_efficiency_statistics())
-            print_statistics("Utilisation:", simulator.utilisation_statistics())
-            print_statistics("Exploitation:", simulator.exploitation_statistics())
-            print_statistics("Jobs:", simulator.job_statistics())
-            print_statistics("Slowdown: ",simulator.slowdown_statistics())
-            print_statistics("Bounded Slowdown: ",simulator.bounded_slowdown_statistics())
-            print_statistics("Waiting Time: ",simulator.waiting_time_statistics())
-            print_statistics("Relative Execution Time: ",simulator.relative_execution_time_statistics())
 
-    #os.remove(options['output_dir'] + "/simulator.pickle")
     print("Execution time " + str(time.time() - start_time) + " seconds")
 
     sys.exit(0)
-
-def print_statistics(message: str, stats: dict):
-
-    total_message = message
-    for s in stats.items():
-        total_message += " "+ str(s[0])+": " + str(s[1])+","
-    
-    print(total_message[:-1])
-    #print(f"{message} total: {stats['total']}, avg: {stats['avg']}, max: {stats['max']}, min: {stats['min']}")
 
 def start_logging():
     options = Options().get()
