@@ -4,6 +4,6 @@
   "platform_file": "platform.json",
   "platform_name": "the_platform",
   "workload_manager": {
-    "type": "Hesitant"
+    "type": "HesitantShMem"
   }
 }
