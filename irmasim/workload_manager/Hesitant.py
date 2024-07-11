@@ -9,15 +9,8 @@ if TYPE_CHECKING:
 class Hesitant(Minimal):
     def __init__(self, simulator: 'Simulator'):
         super(Hesitant, self).__init__(simulator)
-        if simulator.platform.config["model"] != "modelV1":
-            raise Exception("Hesitant workload manager needs a modelV1 platform")
-        self.resources = [ [ resource_id, 1 ] for resource_id in self.simulator.get_resources_ids() ]
-        self.idle_resources = len(self.resources)
-        self.pending_jobs = []
-        self.running_jobs = []
 
     def on_job_submission(self, jobs: list):
-        print("on_job_submission")
         self.pending_jobs.extend(jobs)
 
     def on_job_completion(self, jobs: list):
@@ -27,36 +20,19 @@ class Hesitant(Minimal):
             self.running_jobs.remove(job)
 
     def get_choices(self):
-        if self.pending_jobs != [] and self.idle_resources >= len(self.pending_jobs[0].tasks):
-            print(f" {len(self.pending_jobs)} jobs pending")
-            print(f" {self.idle_resources} resources available >= {len(self.pending_jobs[0].tasks)} tasks")
-            return [ (job,None) for job in range(len(self.pending_jobs)) ]
+        if self.pending_jobs != []:
+            return [ (job,None) for job in range(len(self.pending_jobs)) if len(self.pending_jobs[job].tasks) <= self.idle_resources ]
         else:
             return []
 
     def schedule_choice(self, choice):
         next_job = self.pending_jobs.pop(choice[0])
-        print(f" Scheduling job {next_job.id}")
+        assert self.idle_resources >= len(next_job.tasks)
         for task in next_job.tasks:
             self.allocate(task)
         self.simulator.schedule(next_job.tasks)
         self.running_jobs.append(next_job)
 
-#    def allocate(self, task: Task):
-#        resource = 0
-#        while self.resources[resource][1] == 0:
-#            resource += 1
-#        self.resources[resource][1] = 0
-#        self.idle_resources -= 1
-#        task.allocate(self.resources[resource][0])
-#
-#    def deallocate(self, task: Task):
-#        for resource in range(len(self.resources)):
-#           if self.resources[resource][1] == 0 and self.resources[resource][0] == task.resource:
-#               self.resources[resource][1] = 1
-#               self.idle_resources += 1
-#               break
-#
     def __str__(self):
         return f"{hex(id(self))} pending: {len(self.pending_jobs)} running: {len(self.running_jobs)}"
 

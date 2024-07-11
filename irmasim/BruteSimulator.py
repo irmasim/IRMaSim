@@ -34,11 +34,9 @@ class BruteSimulator(Simulator):
             return True
 
         if delta_time != 0:
-            print(self.simulation_time)
             self.platform.advance(delta_time)
             self.energy += self.platform.get_joules(delta_time)
             self.simulation_time += delta_time
-            print(self.simulation_time)
 
         if delta_time == delta_time_queue:
             jobs = self.job_queue.get_next_jobs(self.simulation_time)
@@ -75,12 +73,11 @@ class BruteSimulator(Simulator):
                 if stack:
                     print(f"Branch: {branch}")
                     self.simulation_summary_branch(branch)
-                    print("Backtracking")
                     checkpoint = stack.pop()
                     self.restore(checkpoint)
                     branch = checkpoint["branch"]
                     choice = checkpoint["choice"]
-                    print(f"simulation_time 2: {self.simulation_time}")
+                    print(f"Backtracking {branch}")
                     self.workload_manager.schedule_choice(choice)
                     end = False
 
@@ -89,19 +86,17 @@ class BruteSimulator(Simulator):
                     choices = self.workload_manager.get_choices()
                     if not choices:
                         break
-                    checkpoint = None
                     for choice in choices[1:]:
-                        checkpoint = self.checkpoint() if checkpoint is None else checkpoint
+                        checkpoint = self.checkpoint()
                         checkpoint["branch"] = branches
                         checkpoint["choice"] = choice
                         stack.append(checkpoint)
-                        print(f"Branching")
+                        print(f"Branching {branches}")
                         branches += 1
                     choice = choices[0]
-                    print(f"simulation_time 1: {self.simulation_time}")
                     self.workload_manager.schedule_choice(choice)
 
-        print(f"Branch: {branch}")
+        print(f"End of branch {branch}")
         self.simulation_summary_branch(branch)
         simulator_handler.setFormatter(logging.Formatter(f'{branch},%(message)s'))
         self.log_state()
