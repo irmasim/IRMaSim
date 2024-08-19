@@ -280,6 +280,8 @@ class Simulator:
                     job['mem'] = 0.0
                 if 'mem_vol' not in job:
                     job['mem_vol'] = 0.0
+                if 'req_energy' not in job:
+                    job['req_energy'] = 0.0
                 job_queue.add_job(
                 Job(job_id, job['id'], job['subtime']-first_job_subtime + simulation_time,
                     job['nodes'], job['ntasks'], job['ntasks_per_node'], job['req_ops'], job['ipc'],
