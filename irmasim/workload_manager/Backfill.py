@@ -36,19 +36,26 @@ class Backfill(WorkloadManager):
             'high_cores': lambda node: - node.count_cores(),
             'high_mem': lambda node: - node.current_memory,
             'high_mem_bw': lambda node: node.children[0].requested_memory_bandwidth,
-            'low_power': lambda node: (node.children[0].children[0].static_power + node.children[0].children[0].dynamic_power) * node.count_cores()
+            'low_power': lambda node: (node.children[0].children[0].static_power + node.children[0].children[0].dynamic_power) * node.count_cores(),
+            'energy_lowest': lambda node, job: self.node_energy(job, node),
+            'energy_highest': lambda node, job: -self.node_energy(job, node),
+            'edp_lowest': lambda node, job: self.node_edp(job, node),
+            'edp_highest': lambda node, job: -self.node_edp(job, node)
         }
 
         self.node_sort_key = node_selections[self.node_scheduler]
         self.idle_nodes = []
         self.idle_nodes.extend(self.simulator.get_resources(klass))
         self.busy_nodes = []
+        self.resources = self.simulator.get_resources(klass)
         print(f"Node selection: {self.node_scheduler}")
+
+        self.assigned_nodes = {node.id: 0 for node in self.resources}
+        self.min_freq = min([node.cores()[0].clock_rate for node in self.resources])
 
         #print(f"Nodo:", [node.id for node in self.idle_nodes], "Power:",
         #[(node.children[0].children[0].static_power + node.children[0].children[0].dynamic_power) * node.count_cores() for node in self.idle_nodes])
 
-        
     def on_job_submission(self, jobs: list):
         self.pending_jobs.extend(jobs)
         #print(f"\n\n{self.simulator.simulation_time}: Llegan jobs: {[job.name for job in jobs]}")
@@ -61,6 +68,7 @@ class Backfill(WorkloadManager):
             for task in job.tasks:
                 self.deallocate(task)
             self.running_jobs.remove(job)
+            self.assigned_nodes[job.tasks[0].resource[2]] -= 1
             #print(f"\n\n{self.simulator.simulation_time}: Completa job: {job.name}")
         while self.schedule_next_job():
             pass
@@ -80,7 +88,12 @@ class Backfill(WorkloadManager):
     
     def order_idle_nodes(self):
         if self.node_scheduler != 'random':
-            self.idle_nodes.sort(key=self.node_sort_key)
+            if (self.node_scheduler == 'energy_lowest' or self.node_scheduler == 'energy_highest' or 
+                self.node_scheduler == 'edp_lowest' or self.node_scheduler == 'edp_highest'):
+                for job in self.pending_jobs:
+                    self.idle_nodes.sort(key=lambda node: self.node_sort_key(node, job))
+            else:
+                self.idle_nodes.sort(key=self.node_sort_key)
             return self.idle_nodes
         else:
             rand.shuffle(self.idle_nodes)
@@ -192,6 +205,7 @@ class Backfill(WorkloadManager):
                 self.idle_nodes.remove(node)
                 self.busy_nodes.append(node)
                 #print("Nodo saturado")
+            self.assigned_nodes[node.id] += 1
 
     def deallocate(self, task: Task):
         core = self.simulator.get_resource(list(task.resource))
@@ -249,3 +263,33 @@ class Backfill(WorkloadManager):
             return True
         #print(f"\tno se puede backfill (shadow_time: {shadow_time}, extra_nodes: {extra_nodes})")
         return False
+
+    def node_energy(self, job: Job, node):
+        node_info = node.cores()[0]
+
+        dyn_fraction = 0
+        for i in range(job.ntasks):
+            dyn_fraction += node_info.dynamic_power
+
+        running_node_jobs = self.assigned_nodes[node.id]
+        static_fraction = 0
+        for c in node.cores():
+            static_fraction += c.static_power
+        static_fraction /= (running_node_jobs + 1)
+
+        node_time = job.req_time * self.estimate_speedup(node)
+        energy = node_time * (dyn_fraction + static_fraction)
+        return energy
+    
+    def node_edp(self, job: Job, node):
+        node_time = job.req_time * self.estimate_speedup(node)
+
+        energy = self.node_energy(job, node)
+        return energy * node_time
+
+    def estimate_speedup(self, node):
+        node_info = node.cores()[0]
+        freq_speedup = (self.min_freq / node_info.clock_rate)
+        inverted_dpflops = ((node_info.clock_rate * 1e3) / node_info.mops)
+
+        return freq_speedup * inverted_dpflops
