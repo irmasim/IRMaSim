@@ -20,6 +20,9 @@ class Node (BasicNode):
     def count_idle_cores(self):
         return len([ 1 for core in self.cores() if core.task is None ])
 
+    def count_running_cores(self):
+        return len([ 1 for core in self.cores() if core.task is not None ])
+
     def max_power_consumption(self):
         return sum([ processor.max_power_consumption for processor in self.children ])
 

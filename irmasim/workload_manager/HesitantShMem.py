@@ -53,9 +53,19 @@ class HesitantShMem(WorkloadManager):
         self.running_jobs.append(next_job)
 
     def layout_job(self, job: Job):
-        layouts = []
         viable_nodes = [ (i,node) for i,node in enumerate(self.resources) if node.count_idle_cores() >= job.ntasks_per_node ]
+        unique = set()
+        unique_viable_nodes = []
         for i, node in viable_nodes:
+            if node.count_running_cores() == 0:
+                attributes = f"{node.children[0].get_mops()}${node.count_cores()}"
+                if attributes in unique:
+                    continue
+                else:
+                    unique.add(attributes)
+            unique_viable_nodes.append((i,node))
+        layouts = []
+        for i, node in unique_viable_nodes:
             layout = [ i for _ in range(job.ntasks_per_node) ]
             layouts.append(layout)
         return layouts
