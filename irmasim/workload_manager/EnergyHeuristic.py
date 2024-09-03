@@ -18,6 +18,10 @@ class EnergyHeuristic(WM):
         options = Options().get()
 
         job_criteria = {
+            'timetasks': {
+                'lowest': lambda job: job.req_time * job.ntasks,
+                'highest': lambda job: -(job.req_time * job.ntasks)
+            },
             'energy': {
                 'lowest': lambda job: job.req_energy * job.ntasks,
                 'highest': lambda job: -(job.req_energy * job.ntasks)
