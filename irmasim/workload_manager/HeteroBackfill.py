@@ -77,15 +77,15 @@ class HeteroBackfill(WorkloadManager):
     def on_job_submission(self, jobs: list):
         self.pending_jobs.update(jobs)
         # Planifica jobs hasta que no haya mas nodos libres o no haya mas jobs
-        for i in range(len(self.pending_jobs)):
-            print(f"Job {self.pending_jobs[i].id} submitted")
+        for i in jobs: 
+            print(f"[{self.simulator.simulation_time:.2f}]: Job {i.id} submitted")
         print()
         while self.schedule_next_job():
             pass
 
     def on_job_completion(self, jobs: list):
         for job in jobs:
-            print(f"Job {job.id} completed")
+            print(f"[{self.simulator.simulation_time:.2f}]: Job {job.id} completed (remaining: {len(self.pending_jobs)})")
             for task in job.tasks:
                 self.deallocate(task)
             self.running_jobs.remove(job)
@@ -104,7 +104,7 @@ class HeteroBackfill(WorkloadManager):
             return True
         
         # If there is no room for the first pending job, try to backfill the rest
-        print(f"No room for first job ({self.pending_jobs[0].id})")
+        print(f"No room for first job ({self.pending_jobs[0].id}) trying to backfill")
         return self.try_backfill_jobs()
         
     def try_allocate_first_job(self):
@@ -116,14 +116,14 @@ class HeteroBackfill(WorkloadManager):
         selected_nodes = self.layout_job(first_job)
         if selected_nodes == []: 
             return False
-
         self.allocate(selected_nodes, first_job)
         return True
 
     def try_backfill_jobs(self):
         for job in self.pending_jobs.copy()[1:]:
-            print(f"Trying to backfill job {job.id}")
             selected_nodes = self.layout_job(job)
+            if selected_nodes == []:
+                continue
             backfillable = True
             for node in selected_nodes: 
                 # If the node is not empty, check if the job can be backfilled
@@ -133,6 +133,7 @@ class HeteroBackfill(WorkloadManager):
                     break
             if backfillable:
                 self.allocate(selected_nodes, job)
+                return True
         return False
 
     def order_idle_nodes(self, job):
@@ -153,6 +154,7 @@ class HeteroBackfill(WorkloadManager):
         pass    
 
     def allocate(self, nodes, job):
+        print(f"[{self.simulator.simulation_time:.2f}]: Job {job.id} running")
         for task,node in zip(job.tasks, nodes):
             for core in node.cores():
                 if core.task is None:
