@@ -129,9 +129,8 @@ class Backfill(WorkloadManager):
         return False
     
     def backfill_job(self, node, job):
-        backfill_job = job
         self.pending_jobs.remove(job)
-        self.allocate(node, backfill_job)
+        self.allocate(node, job)
 
     def order_idle_nodes(self, job):
         if self.node_selection != 'random':
@@ -160,13 +159,11 @@ class Backfill(WorkloadManager):
             if node.count_idle_cores() == 0:
                 self.idle_nodes.remove(node)
                 self.busy_nodes.append(node)
-                #print("Nodo saturado")
             self.assigned_nodes[node.id] += 1
 
     def deallocate(self, task: Task):
         core = self.simulator.get_resource(list(task.resource))
         node = core.parent.parent
-        #print(f"node : ", node)
         if node in self.busy_nodes:
             self.busy_nodes.remove(node)
             self.idle_nodes.append(node)
