@@ -1,0 +1,11 @@
+{
+    "platform_name": "example",
+    "platform_file": "platform.json",
+    "workload_file": "jobs.json",
+	"workload_manager": 
+	{
+		"type": "Backfill",
+		"job_selection": "first",
+		"node_selection": "first"
+	}
+}

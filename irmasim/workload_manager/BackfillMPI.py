@@ -11,11 +11,11 @@ import random as rand
 if TYPE_CHECKING:
     from irmasim.Simulator import Simulator
 
-class HeteroBackfill(WorkloadManager):
+class HBackfillMPI(WorkloadManager):
     def __init__(self, simulator: 'Simulator'):
-        super(HeteroBackfill, self).__init__(simulator)
+        super(HBackfillMPI, self).__init__(simulator)
         if simulator.platform.config["model"] != "modelV1":
-            raise Exception("HeteroBackfill workload manager needs a modelV1 platform")
+            raise Exception("HBackfillMPI workload manager needs a modelV1 platform")
         options = Options().get()
 
         self.pending_jobs = []

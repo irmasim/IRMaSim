@@ -1,0 +1,52 @@
+---
+title: "Checking if Backfill delays blocked job"
+author: "Jaime Palacios"
+---
+
+```{r include=FALSE}
+source("~/research/esteban/docs/setup.R")
+```
+
+```{css, echo=FALSE}
+table {
+  width: 100%;
+}
+
+table th, table td {
+  text-align: center;
+}
+```
+
+Four jobs and one node with 10 cores.
+
+| Job | Cores | Request Time | Submit Time | 
+|-----|-------|------|------|
+| 0 | 2 | 10 | 0 |
+| 1 | 10 | 2 | 0 |
+| 2 | 6 | 6 | 0 |
+| 3 | 6 | 6 | 0 |
+
+```{r include=FALSE}
+jobs <- read.csv("jobs.log", header=TRUE)
+simulation <- read.csv("simulation.log", header=TRUE)
+```
+
+```{r}
+jobs_res <- jobs %>%
+	mutate(resources = str_extract_all(resources, "\\d+") %>%
+		 map_chr(~paste(.x, collapse = "."))) %>%
+	mutate(id = str_extract(id, "\\d+")) %>%
+	select(id, submit_time, start_time, finish_time, resources) %>%
+	arrange(start_time)
+
+ggplot(jobs_res, aes(x = start_time, y = resources)) +
+	geom_segment(aes(xend = finish_time, yend = resources, color = id), linewidth = 4) +
+	geom_label(aes(label = id, x = (start_time + finish_time) / 2, y = resources, color = id), 
+			   size = 2) +
+	labs(title = "Job assignment over time",
+		 x = "Time",
+		 y = "Resources") +
+	theme_bw()
+```
+
+

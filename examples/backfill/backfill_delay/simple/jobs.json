@@ -1,0 +1,11 @@
+{
+   "nb_res": 60,
+   "num_instructions": "TRUE",
+   "jobs": [
+    	{"id": "job0", "subtime": 0, "ntasks": 2, "req_ops": 2000000000, "req_time": 10, "req_energy": 1900000, "ipc": 1, "mem": 50, "mem_vol": 1000000},
+		{"id": "job1", "subtime": 0, "ntasks": 10, "req_ops": 400000000, "req_time": 2, "req_energy": 1900000, "ipc": 1, "mem": 50, "mem_vol": 1000000},
+		{"id": "job2", "subtime": 0, "ntasks": 6, "req_ops": 1200000000, "req_time": 6, "req_energy": 1900000, "ipc": 1, "mem": 50, "mem_vol": 1000000},		
+		{"id": "job3", "subtime": 0, "ntasks": 6, "req_ops": 1200000000, "req_time": 6, "req_energy": 1900000, "ipc": 1, "mem": 50, "mem_vol": 1000000},
+		{"id": "job4", "subtime": 0, "ntasks": 4, "req_ops": 400000000, "req_time": 6, "req_energy": 1900000, "ipc": 1, "mem": 50, "mem_vol": 1000000}
+   ]
+}

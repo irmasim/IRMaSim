@@ -11,11 +11,11 @@ import random as rand
 if TYPE_CHECKING:
     from irmasim.Simulator import Simulator
 
-class Backfill(WorkloadManager):
+class HBackfill(WorkloadManager):
     def __init__(self, simulator: 'Simulator'):
-        super(Backfill, self).__init__(simulator)
+        super(HBackfill, self).__init__(simulator)
         if simulator.platform.config["model"] != "modelV1" and simulator.platform.config["model"] != "modelV1_1":
-            raise Exception("Backfill workload manager needs a modelV1 platform")
+            raise Exception("HBackfill workload manager needs a modelV1 platform")
         options = Options().get()
 
         self.pending_jobs = []
@@ -24,10 +24,24 @@ class Backfill(WorkloadManager):
         mod = importlib.import_module("irmasim.platform.models." + options["platform_model_name"] + ".Node")
         klass = getattr(mod, 'Node')
 
+        if 'job_selection' not in options['workload_manager']:
+            self.job_selection = 'first'
+        else:
+            self.job_selection = options["workload_manager"]["job_selection"]
+
         if 'node_selection' not in options['workload_manager']:
             self.node_selection = 'first'
         else:
             self.node_selection = options["workload_manager"]["node_selection"]
+        
+        job_criteria = {
+            'first': lambda job: job.id,
+            'random': lambda job: job.id,
+            'energy_lowest': lambda job: job.req_energy * job.ntasks,
+            'energy_highest': lambda job: -(job.req_energy * job.ntasks),
+            'edp_lowest': lambda job: job.req_energy * job.req_time * job.ntasks,
+            'edp_highest': lambda job: -(job.req_energy * job.req_time * job.ntasks)
+        }
 
         node_criteria = {
             'random': lambda node: node.id,
@@ -47,6 +61,7 @@ class Backfill(WorkloadManager):
 
         self.pending_jobs = [] 
         self.running_jobs = []
+        self.backfill_jobs = SortedList(key=job_criteria[self.job_selection])
         #self.node_estimation = node_criteria[self.node_selection]
 
         self.node_sort_key = node_criteria[self.node_selection]
@@ -54,6 +69,7 @@ class Backfill(WorkloadManager):
         self.idle_nodes.extend(self.simulator.get_resources(klass))
         self.busy_nodes = [] # actually not used
         self.resources = self.simulator.get_resources(klass)
+        print(f"Job selection: {self.job_selection}")
         print(f"Node selection: {self.node_selection}")
 
         self.assigned_nodes = {node.id: 0 for node in self.resources}
@@ -61,14 +77,14 @@ class Backfill(WorkloadManager):
 
     def on_job_submission(self, jobs: list):
         self.pending_jobs.extend(jobs)
-        #print(f"[{self.simulator.simulation_time:.2f}] {[job.id for job in jobs]} submitted")
+        print(f"[{self.simulator.simulation_time:.2f}] {[job.id for job in jobs]} submitted")
         # Planifica jobs hasta que no haya mas nodos libres o no haya mas jobs
         while self.schedule_next_job():
             pass
 
     def on_job_completion(self, jobs: list):
         for job in jobs:
-            #print(f"[{self.simulator.simulation_time:.2f}] Job {job.name} completed")
+            print(f"[{self.simulator.simulation_time:.2f}] Job {job.name} completed")
             for task in job.tasks:
                 self.deallocate(task)
             self.running_jobs.remove(job)
@@ -111,8 +127,24 @@ class Backfill(WorkloadManager):
                     break
                 # If the node is not empty, check if the job can be backfilled
                 elif self.check_backfill(node, job):
+                    #self.backfill_job(node, job)
+                    self.backfill_jobs.add(job)
+                    break
+       
+        print(f"[{self.simulator.simulation_time:.2f}] {len(self.backfill_jobs)} jobs can be backfilled: ", end="")
+        for job in self.backfill_jobs:
+            print(f"{job.name}", end=" ")
+        print()
+
+        # If there are backfill jobs, allocate until there are no more room
+        while len(self.backfill_jobs) > 0:
+            job = self.backfill_jobs.pop(0)
+            for node in self.order_idle_nodes(job):
+                if len(job.tasks) <= node.count_idle_cores():
                     self.backfill_job(node, job)
                     break
+        self.backfill_jobs.clear()
+ 
         return False
     
     def backfill_job(self, node, job):
@@ -137,7 +169,7 @@ class Backfill(WorkloadManager):
         pass    
 
     def allocate(self, node: BasicNode, job: Job):
-        #print(f"[{self.simulator.simulation_time:.2f}] Job {job.name} allocated to node {node.id}")
+        print(f"[{self.simulator.simulation_time:.2f}] Job {job.name} allocated to node {node.id}")
         cores = node.idle_cores() 
         for task in job.tasks:
             task.allocate(cores.pop(0).full_id())
