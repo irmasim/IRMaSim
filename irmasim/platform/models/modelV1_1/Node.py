@@ -70,9 +70,6 @@ class Node (BasicNode):
     def get_mops(self):
         return self.gops*1e3
 
-    def cores(self):
-        return self.cores
-
     def clock_rate(self):
         return self.gops
 
