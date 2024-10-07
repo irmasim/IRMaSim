@@ -34,8 +34,10 @@ class HBackfillV1_1(WorkloadManager):
         job_criteria = {
             'first': lambda job: job.id,
             'random': lambda job: job.id,
-            'energy_lowest': lambda job: job.req_energy * job.ntasks,
-            'energy_highest': lambda job: -(job.req_energy * job.ntasks),
+            'shortest': lambda job: job.req_time,
+            'longest': lambda job: -job.req_time,
+            'energy_lowest': lambda job: job.req_time * job.ntasks,
+            'energy_highest': lambda job: -(job.req_time * job.ntasks),
             'edp_lowest': lambda job: job.req_energy * job.req_time * job.ntasks,
             'edp_highest': lambda job: -(job.req_energy * job.req_time * job.ntasks)
         }
@@ -43,11 +45,11 @@ class HBackfillV1_1(WorkloadManager):
         node_criteria = {
             'random': lambda node: node.id,
             'first': lambda node: node.id,
-            'high_gflops': lambda node: - node.children[0].mops_per_node,
+            'high_gflops': lambda node: - node.gops,
             'high_cores': lambda node: - node.cores,
             'high_mem': lambda node: - node.current_memory,
-            'high_mem_bw': lambda node: node.children[0].requested_memory_bandwidth,
-            'low_power': lambda node: (node.children[0].children[0].static_power + node.children[0].children[0].dynamic_power) * node.cores,
+            'high_mem_bw': lambda node: node.requested_memory_bandwidth,
+            'low_power': lambda node: (node.static_power + node.dynamic_power) * node.cores,
             'energy_lowest': lambda node, job: self.node_energy(job, node),
             'energy_highest': lambda node, job: -self.node_energy(job, node),
             'edp_lowest': lambda node, job: self.node_edp(job, node),
@@ -62,8 +64,8 @@ class HBackfillV1_1(WorkloadManager):
         #self.node_estimation = node_criteria[self.node_selection]
 
         self.node_sort_key = node_criteria[self.node_selection]
-        self.idle_nodes = []
-        self.idle_nodes.extend(self.simulator.get_resources(klass))
+        self.nodes = []
+        self.nodes.extend(self.simulator.get_resources(klass))
         resources = self.simulator.get_resources(klass)
         self.resources = [ [ resource.full_id(), resource.config['cores'], resource.config['cores'] ] for resource in resources ] 
         print(f"Job selection: {self.job_selection}")
@@ -71,7 +73,7 @@ class HBackfillV1_1(WorkloadManager):
         # Print the resources values
 
         self.assigned_nodes = {node.id: 0 for node in resources}
-        self.min_freq = min([node.clock_rate for node in resources])
+        self.min_freq = min([node.clock_rate() for node in resources])
 
     def on_job_submission(self, jobs: list):
         self.pending_jobs.extend(jobs)
@@ -87,13 +89,12 @@ class HBackfillV1_1(WorkloadManager):
                 self.deallocate(task)
             self.running_jobs.remove(job)
             self.assigned_nodes[job.tasks[0].resource[2]] -= 1
-        print()
         while self.schedule_next_job():
             pass
 
     def schedule_next_job(self):
         # Ïf there are no pending jobs or no idle nodes, return False
-        if len(self.pending_jobs) == 0 or len(self.idle_nodes) == 0:
+        if len(self.pending_jobs) == 0 or len([node for node in self.nodes if node.idle_cores() > 0]) == 0:
             return False
         
         # If there is room for the first pending job, allocate it
@@ -105,19 +106,18 @@ class HBackfillV1_1(WorkloadManager):
         
     def try_allocate_first_job(self):
         # Order the idle nodes according to the first job
-        idle_nodes_ordered = self.order_idle_nodes(self.pending_jobs[0])
+        nodes_ordered = self.order_nodes(self.pending_jobs[0])
 
-        for node in idle_nodes_ordered:
+        for node in nodes_ordered:
             if node.idle_cores() >= len(self.pending_jobs[0].tasks):
                 next_job = self.pending_jobs.pop(0)
                 self.allocate(node, next_job)
-                print(f"[{self.simulator.simulation_time:.2f}] First job {next_job.name} allocated to node {node.id} (idle cores: {node.idle_cores()})")
                 return True
         return False
     
     def try_backfill_jobs(self):
         for job in self.pending_jobs.copy()[1:]:
-            for node in self.order_idle_nodes(job):
+            for node in self.order_nodes(job):
                 # Optimization: If the job does not fit in the node, do not check backfill
                 if len(job.tasks) > node.cores:
                     continue
@@ -127,7 +127,6 @@ class HBackfillV1_1(WorkloadManager):
                     break
                 # If the node is not empty, check if the job can be backfilled
                 elif self.check_backfill(node, job):
-                    #self.backfill_job(node, job)
                     self.backfill_jobs.add(job)
                     break
        
@@ -139,7 +138,7 @@ class HBackfillV1_1(WorkloadManager):
         # If there are backfill jobs, allocate until there are no more room
         while len(self.backfill_jobs) > 0:
             job = self.backfill_jobs.pop(0)
-            for node in self.order_idle_nodes(job):
+            for node in self.order_nodes(job):
                 if len(job.tasks) <= node.idle_cores():
                     self.backfill_job(node, job)
                     break
@@ -151,16 +150,16 @@ class HBackfillV1_1(WorkloadManager):
         self.pending_jobs.remove(job)
         self.allocate(node, job)
 
-    def order_idle_nodes(self, job):
+    def order_nodes(self, job):
         if self.node_selection != 'random':
             if self.node_selection in self.energy_criteria:
-                self.idle_nodes.sort(key=lambda node: self.node_sort_key(node, job))
+                self.nodes.sort(key=lambda node: self.node_sort_key(node, job))
             else:
-                self.idle_nodes.sort(key=self.node_sort_key)
-            return self.idle_nodes
+                self.nodes.sort(key=self.node_sort_key)
+            return self.nodes
         else:
-            rand.shuffle(self.idle_nodes)
-            return self.idle_nodes
+            rand.shuffle(self.nodes)
+            return self.nodes
     
     def on_end_step(self):
         pass
@@ -169,7 +168,6 @@ class HBackfillV1_1(WorkloadManager):
         pass    
 
     def allocate(self, node, job):
-        print(f"[{self.simulator.simulation_time:.2f}] Job {job.name} allocated to node {node.id} (idle cores: {node.idle_cores()})")
         # Get the resource from the list of resources with the same node id 
         resource_index = -1
         for resource in range(len(self.resources)):
@@ -178,15 +176,16 @@ class HBackfillV1_1(WorkloadManager):
                 break
         for task in job.tasks:
             task.allocate(self.resources[resource_index][0])
+            self.resources[resource_index][1] -= 1
         self.simulator.schedule(job.tasks)
         self.running_jobs.append(job)
+        self.assigned_nodes[node.id] += 1
+        #print(f"[{self.simulator.simulation_time:.2f}] Job {job.name} allocated to node {node.id} (idle cores: {node.idle_cores()})")
 
     def deallocate(self, task):
         for resource in range(len(self.resources)):
             if self.resources[resource][0] == task.resource:
                 self.resources[resource][1] += 1
-                if self.resources[resource][1] == self.resources[resource][2]:
-                    self.idle_nodes.append(self.resources[resource])
 
     def shadow_time_and_extra_cores (self, node: BasicNode):
         node_running_jobs = [job for job in self.running_jobs if job.tasks[0].resource[2] == node.id] 
@@ -226,17 +225,14 @@ class HBackfillV1_1(WorkloadManager):
         
         return False
 
-    def node_energy(self, job: Job, node):
-        node_info = node.cores[0]
+    def node_energy(self, job, node):
 
         dyn_fraction = 0
         for i in range(job.ntasks):
-            dyn_fraction += node_info.dynamic_power
+            dyn_fraction += node.dynamic_power
 
         running_node_jobs = self.assigned_nodes[node.id]
-        static_fraction = 0
-        for c in node.cores:
-            static_fraction += c.static_power
+        static_fraction = node.static_power 
         static_fraction /= (running_node_jobs + 1)
 
         node_time = job.req_time * self.estimate_speedup(node)
@@ -251,8 +247,7 @@ class HBackfillV1_1(WorkloadManager):
         return energy * node_time
 
     def estimate_speedup(self, node):
-        node_info = node.cores[0]
-        freq_speedup = (self.min_freq / node_info.clock_rate)
-        inverted_dpflops = ((node_info.clock_rate * 1e3) / node_info.mops)
+        freq_speedup = (self.min_freq / node.clock_rate())
+        inverted_dpflops = ((node.clock_rate() * 1e3) / node.get_mops())
 
         return freq_speedup * inverted_dpflops

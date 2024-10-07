@@ -46,7 +46,7 @@ class HBackfill(WorkloadManager):
         node_criteria = {
             'random': lambda node: node.id,
             'first': lambda node: node.id,
-            'high_gflops': lambda node: - node.children[0].mops_per_node,
+            'high_gflops': lambda node: - node.children[0].mops_per_core,
             'high_cores': lambda node: - node.count_cores(),
             'high_mem': lambda node: - node.current_memory,
             'high_mem_bw': lambda node: node.children[0].requested_memory_bandwidth,
