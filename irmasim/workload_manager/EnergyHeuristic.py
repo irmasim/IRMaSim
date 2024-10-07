@@ -33,6 +33,10 @@ class EnergyHeuristic(WM):
         }
 
         resource_criteria = {
+            'timetasks': {
+                'lowest': lambda node, job: self.node_energy(job, node),
+                'highest': lambda node, job: -self.node_energy(job, node),
+            },
             'energy': {
                 'lowest': lambda node, job: self.node_energy(job, node),
                 'highest': lambda node, job: -self.node_energy(job, node),
