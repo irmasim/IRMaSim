@@ -29,10 +29,10 @@ class HBackfill(WorkloadManager):
         else:
             self.job_selection = options["workload_manager"]["job_selection"]
 
-        if 'node_selection' not in options['workload_manager']:
+        if 'resource_selection' not in options['workload_manager']:
             self.node_selection = 'first'
         else:
-            self.node_selection = options["workload_manager"]["node_selection"]
+            self.node_selection = options["workload_manager"]["resource_selection"]
         
         job_criteria = {
             'first': lambda job: job.id,
@@ -81,14 +81,14 @@ class HBackfill(WorkloadManager):
 
     def on_job_submission(self, jobs: list):
         self.pending_jobs.extend(jobs)
-        print(f"[{self.simulator.simulation_time:.2f}] {[job.id for job in jobs]} submitted")
+        #print(f"[{self.simulator.simulation_time:.2f}] {[job.id for job in jobs]} submitted")
         # Planifica jobs hasta que no haya mas nodos libres o no haya mas jobs
         while self.schedule_next_job():
             pass
 
     def on_job_completion(self, jobs: list):
         for job in jobs:
-            print(f"[{self.simulator.simulation_time:.2f}] Job {job.name} completed")
+            #print(f"[{self.simulator.simulation_time:.2f}] Job {job.name} completed")
             for task in job.tasks:
                 self.deallocate(task)
             self.running_jobs.remove(job)
@@ -135,10 +135,10 @@ class HBackfill(WorkloadManager):
                     self.backfill_jobs.add(job)
                     break
        
-        print(f"[{self.simulator.simulation_time:.2f}] {len(self.backfill_jobs)} jobs can be backfilled: ", end="")
-        for job in self.backfill_jobs:
-            print(f"{job.name}", end=" ")
-        print()
+        #print(f"[{self.simulator.simulation_time:.2f}] {len(self.backfill_jobs)} jobs can be backfilled: ", end="")
+        #for job in self.backfill_jobs:
+        #    print(f"{job.name}", end=" ")
+        #print()
 
         # If there are backfill jobs, allocate until there are no more room
         while len(self.backfill_jobs) > 0:
@@ -173,7 +173,7 @@ class HBackfill(WorkloadManager):
         pass    
 
     def allocate(self, node: BasicNode, job: Job):
-        print(f"[{self.simulator.simulation_time:.2f}] Job {job.name} allocated to node {node.id}")
+        #print(f"[{self.simulator.simulation_time:.2f}] Job {job.name} allocated to node {node.id}")
         cores = node.idle_cores() 
         for task in job.tasks:
             task.allocate(cores.pop(0).full_id())

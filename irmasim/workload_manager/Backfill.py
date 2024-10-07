@@ -24,15 +24,15 @@ class Backfill(WorkloadManager):
         mod = importlib.import_module("irmasim.platform.models." + options["platform_model_name"] + ".Node")
         klass = getattr(mod, 'Node')
 
-        if 'node_selection' not in options['workload_manager']:
+        if 'resource_selection' not in options['workload_manager']:
             self.node_selection = 'first'
         else:
-            self.node_selection = options["workload_manager"]["node_selection"]
+            self.node_selection = options["workload_manager"]["resource_selection"]
 
         node_criteria = {
             'random': lambda node: node.id,
             'first': lambda node: node.id,
-            'high_gflops': lambda node: - node.children[0].mops_per_node,
+            'high_gflops': lambda node: - node.children[0].mops_per_core,
             'high_cores': lambda node: - node.count_cores(),
             'high_mem': lambda node: - node.current_memory,
             'high_mem_bw': lambda node: node.children[0].requested_memory_bandwidth,
