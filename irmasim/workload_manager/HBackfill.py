@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 class HBackfill(WorkloadManager):
     def __init__(self, simulator: 'Simulator'):
         super(HBackfill, self).__init__(simulator)
-        if simulator.platform.config["model"] != "modelV1" and simulator.platform.config["model"] != "modelV1_1":
+        if simulator.platform.config["model"] != "modelV1":
             raise Exception("HBackfill workload manager needs a modelV1 platform")
         options = Options().get()
 
@@ -37,6 +37,10 @@ class HBackfill(WorkloadManager):
         job_criteria = {
             'first': lambda job: job.id,
             'random': lambda job: job.id,
+            'shortest': lambda job: job.req_time,
+            'longest': lambda job: -job.req_time,
+            'timetasks_lowest': lambda job: job.req_time * job.ntasks,
+            'timetasks_highest': lambda job: -(job.req_time * job.ntasks),
             'energy_lowest': lambda job: job.req_energy * job.ntasks,
             'energy_highest': lambda job: -(job.req_energy * job.ntasks),
             'edp_lowest': lambda job: job.req_energy * job.req_time * job.ntasks,
