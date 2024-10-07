@@ -24,11 +24,13 @@ class NodeWM(WorkloadManager):
         self.running_jobs = []
 
     def on_job_submission(self, jobs: list):
+        print(f"\n[{self.simulator.simulation_time:.2f}] Received jobs: {[ job.id for job in jobs ]}")
         self.pending_jobs.extend(jobs)
         while self.schedule_next_job():
             pass
 
     def on_job_completion(self, jobs: list):
+        print(f"\n[{self.simulator.simulation_time:.2f}] Completed jobs: {[ job.id for job in jobs ]}")
         for job in jobs:
             for task in job.tasks:
                 self.deallocate(task)
@@ -38,7 +40,13 @@ class NodeWM(WorkloadManager):
 
     def schedule_next_job(self):
         if self.pending_jobs != [] and max([ resource[1] for resource in self.resources ]) > 0:
+            #if self.pending_jobs != [] and sum([ resource[1] for resource in self.resources ]) > len(self.pending_jobs[0].tasks):
+            total_available_cores = sum([ resource[1] for resource in self.resources ])
+            if total_available_cores < len(self.pending_jobs[0].tasks):
+                print(f"Cannot schedule job {self.pending_jobs[0].id} with {len(self.pending_jobs[0].tasks)} tasks (total available cores: {total_available_cores})")
+                return False
             next_job = self.pending_jobs.pop(0)
+            print(f"Scheduling job {next_job.id} with {len(next_job.tasks)} tasks (total available cores: {sum([ resource[1] for resource in self.resources ])})")
             for task in next_job.tasks:
                 self.allocate(task)
             self.simulator.schedule(next_job.tasks)
@@ -55,6 +63,7 @@ class NodeWM(WorkloadManager):
 
     def allocate(self, task: Task):
         resource = 0
+        # Search for a resource with available cores (more than 0 free cores)
         while self.resources[resource][1] == 0:
             resource += 1
         self.resources[resource][1] -= 1

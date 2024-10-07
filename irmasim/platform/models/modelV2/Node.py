@@ -37,7 +37,7 @@ class Process:
         self.speedup = b+(c-b)*math.exp(-math.exp(a*(all_bw-d)))*0.9
 
     def get_next_step(self):
-            return self.task.ops / (self.node.gops * 1e9 * self.speedup)
+        return self.task.ops / (self.node.gops * 1e9 * self.speedup)
 
     def advance(self, delta_time: float):
         self.task.advance(delta_time, self.node.gops * 1e9 * self.speedup * delta_time)
@@ -77,6 +77,9 @@ class Node (BasicNode):
         self.p20 = config['p20']
 
         self.requested_memory_bandwidth = 0
+
+    def get_mops(self):
+        return self.gops*1e3
 
     def schedule(self, task: Task, resource_id: list):
         process = Process(self,task)
