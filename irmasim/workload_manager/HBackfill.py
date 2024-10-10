@@ -2,7 +2,7 @@ from irmasim.workload_manager.WorkloadManager import WorkloadManager
 from irmasim.Job import Job
 from irmasim.Task import Task
 from irmasim.platform.BasicNode import BasicNode
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, override
 from irmasim.Options import Options
 from sortedcontainers import SortedList
 import importlib
@@ -20,6 +20,9 @@ class HBackfill(WorkloadManager):
 
         self.pending_jobs = []
         self.running_jobs = []
+
+        self.backfilled_jobs = 0
+        self.backfill_candidates = 0
         
         mod = importlib.import_module("irmasim.platform.models." + options["platform_model_name"] + ".Node")
         klass = getattr(mod, 'Node')
@@ -36,7 +39,7 @@ class HBackfill(WorkloadManager):
         
         job_criteria = {
             'first': lambda job: job.id,
-            'random': lambda job: job.id,
+            'random': None, # Random is handled in the code 
             'shortest': lambda job: job.req_time,
             'longest': lambda job: -job.req_time,
             'timetasks_lowest': lambda job: job.req_time * job.ntasks,
@@ -48,7 +51,7 @@ class HBackfill(WorkloadManager):
         }
 
         node_criteria = {
-            'random': lambda node: node.id,
+            'random': None, # Random is handled in the code
             'first': lambda node: node.id,
             'high_gflops': lambda node: - node.children[0].mops_per_core,
             'high_cores': lambda node: - node.count_cores(),
@@ -65,9 +68,11 @@ class HBackfill(WorkloadManager):
 
         self.pending_jobs = [] 
         self.running_jobs = []
-        self.backfill_jobs = SortedList(key=job_criteria[self.job_selection])
+        self.backfill_jobs = []
+        #self.backfill_jobs = SortedList(key=job_criteria[self.job_selection])
         #self.node_estimation = node_criteria[self.node_selection]
 
+        self.job_sort_key = job_criteria[self.job_selection]
         self.node_sort_key = node_criteria[self.node_selection]
         self.idle_nodes = []
         self.idle_nodes.extend(self.simulator.get_resources(klass))
@@ -132,19 +137,32 @@ class HBackfill(WorkloadManager):
                 # If the node is not empty, check if the job can be backfilled
                 elif self.check_backfill(node, job):
                     #self.backfill_job(node, job)
-                    self.backfill_jobs.add(job)
+                    #self.backfill_jobs.add(job)
+                    if job not in self.backfill_jobs:
+                        self.backfill_jobs.append(job)
                     break
-       
+     
         #print(f"[{self.simulator.simulation_time:.2f}] {len(self.backfill_jobs)} jobs can be backfilled: ", end="")
         #for job in self.backfill_jobs:
         #    print(f"{job.name}", end=" ")
         #print()
 
+        if self.job_selection == 'random':
+            rand.shuffle(self.backfill_jobs)
+        else:
+            self.backfill_jobs.sort(key=lambda job: self.job_sort_key(job))
+        
         # If there are backfill jobs, allocate until there are no more room
+        self.backfill_candidates = len(self.backfill_jobs)
         while len(self.backfill_jobs) > 0:
             job = self.backfill_jobs.pop(0)
             for node in self.order_idle_nodes(job):
-                if len(job.tasks) <= node.count_idle_cores():
+                if len(job.tasks) > node.count_cores():
+                    continue
+                if node.count_idle_cores() == node.count_cores():
+                    self.backfill_job(node, job)
+                    break
+                elif len(job.tasks) <= node.count_idle_cores() and self.check_backfill(node, job):
                     self.backfill_job(node, job)
                     break
         self.backfill_jobs.clear()
@@ -152,6 +170,7 @@ class HBackfill(WorkloadManager):
         return False
     
     def backfill_job(self, node, job):
+        self.backfilled_jobs += 1
         self.pending_jobs.remove(job)
         self.allocate(node, job)
 
@@ -200,6 +219,7 @@ class HBackfill(WorkloadManager):
             if job not in running_jobs_eet:
                 running_jobs_eet.append(job)
         idle_cores_after_end_job=node.count_idle_cores()
+        #print(f"Running jobs on node {node.id} ({len(running_jobs_eet)}): {[job.name for job in running_jobs_eet]}")
         # The start point of the blocking job is the end time of the last job in the list of blocking jobs
         blocking_job_start_point = running_jobs_eet[-1].start_time + running_jobs_eet[-1].req_time 
         for i, job in enumerate(running_jobs_eet):
@@ -259,3 +279,11 @@ class HBackfill(WorkloadManager):
         inverted_dpflops = ((node_info.clock_rate * 1e3) / node_info.mops)
 
         return freq_speedup * inverted_dpflops
+
+    def header(klass):
+        return "time,backfilled_jobs,pending_jobs,backfill_candidates"
+
+    def log_state(self):
+        log = f"{self.simulator.simulation_time:.2f},{self.backfilled_jobs},{len(self.pending_jobs)},{self.backfill_candidates}"
+        self.backfilled_jobs = 0
+        return log

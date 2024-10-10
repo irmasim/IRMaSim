@@ -11,6 +11,7 @@ import logging
 from irmasim.Simulator import Simulator
 from irmasim.Options import Options
 from irmasim.Job import Job
+from irmasim.workload_manager.WorkloadManager import WorkloadManager
 
 def launch() -> None:
     start_time = time.time()
@@ -130,12 +131,14 @@ def launch() -> None:
     simulator_handler = logging.getLogger("simulator").handlers[0]
     job_handler = logging.getLogger("jobs").handlers[0]
     resource_handler = logging.getLogger("resources").handlers[0]
+    manager_handler = logging.getLogger("manager").handlers[0]
     for run in range(args.nbruns):
         simulator = Simulator()
         print(f'Starting simulation run: {run}')
         simulator_handler.setFormatter(logging.Formatter(f'{run},%(message)s'))
         job_handler.setFormatter(logging.Formatter(f'{run},%(message)s'))
         resource_handler.setFormatter(logging.Formatter(f'{run},%(message)s'))
+        manager_handler.setFormatter(logging.Formatter(f'{run},%(message)s'))
         simulator.start_simulation()
         print_statistics("Simulation time:", simulator.simulation_time_statistics())
         print_statistics("Energy consumption:", simulator.energy_consumption_statistics())
@@ -198,3 +201,11 @@ def start_logging():
     resource_logger.setLevel(logging.INFO)
     resource_logger.addHandler(FileOutputHandler)
     resource_logger.propagate = False
+
+    manager_logger = logging.getLogger("manager")
+    FileOutputHandler = logging.FileHandler(options['output_dir']+"/"+"manager.log", mode="w")
+    FileOutputHandler.setFormatter(logging.Formatter(f'run,%(message)s'))
+    manager_logger.setLevel(logging.INFO)
+    manager_logger.addHandler(FileOutputHandler)
+    #manager_logger.info("time,backfilled_jobs,backfill_candidates,pending_jobs")
+    manager_logger.propagate = False

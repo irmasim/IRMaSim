@@ -23,3 +23,9 @@ class WorkloadManager:
     def on_end_simulation(self):
         pass
 
+    @classmethod
+    def header(klass):
+        pass
+
+    def log_state(self):
+        pass

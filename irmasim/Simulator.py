@@ -35,6 +35,11 @@ class Simulator:
             self.resource_logger = logging.getLogger("resources")
             self.resource_logger.info("time," + klass.header())
 
+        # Create a logger for the manager
+        self.manager_logger = None
+        self.manager_logger = logging.getLogger("manager")
+        self.manager_logger.info(self.workload_manager.header())
+
     def start_simulation(self) -> None:
         options = Options().get()
         nbtrajectories = int(options['nbtrajectories'])
@@ -57,6 +62,8 @@ class Simulator:
         self.workload_manager.on_job_submission(first_jobs)
         self.workload_manager.on_end_step()
         
+        manager_logger = logging.getLogger("manager")
+        manager_logger.info(self.workload_manager.log_state())
         self.log_state()
 
         delta_time_platform = self.platform.get_next_step()
@@ -89,6 +96,8 @@ class Simulator:
 
             if delta_time == delta_time_queue or delta_time == delta_time_platform:
                 self.workload_manager.on_end_step()
+                manager_logger = logging.getLogger("manager")
+                manager_logger.info(self.workload_manager.log_state())
 
             delta_time_platform = self.platform.get_next_step()
             # TODO unify get_next_step return value

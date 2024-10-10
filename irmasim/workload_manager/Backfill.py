@@ -20,6 +20,8 @@ class Backfill(WorkloadManager):
 
         self.pending_jobs = []
         self.running_jobs = []
+
+        self.backfilled_jobs = 0
         
         mod = importlib.import_module("irmasim.platform.models." + options["platform_model_name"] + ".Node")
         klass = getattr(mod, 'Node')
@@ -30,7 +32,7 @@ class Backfill(WorkloadManager):
             self.node_selection = options["workload_manager"]["resource_selection"]
 
         node_criteria = {
-            'random': lambda node: node.id,
+            'random': None, # Random is handled in the code
             'first': lambda node: node.id,
             'high_gflops': lambda node: - node.children[0].mops_per_core,
             'high_cores': lambda node: - node.count_cores(),
@@ -116,6 +118,7 @@ class Backfill(WorkloadManager):
         return False
     
     def backfill_job(self, node, job):
+        self.backfilled_jobs += 1
         self.pending_jobs.remove(job)
         self.allocate(node, job)
 
