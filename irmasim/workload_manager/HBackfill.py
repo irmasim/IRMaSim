@@ -2,7 +2,7 @@ from irmasim.workload_manager.WorkloadManager import WorkloadManager
 from irmasim.Job import Job
 from irmasim.Task import Task
 from irmasim.platform.BasicNode import BasicNode
-from typing import TYPE_CHECKING, override
+from typing import TYPE_CHECKING
 from irmasim.Options import Options
 from sortedcontainers import SortedList
 import importlib
@@ -219,7 +219,6 @@ class HBackfill(WorkloadManager):
             if job not in running_jobs_eet:
                 running_jobs_eet.append(job)
         idle_cores_after_end_job=node.count_idle_cores()
-        #print(f"Running jobs on node {node.id} ({len(running_jobs_eet)}): {[job.name for job in running_jobs_eet]}")
         # The start point of the blocking job is the end time of the last job in the list of blocking jobs
         blocking_job_start_point = running_jobs_eet[-1].start_time + running_jobs_eet[-1].req_time 
         for i, job in enumerate(running_jobs_eet):
