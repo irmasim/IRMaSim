@@ -2,7 +2,7 @@ from irmasim.workload_manager.WorkloadManager import WorkloadManager
 from irmasim.Job import Job
 from irmasim.Task import Task
 from irmasim.platform.BasicNode import BasicNode
-from typing import TYPE_CHECKING,
+from typing import TYPE_CHECKING
 from irmasim.Options import Options
 from sortedcontainers import SortedList
 import importlib
