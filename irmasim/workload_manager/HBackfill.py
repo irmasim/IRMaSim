@@ -38,7 +38,7 @@ class HBackfill(WorkloadManager):
             self.node_selection = options["workload_manager"]["resource_selection"]
         
         job_criteria = {
-            'first': lambda job: job.id,
+            'first': lambda job: job.submit_time,
             'random': None, # Random is handled in the code 
             'shortest': lambda job: job.req_time,
             'longest': lambda job: -job.req_time,
@@ -122,6 +122,7 @@ class HBackfill(WorkloadManager):
                 next_job = self.pending_jobs.pop(0)
                 self.allocate(node, next_job)
                 return True
+        #print(f"[{self.simulator.simulation_time:.2f}] Job {self.pending_jobs[0].name} cannot be allocated")
         return False
     
     def try_backfill_jobs(self):
@@ -132,7 +133,8 @@ class HBackfill(WorkloadManager):
                     continue
                 # If the node is empty, backfill with the job (this will not affect the blocked job)
                 if node.count_idle_cores() == node.count_cores():
-                    self.backfill_job(node, job)
+                    if job not in self.backfill_jobs:
+                        self.backfill_jobs.append(job)
                     break
                 # If the node is not empty, check if the job can be backfilled
                 elif self.check_backfill(node, job):
@@ -142,16 +144,15 @@ class HBackfill(WorkloadManager):
                         self.backfill_jobs.append(job)
                     break
      
-        #print(f"[{self.simulator.simulation_time:.2f}] {len(self.backfill_jobs)} jobs can be backfilled: ", end="")
-        #for job in self.backfill_jobs:
-        #    print(f"{job.name}", end=" ")
-        #print()
+        #print(f"[{self.simulator.simulation_time:.2f}] {len(self.backfill_jobs)} jobs can be backfilled: {[(job.name, job.req_time) for job in self.backfill_jobs]}") 
 
         if self.job_selection == 'random':
             rand.shuffle(self.backfill_jobs)
         else:
             self.backfill_jobs.sort(key=lambda job: self.job_sort_key(job))
-        
+
+        #print(f"[{self.simulator.simulation_time:.2f}] Sorted backfill jobs: {[job.name for job in self.backfill_jobs]}")
+       
         # If there are backfill jobs, allocate until there are no more room
         self.backfill_candidates = len(self.backfill_jobs)
         while len(self.backfill_jobs) > 0:
@@ -283,6 +284,6 @@ class HBackfill(WorkloadManager):
         return "time,backfill_candidates,backfilled_jobs,pending_jobs"
 
     def log_state(self):
-        log = f"{self.simulator.simulation_time:.2f},{self.backfilled_jobs},{self.backfill_candidates},{len(self.pending_jobs)}"
+        log = f"{self.simulator.simulation_time:.2f},{self.backfill_candidates},{self.backfilled_jobs},{len(self.pending_jobs)}"
         self.backfilled_jobs = 0
         return log
