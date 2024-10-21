@@ -81,6 +81,10 @@ class HBackfillR(WorkloadManager):
         print(f"Job selection: {self.job_selection}")
         print(f"Node selection: {self.node_selection}")
 
+        # Print resources information
+        for node in self.resources:
+            print(f"Node {node.id}: {node.count_cores()} cores and {node.children[0].children[0].clock_rate} MHz clock rate")
+
         self.assigned_nodes = {node.id: 0 for node in self.resources}
         self.min_freq = min([node.cores()[0].clock_rate for node in self.resources])
 
@@ -216,7 +220,8 @@ class HBackfillR(WorkloadManager):
     def shadow_time_and_extra_cores (self, node: BasicNode):
         # Search the minimum blocking_job_start_point between all the nodes
         blocking_job_start_point = float('inf')
-        node_with_blocking_job = None
+        node_with_blocking_job = node
+        last_job = 0
         for nodei in self.resources:
             running_jobs_eet_tmp = sorted(nodei.running_jobs(), key=lambda j: (j.start_time + j.req_time))
             running_jobs_eet = []
@@ -233,18 +238,20 @@ class HBackfillR(WorkloadManager):
                     if blocking_job_start_point_tmp < blocking_job_start_point:
                         blocking_job_start_point = blocking_job_start_point_tmp
                         node_with_blocking_job = nodei
+                        last_job = i 
                         # If the earliest execution time of the blocking job is in other node, the blocking job start point is infinite (not affect the backfill)
                         if node != nodei:
                             blocking_job_start_point = float('inf')
                     break
+        #print(f" - Cheking shadow time and extra cores for node {node.id} with blocking job in node {node_with_blocking_job.id} starts at time {blocking_job_start_point}")
         # Extra cores are the cores that will not be used by the blocking job neither by the actual running jobs 
         # If the current node is not affected 
-        if node_with_blocking_job is not None:
+        if node_with_blocking_job is not node:
             extra_cores = len(node.idle_cores())
         else: 
             extra_cores = node.count_cores() - len(self.pending_jobs[0].tasks)
             # extra_cores -= len(node.idle_cores()) # This is not the same as the next for loop?? 
-            for job in node.running_jobs():
+            for job in running_jobs_eet[last_job+1:]:
                 extra_cores -= len(job.tasks)
 
         return blocking_job_start_point, extra_cores
@@ -254,13 +261,14 @@ class HBackfillR(WorkloadManager):
         # shadow_time = Start time of the blocking job (until this time jobs can be backfilled)
         # extra_cores = Cores that will not be used by the blocking job and are not used
         shadow_time , extra_cores = self.shadow_time_and_extra_cores(node)
-        #print(f"Job {job.name} on node {node.id}: shadow time {shadow_time} and extra cores {extra_cores}") 
+        #print(f" -- Job {job.name} on node {node.id}: shadow time {shadow_time} and extra cores {extra_cores}") 
 
         # If there are enough cores for the job regardless of the cores that the blocking job(s) will use
         if len(job.tasks) <= extra_cores and len(job.tasks) <= node.count_idle_cores(): # (la segunda condicion es redundante¿?)
             return True
         # If there are enough cores for the job (using part of the ones is using blocking job) and the job ends before the blocking job
         elif len(job.tasks) <= node.count_idle_cores() and (self.simulator.simulation_time + job.req_time) <= shadow_time: 
+            #print(f"Job {job.name} backfilled on node {node.id} by shadow time ({self.simulator.simulation_time + job.req_time} <= {shadow_time})")
             return True
        
         # DEBUG
