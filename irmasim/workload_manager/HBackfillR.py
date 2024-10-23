@@ -23,6 +23,7 @@ class HBackfillR(WorkloadManager):
 
         self.backfilled_jobs = 0
         self.backfill_candidates = 0
+        self.backfill_ext = []
         
         mod = importlib.import_module("irmasim.platform.models." + options["platform_model_name"] + ".Node")
         klass = getattr(mod, 'Node')
@@ -42,6 +43,8 @@ class HBackfillR(WorkloadManager):
             'random': None, # Random is handled in the code 
             'shortest': lambda job: job.req_time,
             'longest': lambda job: -job.req_time,
+            'widest': lambda job: job.ntasks,
+            'narrowest': lambda job: -job.ntasks,
             'timetasks_lowest': lambda job: job.req_time * job.ntasks,
             'timetasks_highest': lambda job: -(job.req_time * job.ntasks),
             'energy_lowest': lambda job: job.req_energy * job.ntasks,
@@ -262,6 +265,12 @@ class HBackfillR(WorkloadManager):
         # extra_cores = Cores that will not be used by the blocking job and are not used
         shadow_time , extra_cores = self.shadow_time_and_extra_cores(node)
         #print(f" -- Job {job.name} on node {node.id}: shadow time {shadow_time} and extra cores {extra_cores}") 
+    
+        # Log the number of jobs that can be backfilled due to the new condition
+        if shadow_time == float('inf') and node.count_idle_cores() >= len(job.tasks):
+            print(f"[self.simulator.simulation_time:.2f] Job {job.name} can be backfilled on node {node.id} by new condition")
+            if job.name not in self.backfill_ext:
+                self.backfill_ext.append(job.name)
 
         # If there are enough cores for the job regardless of the cores that the blocking job(s) will use
         if len(job.tasks) <= extra_cores and len(job.tasks) <= node.count_idle_cores(): # (la segunda condicion es redundante¿?)
@@ -314,9 +323,10 @@ class HBackfillR(WorkloadManager):
         return freq_speedup * inverted_dpflops
 
     def header(klass):
-        return "time,backfill_candidates,backfilled_jobs,pending_jobs"
+        return "time,backfill_candidates,backfilled_jobs,pending_jobs,backfill_ext"
 
     def log_state(self):
-        log = f"{self.simulator.simulation_time:.2f},{self.backfill_candidates},{self.backfilled_jobs},{len(self.pending_jobs)}"
+        log = f"{self.simulator.simulation_time:.2f},{self.backfill_candidates},{self.backfilled_jobs},{len(self.pending_jobs)},{len(self.backfill_ext)}"
         self.backfilled_jobs = 0
+        self.backfill_ext = []
         return log
