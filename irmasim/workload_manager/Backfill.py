@@ -99,6 +99,7 @@ class Backfill(WorkloadManager):
                 next_job = self.pending_jobs.pop(0)
                 self.allocate(node, next_job)
                 return True
+        #print(f"[{self.simulator.simulation_time:.2f}] Job {self.pending_jobs[0].name} blocked")
         return False
     
     def try_backfill_jobs(self):
@@ -186,7 +187,8 @@ class Backfill(WorkloadManager):
         # shadow_time = Start time of the blocking job (until this time jobs can be backfilled)
         # extra_cores = Cores that will not be used by the blocking job and are not used
         shadow_time , extra_cores = self.shadow_time_and_extra_cores(node)
-        
+        #print(f"Job {job.name} on node {node.id}: shadow time {shadow_time} and extra cores {extra_cores}") 
+
         # If there are enough cores for the job regardless of the cores that the blocking job(s) will use
         if len(job.tasks) <= extra_cores and len(job.tasks) <= node.count_idle_cores(): # (la segunda condicion es redundante¿?)
             return True
@@ -194,6 +196,15 @@ class Backfill(WorkloadManager):
         elif len(job.tasks) <= node.count_idle_cores() and (self.simulator.simulation_time + job.req_time) <= shadow_time: 
             return True
         
+        # DEBUG
+        #if len(job.tasks) > extra_cores:
+        #    print(f"Job {job.name} blocked on node {node.id} by extra cores")
+        #if len(job.tasks) > node.count_idle_cores():
+        #    print(f"Job {job.name} blocked on node {node.id} by idle cores")
+        #if (self.simulator.simulation_time + job.req_time) > shadow_time:
+        #    print(f"Job {job.name} blocked on node {node.id} by shadow time")
+        # END   
+
         return False
 
     def node_energy(self, job: Job, node):

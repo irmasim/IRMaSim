@@ -8,15 +8,16 @@ from sortedcontainers import SortedList
 import importlib
 import random as rand
 import math
+import sys
 
 if TYPE_CHECKING:
     from irmasim.Simulator import Simulator
 
-class BackfillBestFit(WorkloadManager):
+class BackfillFit(WorkloadManager):
     def __init__(self, simulator: 'Simulator'):
-        super(BackfillBestFit, self).__init__(simulator)
+        super(BackfillFit, self).__init__(simulator)
         if simulator.platform.config["model"] != "modelV1":
-            raise Exception("BackfillBestFit workload manager needs a modelV1 platform")
+            raise Exception("BackfillFit workload manager needs a modelV1 platform")
         options = Options().get()
 
         self.pending_jobs = []
@@ -33,6 +34,18 @@ class BackfillBestFit(WorkloadManager):
         self.backfill_jobs = []
         #self.backfill_jobs = SortedList(key=job_criteria[self.job_selection])
         #self.node_estimation = node_criteria[self.node_selection]
+
+        # Available metrics: time, core
+        if 'metric' not in options['workload_manager']:
+            self.metric = 'time'
+        else:
+            self.metric = options["workload_manager"]["metric"]
+
+        # Available criteria: best, worst
+        if 'fit_criteria' not in options['workload_manager']:
+            self.fit_criteria = 'best'
+        else:
+            self.fit_criteria = options["workload_manager"]["fit_criteria"]
 
         # Only used when all the nodes are idle
         if 'resource_selection' not in options['workload_manager']:
@@ -59,14 +72,14 @@ class BackfillBestFit(WorkloadManager):
 
     def on_job_submission(self, jobs: list):
         self.pending_jobs.extend(jobs)
-        print(f"[{self.simulator.simulation_time:.2f}] {[job.name for job in jobs]} submitted")
+        #print(f"[{self.simulator.simulation_time:.2f}] {[job.name for job in jobs]} submitted")
         # Planifica jobs hasta que no haya mas nodos libres o no haya mas jobs
         while self.schedule_next_job():
             pass
 
     def on_job_completion(self, jobs: list):
         for job in jobs:
-            print(f"[{self.simulator.simulation_time:.2f}] Job {job.name} completed")
+            #print(f"[{self.simulator.simulation_time:.2f}] Job {job.name} completed")
             for task in job.tasks:
                 self.deallocate(task)
             self.running_jobs.remove(job)
@@ -95,7 +108,7 @@ class BackfillBestFit(WorkloadManager):
                 next_job = self.pending_jobs.pop(0)
                 self.allocate(node, next_job)
                 return True
-        print(f"[{self.simulator.simulation_time:.2f}] Job {self.pending_jobs[0].name} cannot be allocated")
+        #print(f"[{self.simulator.simulation_time:.2f}] Job {self.pending_jobs[0].name} cannot be allocated")
         return False
     
     def try_backfill_jobs(self):
@@ -114,11 +127,12 @@ class BackfillBestFit(WorkloadManager):
         if len(self.backfill_jobs) == 0:
             return False
 
-        print(f"Initial backfill jobs: {[(job[0].name, job[1].id) for job in self.backfill_jobs]}")
-        self.backfill_jobs.sort(key=lambda jobNode: self.best_fit(jobNode))
+        #print(f"Initial backfill jobs: {[(job[0].name, job[1].id) for job in self.backfill_jobs]}")
+        self.sort_backfill_jobs()
         self.backfill_candidates = len(self.backfill_jobs)
-        print(f"Sorted backfill jobs: {[(jobNode[0].name, jobNode[1].id, self.best_fit(jobNode)) for jobNode in self.backfill_jobs]}")
-        print()
+        #print(f"Sorted backfill jobs: {[(jobNode[0].name, jobNode[1].id, self.time_fit(jobNode)) for jobNode in self.backfill_jobs]}")
+        #print(f"Sorted backfill jobs: {[(jobNode[0].name, jobNode[1].id, self.core_fit(jobNode)) for jobNode in self.backfill_jobs]}")
+        #print()
 
         # If there are backfill jobs, allocate until there are no more room
         while len(self.backfill_jobs) > 0:
@@ -133,13 +147,26 @@ class BackfillBestFit(WorkloadManager):
             elif self.check_backfill(node, job):
                 self.backfill_job(node, job)
             else:
-                print(f"[{self.simulator.simulation_time:.2f}] Job {job.name} cannot be backfilled anymore")
+                #print(f"[{self.simulator.simulation_time:.2f}] Job {job.name} cannot be backfilled anymore (node idle cores: {node.count_idle_cores()})")
                 continue
             # Recalculate priorities
-            self.backfill_jobs.sort(key=lambda jobNode: self.best_fit(jobNode))
-            print(f"Sorted backfill jobs: {[(jobNode[0].name, jobNode[1].id, self.best_fit(jobNode)) for jobNode in self.backfill_jobs]}")
+            self.sort_backfill_jobs() 
+            #print(f"Sorted backfill jobs: {[(jobNode[0].name, jobNode[1].id, self.time_fit(jobNode)) for jobNode in self.backfill_jobs]}")
 
         return False
+
+    def sort_backfill_jobs(self):
+        
+        if self.metric == 'time':
+            if self.fit_criteria == 'best':
+                self.backfill_jobs.sort(key=lambda jobNode: self.time_fit(jobNode))
+            else:
+                self.backfill_jobs.sort(key=lambda jobNode: -self.time_fit(jobNode))
+        elif self.metric == 'core':
+            if self.fit_criteria == 'best':
+                self.backfill_jobs.sort(key=lambda jobNode: self.core_fit(jobNode))
+            else:
+                self.backfill_jobs.sort(key=lambda jobNode: -self.core_fit(jobNode))
     
     def backfill_job(self, node, job):
         self.backfilled_jobs += 1
@@ -161,7 +188,7 @@ class BackfillBestFit(WorkloadManager):
         pass    
 
     def allocate(self, node: BasicNode, job: Job):
-        print(f"[{self.simulator.simulation_time:.2f}] Job {job.name} allocated to node {node.id}")
+        #print(f"[{self.simulator.simulation_time:.2f}] Job {job.name} allocated to node {node.id}")
         cores = node.idle_cores() 
         for task in job.tasks:
             task.allocate(cores.pop(0).full_id())
@@ -178,25 +205,42 @@ class BackfillBestFit(WorkloadManager):
         if node not in self.idle_nodes:
             self.idle_nodes.append(node)
 
-    def shadow_time_and_extra_cores(self, node: BasicNode):
-        running_jobs_eet_tmp = sorted(node.running_jobs(), key=lambda j: (j.start_time + j.req_time)) #ASC De menor a mayor
-        # Remove repeated jobs
-        running_jobs_eet = []
-        for job in running_jobs_eet_tmp:
-            if job not in running_jobs_eet:
-                running_jobs_eet.append(job)
-        idle_cores_after_end_job=node.count_idle_cores()
-        # The start point of the blocking job is the end time of the last job in the list of blocking jobs
-        blocking_job_start_point = running_jobs_eet[-1].start_time + running_jobs_eet[-1].req_time 
-        for i, job in enumerate(running_jobs_eet):
-            idle_cores_after_end_job += len(job.tasks)
-            if idle_cores_after_end_job >= len(self.pending_jobs[0].tasks):
-                blocking_job_start_point = job.start_time + job.req_time
-                break
-        # Extra nodes are the cores that will not be used by the blocking job neither by the actual running jobs
-        extra_cores = node.count_cores() - len(self.pending_jobs[0].tasks)
-        for job in running_jobs_eet[i+1:]: 
-            extra_cores -= len(job.tasks)
+    def shadow_time_and_extra_cores (self, node: BasicNode):
+        # Search the minimum blocking_job_start_point between all the nodes
+        blocking_job_start_point = sys.maxsize
+        node_with_blocking_job = node
+        last_job = 0
+        for nodei in self.resources:
+            running_jobs_eet_tmp = sorted(nodei.running_jobs(), key=lambda j: (j.start_time + j.req_time))
+            running_jobs_eet = []
+            # Remove repeated jobs (because there are as many repeated jobs as cores)
+            for job in running_jobs_eet_tmp:
+                if job not in running_jobs_eet:
+                    running_jobs_eet.append(job)
+            idle_cores_after_end_job=nodei.count_idle_cores()
+            for i, job in enumerate(running_jobs_eet):
+                idle_cores_after_end_job += len(job.tasks)
+                # When the blocking jobs can be executed
+                if idle_cores_after_end_job >= len(self.pending_jobs[0].tasks):
+                    blocking_job_start_point_tmp = job.start_time + job.req_time
+                    if blocking_job_start_point_tmp < blocking_job_start_point:
+                        blocking_job_start_point = blocking_job_start_point_tmp
+                        node_with_blocking_job = nodei
+                        last_job = i 
+                        # If the earliest execution time of the blocking job is in other node, the blocking job start point is infinite (not affect the backfill)
+                        if node != nodei:
+                            blocking_job_start_point = sys.maxsize
+                    break
+        #print(f" - Cheking shadow time and extra cores for node {node.id} with blocking job in node {node_with_blocking_job.id} starts at time {blocking_job_start_point}")
+        # Extra cores are the cores that will not be used by the blocking job neither by the actual running jobs 
+        # If the current node is not affected 
+        if node_with_blocking_job is not node:
+            extra_cores = len(node.idle_cores())
+        else: 
+            extra_cores = node.count_cores() - len(self.pending_jobs[0].tasks)
+            # extra_cores -= len(node.idle_cores()) # This is not the same as the next for loop?? 
+            for job in running_jobs_eet[last_job+1:]:
+                extra_cores -= len(job.tasks)
 
         return blocking_job_start_point, extra_cores
 
@@ -213,7 +257,7 @@ class BackfillBestFit(WorkloadManager):
         
         return False
 
-    def best_fit(self, jobNode):
+    def time_fit(self, jobNode):
         job, node = jobNode
         # If the node is empty, return 0 (highest priority)
         if node.count_idle_cores() == node.count_cores():
@@ -231,6 +275,11 @@ class BackfillBestFit(WorkloadManager):
                     spare_time = shadow_time - (running_job.start_time + running_job.req_time) - job.req_time
                     break
         return spare_time
+
+    def core_fit(self, jobNode): 
+        job, node = jobNode
+        return len(node.idle_cores()) - len(job.tasks)
+
 
     def node_energy(self, job: Job, node):
         node_info = node.cores()[0]
