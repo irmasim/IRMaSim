@@ -239,10 +239,10 @@ class Backfill(WorkloadManager):
         return freq_speedup * inverted_dpflops
    
     def header(klass):
-        return "time,backfill_candidates,backfilled_jobs,pending_jobs"
+        return "time,backfill_candidates,backfilled_jobs,pending_jobs,backfill_ext"
 
     def log_state(self):
-        log = f"{self.simulator.simulation_time:.2f},{self.backfilled_jobs},{self.backfilled_jobs},{len(self.pending_jobs)}"
+        log = f"{self.simulator.simulation_time:.2f},{self.backfilled_jobs},{self.backfilled_jobs},{len(self.pending_jobs)},0"
         self.backfilled_jobs = 0
         return log
 
