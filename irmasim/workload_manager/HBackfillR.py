@@ -268,9 +268,9 @@ class HBackfillR(WorkloadManager):
     
         # Log the number of jobs that can be backfilled due to the new condition
         if shadow_time == float('inf') and node.count_idle_cores() >= len(job.tasks):
-            print(f"[self.simulator.simulation_time:.2f] Job {job.name} can be backfilled on node {node.id} by new condition")
-            if job.name not in self.backfill_ext:
-                self.backfill_ext.append(job.name)
+            #print(f"[self.simulator.simulation_time:.2f] Job {job.name} can be backfilled on node {node.id} by new condition")
+            if job.name not in [job[0] for job in self.backfill_ext]:
+                self.backfill_ext.append((job.name, node.id))
 
         # If there are enough cores for the job regardless of the cores that the blocking job(s) will use
         if len(job.tasks) <= extra_cores and len(job.tasks) <= node.count_idle_cores(): # (la segunda condicion es redundante¿?)
