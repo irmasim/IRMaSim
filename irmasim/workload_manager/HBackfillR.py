@@ -223,6 +223,7 @@ class HBackfillR(WorkloadManager):
     def shadow_time_and_extra_cores (self, node: BasicNode):
         # Search the minimum blocking_job_start_point between all the nodes
         blocking_job_start_point = float('inf')
+        blocking_job_start_time = float('inf')
         node_with_blocking_job = node
         last_job = 0
         for nodei in self.resources:
@@ -240,6 +241,7 @@ class HBackfillR(WorkloadManager):
                     blocking_job_start_point_tmp = job.start_time + job.req_time
                     if blocking_job_start_point_tmp < blocking_job_start_point:
                         blocking_job_start_point = blocking_job_start_point_tmp
+                        blocking_job_start_time = blocking_job_start_point_tmp
                         node_with_blocking_job = nodei
                         last_job = i 
                         # If the earliest execution time of the blocking job is in other node, the blocking job start point is infinite (not affect the backfill)
@@ -257,20 +259,22 @@ class HBackfillR(WorkloadManager):
             for job in running_jobs_eet[last_job+1:]:
                 extra_cores -= len(job.tasks)
 
-        return blocking_job_start_point, extra_cores
+        return blocking_job_start_point, extra_cores, blocking_job_start_time
 
     def check_backfill(self, node: BasicNode, job: Job):
 
         # shadow_time = Start time of the blocking job (until this time jobs can be backfilled)
         # extra_cores = Cores that will not be used by the blocking job and are not used
-        shadow_time , extra_cores = self.shadow_time_and_extra_cores(node)
+        shadow_time , extra_cores, blocked_job_start = self.shadow_time_and_extra_cores(node)
         #print(f" -- Job {job.name} on node {node.id}: shadow time {shadow_time} and extra cores {extra_cores}") 
     
         # Log the number of jobs that can be backfilled due to the new condition
-        if shadow_time == float('inf') and node.count_idle_cores() >= len(job.tasks):
-            print(f"[self.simulator.simulation_time:.2f] Job {job.name} can be backfilled on node {node.id} by new condition")
-            if job.name not in self.backfill_ext:
-                self.backfill_ext.append(job.name)
+        if shadow_time == float('inf') and node.count_idle_cores() >= len(job.tasks) and blocked_job_start < (self.simulator.simulation_time + job.req_time):
+            #print(f"[self.simulator.simulation_time:.2f] Job {job.name} can be backfilled on node {node.id} by new condition")
+            if (job.name, node.id) not in self.backfill_ext:
+                #print(f"Job {job.name} can be backfilled on node {node.id} by new condition (total: {self.backfill_candidates})")
+                self.backfill_ext.append((job.name, node.id))
+                #print(f"Backfill candidates: [{[(job, node) for job, node in self.backfill_ext]}]")
 
         # If there are enough cores for the job regardless of the cores that the blocking job(s) will use
         if len(job.tasks) <= extra_cores and len(job.tasks) <= node.count_idle_cores(): # (la segunda condicion es redundante¿?)
