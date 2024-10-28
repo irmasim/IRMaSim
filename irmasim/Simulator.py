@@ -362,9 +362,20 @@ class Simulator:
         if(self.simulation_time == 0):
             return {"total": 0}
         else:
-            cpu_hours = sum([ (job.finish_time - job.start_time) * job.ntasks for job in self.job_queue.finished_jobs ])
+            #cpu_hours = sum([ (job.finish_time - job.start_time) * job.ntasks for job in self.job_queue.finished_jobs ])
+            used_cores = 0 
+            for job in self.job_queue.finished_jobs:
+                if job.finish_time == self.simulation_time:
+                    #print(f"[{self.simulation_time:.2f}] stats: job {job.id} has finish_time == simulation_time with {job.ntasks} cores")
+                    used_cores += job.ntasks 
+            for job in self.job_queue.submitted_jobs:
+                if job.start_time < self.simulation_time:
+                    #print(f"[{self.simulation_time:.2f}] stats: job {job.id} has start_time ({job.start_time}) < simulation_time with {job.ntasks} cores")
+                    used_cores += job.ntasks
             cores = self.platform.count_resources()[-1]
-            return {"total": cpu_hours/self.simulation_time/cores}
+            #print()
+            return {"total": used_cores/cores}
+            #return {"total": cpu_hours/self.simulation_time/cores}
 
     def exploitation_statistics(self) -> dict:
         if self.simulation_time == 0:
