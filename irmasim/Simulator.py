@@ -366,14 +366,11 @@ class Simulator:
             used_cores = 0 
             for job in self.job_queue.finished_jobs:
                 if job.finish_time == self.simulation_time:
-                    #print(f"[{self.simulation_time:.2f}] stats: job {job.id} has finish_time == simulation_time with {job.ntasks} cores")
                     used_cores += job.ntasks 
             for job in self.job_queue.submitted_jobs:
                 if job.start_time < self.simulation_time:
-                    #print(f"[{self.simulation_time:.2f}] stats: job {job.id} has start_time ({job.start_time}) < simulation_time with {job.ntasks} cores")
                     used_cores += job.ntasks
             cores = self.platform.count_resources()[-1]
-            #print()
             return {"total": used_cores/cores}
             #return {"total": cpu_hours/self.simulation_time/cores}
 
@@ -381,7 +378,14 @@ class Simulator:
         if self.simulation_time == 0:
             return {"total": 0}
         else:
-            executed_mop = sum([ job.ops * 1e-6 * job.ntasks for job in self.job_queue.finished_jobs ])
+            #executed_mop = sum([ job.ops * 1e-6 * job.ntasks for job in self.job_queue.finished_jobs ])
+            executed_mop = 0 
+            for job in self.job_queue.finished_jobs:
+                if job.finish_time == self.simulation_time:
+                    executed_mop += job.ops * 1e-6 * job.ntasks 
+            for job in self.job_queue.submitted_jobs:
+                if job.start_time < self.simulation_time:
+                    executed_mop += job.ops * 1e-6 * job.ntasks 
             total_mop = self.platform.get_mops() * self.simulation_time
             return {"total": executed_mop/total_mop}
 
