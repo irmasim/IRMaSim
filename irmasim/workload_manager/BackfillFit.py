@@ -274,9 +274,6 @@ class BackfillFit(WorkloadManager):
                 if idle_cores >= job.ntasks:
                     spare_time = shadow_time - (running_job.start_time + running_job.req_time) - job.req_time
                     break
-        # Consider the frequency of the node (with a 15% of margin)
-        spare_time *= self.estimate_speedup(node) * 1.15
-
         return spare_time
 
     def core_fit(self, jobNode): 
