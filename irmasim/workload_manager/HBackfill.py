@@ -42,6 +42,8 @@ class HBackfill(WorkloadManager):
             'random': None, # Random is handled in the code 
             'shortest': lambda job: job.req_time,
             'longest': lambda job: -job.req_time,
+            'narrowest': lambda job: job.ntasks,
+            'widest': lambda job: -job.ntasks,
             'timetasks_lowest': lambda job: job.req_time * job.ntasks,
             'timetasks_highest': lambda job: -(job.req_time * job.ntasks),
             'energy_lowest': lambda job: job.req_energy * job.ntasks,
@@ -281,9 +283,9 @@ class HBackfill(WorkloadManager):
         return freq_speedup * inverted_dpflops
 
     def header(klass):
-        return "time,backfill_candidates,backfilled_jobs,pending_jobs"
+        return "time,backfill_candidates,backfilled_jobs,pending_jobs,backfill_ext"
 
     def log_state(self):
-        log = f"{self.simulator.simulation_time:.2f},{self.backfill_candidates},{self.backfilled_jobs},{len(self.pending_jobs)}"
+        log = f"{self.simulator.simulation_time:.2f},{self.backfill_candidates},{self.backfilled_jobs},{len(self.pending_jobs)},0"
         self.backfilled_jobs = 0
         return log
