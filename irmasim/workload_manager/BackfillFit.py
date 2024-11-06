@@ -131,7 +131,6 @@ class BackfillFit(WorkloadManager):
         self.sort_backfill_jobs()
         self.backfill_candidates = len(self.backfill_jobs)
         #print(f"Sorted backfill jobs: {[(jobNode[0].name, jobNode[1].id, self.time_fit(jobNode)) for jobNode in self.backfill_jobs]}")
-        #print(f"Sorted backfill jobs: {[(jobNode[0].name, jobNode[1].id, self.core_fit(jobNode)) for jobNode in self.backfill_jobs]}")
         #print()
 
         # If there are backfill jobs, allocate until there are no more room
@@ -147,7 +146,6 @@ class BackfillFit(WorkloadManager):
             elif self.check_backfill(node, job):
                 self.backfill_job(node, job)
             else:
-                #print(f"[{self.simulator.simulation_time:.2f}] Job {job.name} cannot be backfilled anymore (node idle cores: {node.count_idle_cores()})")
                 continue
             # Recalculate priorities
             self.sort_backfill_jobs() 
@@ -167,6 +165,11 @@ class BackfillFit(WorkloadManager):
                 self.backfill_jobs.sort(key=lambda jobNode: self.core_fit(jobNode))
             else:
                 self.backfill_jobs.sort(key=lambda jobNode: -self.core_fit(jobNode))
+        elif self.metric == 'timecore':
+            if self.fit_criteria == 'best':
+                self.backfill_jobs.sort(key=lambda jobNode: (self.time_fit(jobNode) * self.core_fit(jobNode)))
+            else:
+                self.backfill_jobs.sort(key=lambda jobNode: -(self.time_fit(jobNode) * self.core_fit(jobNode)))
     
     def backfill_job(self, node, job):
         self.backfilled_jobs += 1
@@ -210,21 +213,18 @@ class BackfillFit(WorkloadManager):
         blocking_job_start_point = sys.maxsize
         node_with_blocking_job = node
         last_job = 0
+        blocked_job = self.pending_jobs[0]
         for nodei in self.resources:
-            running_jobs_eet_tmp = sorted(nodei.running_jobs(), key=lambda j: (j.start_time + j.req_time))
-            running_jobs_eet = []
-            # Remove repeated jobs (because there are as many repeated jobs as cores)
-            for job in running_jobs_eet_tmp:
-                if job not in running_jobs_eet:
-                    running_jobs_eet.append(job)
+            running_jobs_eet = sorted(nodei.running_jobs(), key=lambda j: (j.start_time + j.req_time))
             idle_cores_after_end_job=nodei.count_idle_cores()
             for i, job in enumerate(running_jobs_eet):
                 idle_cores_after_end_job += len(job.tasks)
                 # When the blocking jobs can be executed
-                if idle_cores_after_end_job >= len(self.pending_jobs[0].tasks):
+                if idle_cores_after_end_job >= len(blocked_job.tasks):
                     blocking_job_start_point_tmp = job.start_time + job.req_time
                     if blocking_job_start_point_tmp < blocking_job_start_point:
                         blocking_job_start_point = blocking_job_start_point_tmp
+                        #print(f" - Blocked job {blocked_job.name} can start at time {blocking_job_start_point} on node {nodei.id}")
                         node_with_blocking_job = nodei
                         last_job = i 
                         # If the earliest execution time of the blocking job is in other node, the blocking job start point is infinite (not affect the backfill)
@@ -267,7 +267,7 @@ class BackfillFit(WorkloadManager):
         if node.count_idle_cores() >= len(job.tasks):
             spare_time = shadow_time - job.req_time
         else:
-            running_jobs = sorted(node.running_jobs(), key=lambda j: j.req_time)
+            running_jobs = sorted(node.running_tasks(), key=lambda j: j.req_time)
             idle_cores = 0
             for running_job in running_jobs:
                 idle_cores += len(running_job.tasks)
