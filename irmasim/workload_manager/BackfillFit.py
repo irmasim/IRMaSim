@@ -223,7 +223,7 @@ class BackfillFit(WorkloadManager):
                 if idle_cores_after_end_job >= len(blocked_job.tasks):
                     blocking_job_start_point_tmp = job.start_time + job.req_time
                     if blocking_job_start_point_tmp < blocking_job_start_point:
-                        blocking_job_start_point = blocking_job_start_point_tmp
+                        blocking_job_start_point = blocking_job_start_point_tmp * self.estimate_speedup(nodei)
                         #print(f" - Blocked job {blocked_job.name} can start at time {blocking_job_start_point} on node {nodei.id}")
                         node_with_blocking_job = nodei
                         last_job = i 
@@ -263,23 +263,15 @@ class BackfillFit(WorkloadManager):
         if node.count_idle_cores() == node.count_cores():
             return 0
         shadow_time, extra_cores = self.shadow_time_and_extra_cores(node)
-        spare_time = shadow_time
-        if node.count_idle_cores() >= len(job.tasks):
-            spare_time = shadow_time - job.req_time
-        else:
-            running_jobs = sorted(node.running_tasks(), key=lambda j: j.req_time)
-            idle_cores = 0
-            for running_job in running_jobs:
-                idle_cores += len(running_job.tasks)
-                if idle_cores >= job.ntasks:
-                    spare_time = shadow_time - (running_job.start_time + running_job.req_time) - job.req_time
-                    break
+        # If the job does not affect the blocking job, return highest value (it does not have a "fit")
+        if shadow_time == sys.maxsize:
+            return sys.maxsize
+        spare_time = (shadow_time - self.simulator.simulation_time) - (job.req_time * self.estimate_speedup(node))
         return spare_time
 
     def core_fit(self, jobNode): 
         job, node = jobNode
         return len(node.idle_cores()) - len(job.tasks)
-
 
     def node_energy(self, job: Job, node):
         node_info = node.cores()[0]
