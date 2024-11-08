@@ -210,38 +210,43 @@ class BackfillFit(WorkloadManager):
 
     def shadow_time_and_extra_cores (self, node: BasicNode):
         # Search the minimum blocking_job_start_point between all the nodes
-        blocking_job_start_point = sys.maxsize
+        blocking_job_start_point = sys.maxsize 
         node_with_blocking_job = node
-        last_job = 0
         blocked_job = self.pending_jobs[0]
+
+        running_jobs_eet = sorted(node.running_jobs(), key=lambda j: (j.start_time + j.req_time))
+        idle_cores_after_end_job=node.count_idle_cores()
+        for i, job in enumerate(running_jobs_eet):
+            idle_cores_after_end_job += len(job.tasks)
+            if idle_cores_after_end_job >= len(blocked_job.tasks): 
+                blocking_job_start_point = job.start_time + job.req_time
+                break
+
         for nodei in self.resources:
             running_jobs_eet = sorted(nodei.running_jobs(), key=lambda j: (j.start_time + j.req_time))
             idle_cores_after_end_job=nodei.count_idle_cores()
+            # If the blocked job is not in the current node the current node is free to backfill (speedup execution)
+            if node_with_blocking_job is not node:
+                break
             for i, job in enumerate(running_jobs_eet):
                 idle_cores_after_end_job += len(job.tasks)
                 # When the blocking jobs can be executed
                 if idle_cores_after_end_job >= len(blocked_job.tasks):
-                    #blocking_job_start_point_tmp = job.start_time + (job.req_time * self.estimate_speedup(nodei))
                     blocking_job_start_point_tmp = job.start_time + job.req_time
                     if blocking_job_start_point_tmp < blocking_job_start_point:
-                        blocking_job_start_point = blocking_job_start_point_tmp 
-                        #print(f" - Blocked job {blocked_job.name} can start at time {blocking_job_start_point} on node {nodei.id}")
+                        blocking_job_start_point = blocking_job_start_point_tmp
                         node_with_blocking_job = nodei
-                        last_job = i 
                         # If the earliest execution time of the blocking job is in other node, the blocking job start point is infinite (not affect the backfill)
                         if node != nodei:
-                            blocking_job_start_point = sys.maxsize
+                            blocking_job_start_point = sys.maxsize 
                     break
-        #print(f" - Cheking shadow time and extra cores for node {node.id} with blocking job in node {node_with_blocking_job.id} starts at time {blocking_job_start_point}")
+
         # Extra cores are the cores that will not be used by the blocking job neither by the actual running jobs 
         # If the current node is not affected 
         if node_with_blocking_job is not node:
             extra_cores = len(node.idle_cores())
         else: 
-            extra_cores = node.count_cores() - len(self.pending_jobs[0].tasks)
-            # extra_cores -= len(node.idle_cores()) # This is not the same as the next for loop?? 
-            for job in running_jobs_eet[last_job+1:]:
-                extra_cores -= len(job.tasks)
+            extra_cores = min(node.count_cores() - len(self.pending_jobs[0].tasks), node.count_idle_cores())
 
         return blocking_job_start_point, extra_cores
 
@@ -253,7 +258,7 @@ class BackfillFit(WorkloadManager):
         if len(job.tasks) <= extra_cores and len(job.tasks) <= node.count_idle_cores(): # (la segunda condicion es redundante¿?)
             return True
         # If there are enough cores for the job (using part of the ones is using blocking job) and the job ends before the blocking job
-        elif len(job.tasks) <= node.count_idle_cores() and (self.simulator.simulation_time + job.req_time) <= shadow_time #* self.estimate_speedup(node)) <= shadow_time: 
+        elif len(job.tasks) <= node.count_idle_cores() and (self.simulator.simulation_time + job.req_time) <= shadow_time: #* self.estimate_speedup(node)) <= shadow_time: 
             return True
         
         return False
