@@ -152,12 +152,10 @@ class HBackfillR(WorkloadManager):
                     break
      
         #print(f"[{self.simulator.simulation_time:.2f}] {len(self.backfill_jobs)} jobs can be backfilled: {[(job.name, job.req_time) for job in self.backfill_jobs]}") 
-
         if self.job_selection == 'random':
             rand.shuffle(self.backfill_jobs)
         else:
             self.backfill_jobs.sort(key=lambda job: self.job_sort_key(job))
-
         #print(f"[{self.simulator.simulation_time:.2f}] Sorted backfill jobs: {[job.name for job in self.backfill_jobs]}")
        
         # If there are backfill jobs, allocate until there are no more room
@@ -225,15 +223,21 @@ class HBackfillR(WorkloadManager):
         blocking_job_start_point = float('inf')
         blocking_job_start_time = float('inf')
         node_with_blocking_job = node
-        last_job = 0
+
+        running_jobs_eet = sorted(node.running_jobs(), key=lambda j: (j.start_time + j.req_time))
+        idle_cores_after_end_job=node.count_idle_cores()
+        for i, job in enumerate(running_jobs_eet):
+            idle_cores_after_end_job += len(job.tasks)
+            if idle_cores_after_end_job >= len(self.pending_jobs[0].tasks):
+                blocking_job_start_point = job.start_time + job.req_time
+                break
+
         for nodei in self.resources:
-            running_jobs_eet_tmp = sorted(nodei.running_jobs(), key=lambda j: (j.start_time + j.req_time))
-            running_jobs_eet = []
-            # Remove repeated jobs (because there are as many repeated jobs as cores)
-            for job in running_jobs_eet_tmp:
-                if job not in running_jobs_eet:
-                    running_jobs_eet.append(job)
+            running_jobs_eet = sorted(nodei.running_jobs(), key=lambda j: (j.start_time + j.req_time))
             idle_cores_after_end_job=nodei.count_idle_cores()
+            # If the blocked job is not in the current node the current node is free to backfill (speedup execution)
+            if node_with_blocking_job is not node:
+                break
             for i, job in enumerate(running_jobs_eet):
                 idle_cores_after_end_job += len(job.tasks)
                 # When the blocking jobs can be executed
@@ -243,21 +247,17 @@ class HBackfillR(WorkloadManager):
                         blocking_job_start_point = blocking_job_start_point_tmp
                         blocking_job_start_time = blocking_job_start_point_tmp
                         node_with_blocking_job = nodei
-                        last_job = i 
                         # If the earliest execution time of the blocking job is in other node, the blocking job start point is infinite (not affect the backfill)
                         if node != nodei:
                             blocking_job_start_point = float('inf')
                     break
-        #print(f" - Cheking shadow time and extra cores for node {node.id} with blocking job in node {node_with_blocking_job.id} starts at time {blocking_job_start_point}")
+
         # Extra cores are the cores that will not be used by the blocking job neither by the actual running jobs 
         # If the current node is not affected 
         if node_with_blocking_job is not node:
             extra_cores = len(node.idle_cores())
         else: 
-            extra_cores = node.count_cores() - len(self.pending_jobs[0].tasks)
-            # extra_cores -= len(node.idle_cores()) # This is not the same as the next for loop?? 
-            for job in running_jobs_eet[last_job+1:]:
-                extra_cores -= len(job.tasks)
+            extra_cores = min(node.count_cores() - len(self.pending_jobs[0].tasks), node.count_idle_cores())
 
         return blocking_job_start_point, extra_cores, blocking_job_start_time
 
@@ -266,33 +266,19 @@ class HBackfillR(WorkloadManager):
         # shadow_time = Start time of the blocking job (until this time jobs can be backfilled)
         # extra_cores = Cores that will not be used by the blocking job and are not used
         shadow_time , extra_cores, blocked_job_start = self.shadow_time_and_extra_cores(node)
-        #print(f" -- Job {job.name} on node {node.id}: shadow time {shadow_time} and extra cores {extra_cores}") 
     
         # Log the number of jobs that can be backfilled due to the new condition
         if shadow_time == float('inf') and node.count_idle_cores() >= len(job.tasks) and blocked_job_start < (self.simulator.simulation_time + job.req_time):
-            #print(f"[self.simulator.simulation_time:.2f] Job {job.name} can be backfilled on node {node.id} by new condition")
             if (job.name, node.id) not in self.backfill_ext:
-                #print(f"Job {job.name} can be backfilled on node {node.id} by new condition (total: {self.backfill_candidates})")
                 self.backfill_ext.append((job.name, node.id))
-                #print(f"Backfill candidates: [{[(job, node) for job, node in self.backfill_ext]}]")
 
         # If there are enough cores for the job regardless of the cores that the blocking job(s) will use
         if len(job.tasks) <= extra_cores and len(job.tasks) <= node.count_idle_cores(): # (la segunda condicion es redundante¿?)
             return True
         # If there are enough cores for the job (using part of the ones is using blocking job) and the job ends before the blocking job
         elif len(job.tasks) <= node.count_idle_cores() and (self.simulator.simulation_time + job.req_time) <= shadow_time: 
-            #print(f"Job {job.name} backfilled on node {node.id} by shadow time ({self.simulator.simulation_time + job.req_time} <= {shadow_time})")
             return True
        
-        # DEBUG
-        #if len(job.tasks) > extra_cores:
-        #    print(f"Job {job.name} blocked on node {node.id} by extra cores")
-        #if len(job.tasks) > node.count_idle_cores():
-        #    print(f"Job {job.name} blocked on node {node.id} by idle cores")
-        #if (self.simulator.simulation_time + job.req_time) > shadow_time:
-        #    print(f"Job {job.name} blocked on node {node.id} by shadow time")
-        # END   
-
         return False
 
     def node_energy(self, job: Job, node):
