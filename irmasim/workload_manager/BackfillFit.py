@@ -221,7 +221,8 @@ class BackfillFit(WorkloadManager):
                 idle_cores_after_end_job += len(job.tasks)
                 # When the blocking jobs can be executed
                 if idle_cores_after_end_job >= len(blocked_job.tasks):
-                    blocking_job_start_point_tmp = job.start_time + (job.req_time * self.estimate_speedup(nodei))
+                    #blocking_job_start_point_tmp = job.start_time + (job.req_time * self.estimate_speedup(nodei))
+                    blocking_job_start_point_tmp = job.start_time + job.req_time
                     if blocking_job_start_point_tmp < blocking_job_start_point:
                         blocking_job_start_point = blocking_job_start_point_tmp 
                         #print(f" - Blocked job {blocked_job.name} can start at time {blocking_job_start_point} on node {nodei.id}")
@@ -252,7 +253,7 @@ class BackfillFit(WorkloadManager):
         if len(job.tasks) <= extra_cores and len(job.tasks) <= node.count_idle_cores(): # (la segunda condicion es redundante¿?)
             return True
         # If there are enough cores for the job (using part of the ones is using blocking job) and the job ends before the blocking job
-        elif len(job.tasks) <= node.count_idle_cores() and (self.simulator.simulation_time + job.req_time * self.estimate_speedup(node)) <= shadow_time: 
+        elif len(job.tasks) <= node.count_idle_cores() and (self.simulator.simulation_time + job.req_time) <= shadow_time #* self.estimate_speedup(node)) <= shadow_time: 
             return True
         
         return False
@@ -266,7 +267,7 @@ class BackfillFit(WorkloadManager):
         # If the job does not affect the blocking job, return highest value (it does not have a "fit")
         if shadow_time == sys.maxsize:
             return sys.maxsize
-        spare_time = (shadow_time - self.simulator.simulation_time) - (job.req_time * self.estimate_speedup(node))
+        spare_time = (shadow_time - self.simulator.simulation_time) - (job.req_time) #* self.estimate_speedup(node))
         return spare_time
 
     def core_fit(self, jobNode): 
