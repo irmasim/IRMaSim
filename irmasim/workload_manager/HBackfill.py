@@ -215,12 +215,7 @@ class HBackfill(WorkloadManager):
             self.idle_nodes.append(node)
 
     def shadow_time_and_extra_cores (self, node: BasicNode):
-        running_jobs_eet_tmp = sorted(node.running_jobs(), key=lambda j: (j.start_time + j.req_time)) #ASC De menor a mayor
-        # Remove repeated jobs
-        running_jobs_eet = []
-        for job in running_jobs_eet_tmp:
-            if job not in running_jobs_eet:
-                running_jobs_eet.append(job)
+        running_jobs_eet = sorted(node.running_jobs(), key=lambda j: (j.start_time + j.req_time)) #ASC De menor a mayor
         idle_cores_after_end_job=node.count_idle_cores()
         # The start point of the blocking job is the end time of the last job in the list of blocking jobs
         blocking_job_start_point = running_jobs_eet[-1].start_time + running_jobs_eet[-1].req_time 
