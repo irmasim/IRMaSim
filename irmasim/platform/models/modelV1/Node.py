@@ -42,9 +42,13 @@ class Node (BasicNode):
         return tasks
 
     def running_jobs(self):
-        jobs = []
+        jobs_tmp = []
         for processor in self.children:
-            jobs.extend([ core.task.job for core in processor.children if core.task is not None and core.task.job not in jobs])
+            jobs_tmp.extend([ core.task.job for core in processor.children if core.task is not None])
+        jobs = []
+        for job in jobs_tmp:
+            if job not in jobs:
+                jobs.append(job)
         return jobs
 
     def schedule(self, task: Task, resource_id: list):
