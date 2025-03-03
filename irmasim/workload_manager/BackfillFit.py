@@ -316,4 +316,5 @@ class BackfillFit(WorkloadManager):
     def log_state(self):
         log = f"{self.simulator.simulation_time:.2f},{self.backfill_candidates},{self.backfilled_jobs},{len(self.pending_jobs)}"
         self.backfilled_jobs = 0
+        self.backfill_candidates = 0
         return log
