@@ -51,8 +51,9 @@ class Cartasan(WorkloadManager):
         self.pending_jobs = [] 
         self.running_jobs = []
         # Maximum time a job can be waiting in the queue before raising its priority to the highest
-        self.threshold = 259200 # 3 days in seconds
-        self.priority_queue = [] # TODO
+        #self.threshold = 259200 # 3 days in seconds
+        self.threshold = 400
+        self.priority_queue = [] 
 
         self.algorithm_sort_key = algorithm[options["workload_manager"]["algorithm"]]
         self.node_sort_key = node_criteria[self.node_selection]
@@ -68,8 +69,6 @@ class Cartasan(WorkloadManager):
         self.pending_jobs.extend(jobs)
         self.pending_jobs.sort(key=self.algorithm_sort_key)
         print(f"[{self.simulator.simulation_time:.2f}] {[job.id for job in jobs]} submitted")
-        print(f"[{self.simulator.simulation_time:.2f}] Ordered jobs: {[job.id for job in self.pending_jobs]}")
-        # Planifica jobs hasta que no haya mas nodos libres o no haya mas jobs
         while self.schedule_next_job():
             pass
 
@@ -85,22 +84,44 @@ class Cartasan(WorkloadManager):
 
     def schedule_next_job(self):
         # Ïf there are no pending jobs or no idle nodes, return False
-        if len(self.pending_jobs) == 0 or len(self.idle_nodes) == 0:
+        if (len(self.pending_jobs) == 0 and len(self.priority_queue) == 0) or len(self.idle_nodes) == 0:
             return False
         
+        # Check if some job have been waiting more than the threshold
+        for job in self.pending_jobs:
+            if self.simulator.simulation_time - job.submit_time > self.threshold:
+                self.priority_queue.append(job)
+                self.pending_jobs.remove(job)
+
         # If there is room for the first pending job, allocate it
         if self.try_allocate_first_job():
             return True
         
     def try_allocate_first_job(self):
-        # Order the idle nodes according to the first job
-        idle_nodes_ordered = self.order_idle_nodes(self.pending_jobs[0])
+        
+        # If there is a job in the priority queue, try to allocate it 
+        if self.priority_queue != []:
+            first_job = self.priority_queue[0]
+            print(f"[{self.simulator.simulation_time:.2f}] Job {first_job.name} is in priority queue")
+            idle_nodes_ordered = self.order_idle_nodes(first_job)
+            for node in idle_nodes_ordered:
+                if node.count_idle_cores() >= len(first_job.tasks):
+                    print(f"[{self.simulator.simulation_time:.2f}] Priority Job {first_job.name} allocated to node {node.id} (waiting time: {self.simulator.simulation_time - first_job.submit_time})")
+                    self.allocate(node, first_job)
+                    self.priority_queue.pop(0)
+                    return True
 
-        for node in idle_nodes_ordered:
-            if node.count_idle_cores() >= len(self.pending_jobs[0].tasks):
-                next_job = self.pending_jobs.pop(0)
-                self.allocate(node, next_job)
-                return True
+        # If there is no job in the priority queue or it was not possible to allocate it, try to allocate the first job
+        if self.pending_jobs != []:
+            first_job = self.pending_jobs[0]
+            idle_nodes_ordered = self.order_idle_nodes(first_job)
+            for node in idle_nodes_ordered:
+                if node.count_idle_cores() >= len(first_job.tasks):
+                    print(f"[{self.simulator.simulation_time:.2f}] Job {first_job.name} allocated to node {node.id} (waiting time: {self.simulator.simulation_time - first_job.submit_time})")
+                    self.allocate(node, first_job)
+                    self.pending_jobs.pop(0)
+                    return True
+
         #print(f"[{self.simulator.simulation_time:.2f}] Job {self.pending_jobs[0].name} blocked")
         return False
     
@@ -112,7 +133,6 @@ class Cartasan(WorkloadManager):
         pass    
 
     def allocate(self, node: BasicNode, job: Job):
-        print(f"[{self.simulator.simulation_time:.2f}] Job {job.name} allocated to node {node.id}")
         cores = node.idle_cores() 
         for task in job.tasks:
             task.allocate(cores.pop(0).full_id())
