@@ -100,7 +100,7 @@ class HBackfillR(WorkloadManager):
 
     def on_job_completion(self, jobs: list):
         for job in jobs:
-            #print(f"[{self.simulator.simulation_time:.2f}] Job {job.name} completed")
+            print(f"[{self.simulator.simulation_time:.2f}] Job {job.name} completed")
             for task in job.tasks:
                 self.deallocate(task)
             self.running_jobs.remove(job)
@@ -200,7 +200,7 @@ class HBackfillR(WorkloadManager):
         pass    
 
     def allocate(self, node: BasicNode, job: Job):
-        #print(f"[{self.simulator.simulation_time:.2f}] Job {job.name} allocated to node {node.id}")
+        print(f"[{self.simulator.simulation_time:.2f}] Job {job.name} allocated to node {node.id} (free: {node.count_idle_cores()})")
         cores = node.idle_cores() 
         for task in job.tasks:
             task.allocate(cores.pop(0).full_id())
