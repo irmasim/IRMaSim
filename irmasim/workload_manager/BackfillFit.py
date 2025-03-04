@@ -127,10 +127,10 @@ class BackfillFit(WorkloadManager):
         if len(self.backfill_jobs) == 0:
             return False
 
-        #print(f"Initial backfill jobs: {[(job[0].name, job[1].id) for job in self.backfill_jobs]}")
+        print(f"[{self.simulator.simulation_time:.2f}] Initial backfill jobs: {[(job[0].name, job[1].id) for job in self.backfill_jobs]}")
         self.sort_backfill_jobs()
         self.backfill_candidates = len(self.backfill_jobs)
-        #print(f"Sorted backfill jobs: {[(jobNode[0].name, jobNode[1].id, self.time_fit(jobNode)) for jobNode in self.backfill_jobs]}")
+        print(f"[{self.simulator.simulation_time:.2f}] Sorted backfill jobs: {[(jobNode[0].name, jobNode[1].id, self.core_fit(jobNode)) for jobNode in self.backfill_jobs]}")
         #print()
 
         # If there are backfill jobs, allocate until there are no more room
@@ -142,14 +142,16 @@ class BackfillFit(WorkloadManager):
             # If the node is empty, it can't be blocked by any job (it will be allocated)
             if node.count_idle_cores() == node.count_cores():
                 self.backfill_job(node, job)
+                print(f"Backfilled job: {job.name}")
             # It is possible that the job cannot be backfilled (the machine status has changed)
             elif self.check_backfill(node, job):
                 self.backfill_job(node, job)
+                print(f"Backfilled job: {job.name}")
             else:
                 continue
             # Recalculate priorities
             self.sort_backfill_jobs() 
-            #print(f"Sorted backfill jobs: {[(jobNode[0].name, jobNode[1].id, self.time_fit(jobNode)) for jobNode in self.backfill_jobs]}")
+            print(f"Sorted backfill jobs: {[(jobNode[0].name, jobNode[1].id, self.core_fit(jobNode)) for jobNode in self.backfill_jobs]}")
 
         return False
 
@@ -272,6 +274,7 @@ class BackfillFit(WorkloadManager):
         # If the job does not affect the blocking job, return highest value (it does not have a "fit")
         if shadow_time == sys.maxsize:
             return sys.maxsize
+            #return 1 / job.req_time
         spare_time = (shadow_time - self.simulator.simulation_time) - (job.req_time) #* self.estimate_speedup(node))
         return spare_time
 

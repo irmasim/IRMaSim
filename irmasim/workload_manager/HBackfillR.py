@@ -43,8 +43,8 @@ class HBackfillR(WorkloadManager):
             'random': None, # Random is handled in the code 
             'shortest': lambda job: job.req_time,
             'longest': lambda job: -job.req_time,
-            'widest': lambda job: job.ntasks,
-            'narrowest': lambda job: -job.ntasks,
+            'narrowest': lambda job: job.ntasks,
+            'widest': lambda job: -job.ntasks,
             'timetasks_lowest': lambda job: job.req_time * job.ntasks,
             'timetasks_highest': lambda job: -(job.req_time * job.ntasks),
             'energy_lowest': lambda job: job.req_energy * job.ntasks,
@@ -135,6 +135,7 @@ class HBackfillR(WorkloadManager):
     def try_backfill_jobs(self):
         for job in self.pending_jobs.copy()[1:]:
             for node in self.order_idle_nodes(job):
+                print(f"Checking node {node.id}")
                 # Optimization: If the job does not fit in the node, do not check backfill
                 if len(job.tasks) > node.count_cores():
                     continue
@@ -151,12 +152,12 @@ class HBackfillR(WorkloadManager):
                         self.backfill_jobs.append(job)
                     break
      
-        #print(f"[{self.simulator.simulation_time:.2f}] {len(self.backfill_jobs)} jobs can be backfilled: {[(job.name, job.req_time) for job in self.backfill_jobs]}") 
+        print(f"[{self.simulator.simulation_time:.2f}] {len(self.backfill_jobs)} jobs can be backfilled: {[(job.name, job.req_time) for job in self.backfill_jobs]}") 
         if self.job_selection == 'random':
             rand.shuffle(self.backfill_jobs)
         else:
             self.backfill_jobs.sort(key=lambda job: self.job_sort_key(job))
-        #print(f"[{self.simulator.simulation_time:.2f}] Sorted backfill jobs: {[job.name for job in self.backfill_jobs]}")
+        print(f"[{self.simulator.simulation_time:.2f}] Sorted backfill jobs: {[job.name for job in self.backfill_jobs]}")
        
         # If there are backfill jobs, allocate until there are no more room
         self.backfill_candidates = len(self.backfill_jobs)
