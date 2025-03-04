@@ -64,7 +64,7 @@ class Backfill(WorkloadManager):
     def on_job_submission(self, jobs: list):
         self.pending_jobs.extend(jobs)
         #print(f"[{self.simulator.simulation_time:.2f}] {[job.id for job in jobs]} submitted")
-        # Planifica jobs hasta que no haya mas nodos libres o no haya mas jobs
+        self.order_pending_jobs()
         while self.schedule_next_job():
             pass
 
@@ -75,6 +75,7 @@ class Backfill(WorkloadManager):
                 self.deallocate(task)
             self.running_jobs.remove(job)
             self.assigned_nodes[job.tasks[0].resource[2]] -= 1
+        self.order_pending_jobs()
         while self.schedule_next_job():
             pass
 
@@ -232,6 +233,13 @@ class Backfill(WorkloadManager):
         inverted_dpflops = ((node_info.clock_rate * 1e3) / node_info.mops)
 
         return freq_speedup * inverted_dpflops
+
+    def order_pending_jobs(self):
+        """
+        This method is meant to be overridden in subclasses to reorder pending jobs.
+        In Backfill, it does nothing, maintaining FCFS order.
+        """
+        pass # FCFS order is maintained by default
    
     def header(klass):
         return "time,backfill_candidates,backfilled_jobs,pending_jobs,backfill_ext"
