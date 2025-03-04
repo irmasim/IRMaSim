@@ -37,7 +37,7 @@ class Cartasan(WorkloadManager):
 
         algorithm = {
             'SPF': lambda job: job.req_time, # Smallest Estimated Processing Time First
-            'SQF': lambda job: job.tasks, # Smallest Resource Requirement First
+            'SQF': lambda job: job.ntasks, # Smallest Resource Requirement First
             'SAF': lambda job: job.req_time * job.ntasks  # Smalles Estimated "Area" First
         }
 
@@ -52,20 +52,21 @@ class Cartasan(WorkloadManager):
         self.running_jobs = []
         # Maximum time a job can be waiting in the queue before raising its priority to the highest
         self.threshold = 259200 # 3 days in seconds
+        self.priority_queue = [] # TODO
 
-        self.algorithm = algorithm[options["workload_manager"]["algorithm"]]
+        self.algorithm_sort_key = algorithm[options["workload_manager"]["algorithm"]]
         self.node_sort_key = node_criteria[self.node_selection]
         self.idle_nodes = []
         self.idle_nodes.extend(self.simulator.get_resources(klass))
         self.resources = self.simulator.get_resources(klass)
-        print(f"Algorithm: {self.algorithm}")
+        print(f"Algorithm: {options["workload_manager"]["algorithm"]}")
 
         self.assigned_nodes = {node.id: 0 for node in self.resources}
         self.min_freq = min([node.cores()[0].clock_rate for node in self.resources])
 
     def on_job_submission(self, jobs: list):
         self.pending_jobs.extend(jobs)
-        self.pending_jobs.sort(key=self.algorithm)
+        self.pending_jobs.sort(key=self.algorithm_sort_key)
         print(f"[{self.simulator.simulation_time:.2f}] {[job.id for job in jobs]} submitted")
         print(f"[{self.simulator.simulation_time:.2f}] Ordered jobs: {[job.id for job in self.pending_jobs]}")
         # Planifica jobs hasta que no haya mas nodos libres o no haya mas jobs
